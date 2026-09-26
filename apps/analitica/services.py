@@ -1,0 +1,127 @@
+"""Servicios de analítica que conectan los algoritmos con los datos."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import date, timedelta
+from decimal import Decimal
+
+from django.conf import settings
+from django.db.models import F, Sum
+
+from apps.catalogo.models import EstadoStock, Producto
+
+from . import algoritmos as alg
+from .models import DemandaDiaria
+
+PARAMS = settings.INVENTARIO_INTELIGENTE
+
+
+def acumular_demanda_diaria(producto: Producto, fecha: date, cantidad) -> None:
+    obj, _ = DemandaDiaria.objects.get_or_create(producto=producto, fecha=fecha)
+    DemandaDiaria.objects.filter(pk=obj.pk).update(cantidad=F("cantidad") + Decimal(str(cantidad)))
+
+
+def serie_ventas_diarias(producto: Producto, dias: int, hasta: date | None = None) -> list[float]:
+    """Serie completa (con ceros en días sin venta) de los últimos `dias` días."""
+    hasta = hasta or date.today()
+    desde = hasta - timedelta(days=dias - 1)
+    datos = dict(
+        DemandaDiaria.objects.filter(producto=producto, fecha__range=(desde, hasta)).values_list("fecha", "cantidad")
+    )
+    return [float(datos.get(desde + timedelta(days=i), 0)) for i in range(dias)]
+
+
+def tiempo_entrega(producto: Producto) -> float:
+    if producto.proveedor_principal_id:
+        pp = producto.proveedores.filter(proveedor_id=producto.proveedor_principal_id).first()
+        if pp and pp.tiempo_entrega_dias is not None:
+            return pp.tiempo_entrega_dias
+        return float(producto.proveedor_principal.tiempo_entrega_real())
+    config = getattr(producto.negocio, "config", None)
+    return config.tiempo_entrega_defecto if config else 3
+
+
+def unidades_en_transito(producto: Producto) -> float:
+    from apps.compras.models import DetalleOrdenCompra, OrdenCompra
+
+    pendientes = DetalleOrdenCompra.objects.filter(
+        producto=producto,
+        orden__estado__in=[
+            OrdenCompra.Estado.ENVIADA,
+            OrdenCompra.Estado.CONFIRMADA,
+            OrdenCompra.Estado.RECIBIDA_PARCIAL,
+        ],
+    ).aggregate(p=Sum(F("cantidad_pedida") - F("cantidad_recibida")))["p"]
+    return float(pendientes or 0)
+
+
+@dataclass
+class AnalisisProducto:
+    producto: Producto
+    stock: float
+    demanda_diaria: float
+    sigma: float
+    cobertura_dias: float | None
+    tiempo_entrega: float
+    stock_seguridad: float
+    punto_reorden: float
+    en_transito: float
+    rotacion: str
+    estado: str
+    dias_desde_ultima_venta: int | None
+
+
+def analizar_producto(producto: Producto, hoy: date | None = None) -> AnalisisProducto:
+    hoy = hoy or date.today()
+    config = getattr(producto.negocio, "config", None)
+    dias = PARAMS["DIAS_HISTORIA"]
+    serie = serie_ventas_diarias(producto, dias, hoy)
+    d = alg.suavizado_exponencial(serie, PARAMS["ALFA_SUAVIZADO"])
+    sigma = alg.desviacion(serie)
+    stock = float(producto.stock_actual)
+    L = tiempo_entrega(producto)
+    ss = alg.stock_seguridad(sigma, L, float(producto.stock_minimo), PARAMS["Z_NIVEL_SERVICIO"])
+    cobertura = alg.dias_de_cobertura(stock, d)
+
+    ultima = DemandaDiaria.objects.filter(producto=producto, cantidad__gt=0).order_by("-fecha").first()
+    dias_ultima = (hoy - ultima.fecha).days if ultima else None
+    rotacion = alg.clasificar_rotacion(
+        sum(1 for x in serie if x > 0), dias, dias_ultima, config.dias_sin_movimiento if config else 45
+    )
+
+    estado = producto.estado_basico()
+    if estado != EstadoStock.AGOTADO and cobertura is not None and cobertura < L:
+        estado = EstadoStock.CRITICO
+    elif estado == EstadoStock.NORMAL and cobertura is not None and cobertura > (config.dias_exceso if config else 90):
+        estado = EstadoStock.EXCESO
+
+    return AnalisisProducto(
+        producto=producto,
+        stock=stock,
+        demanda_diaria=d,
+        sigma=sigma,
+        cobertura_dias=cobertura,
+        tiempo_entrega=L,
+        stock_seguridad=ss,
+        punto_reorden=alg.punto_de_reorden(d, L, ss),
+        en_transito=unidades_en_transito(producto),
+        rotacion=rotacion,
+        estado=estado,
+        dias_desde_ultima_venta=dias_ultima,
+    )
+
+
+def pronostico_mensual(producto: Producto, meses: int = 6) -> alg.Pronostico:
+    """Pronóstico del próximo mes con Holt sobre ventas mensuales."""
+    from django.db.models.functions import TruncMonth
+
+    filas = (
+        DemandaDiaria.objects.filter(producto=producto)
+        .annotate(mes=TruncMonth("fecha"))
+        .values("mes")
+        .annotate(total=Sum("cantidad"))
+        .order_by("mes")
+    )
+    serie = [float(f["total"]) for f in filas][-meses:]
+    return alg.pronostico_holt(serie)

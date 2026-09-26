@@ -1,0 +1,688 @@
+{
+  "hitos": [
+    {
+      "titulo": "Fase 0 · Fundaciones",
+      "descripcion": "Repo, Docker, CI, negocio + plantillas de giro, roles."
+    },
+    {
+      "titulo": "Fase 1 · MVP Registrar y Controlar",
+      "descripcion": "Productos, movimientos, ventas, kárdex y semáforo de stock."
+    },
+    {
+      "titulo": "Fase 2 · Proveedores, Compras y Vencimientos",
+      "descripcion": "Proveedores, órdenes de compra, recepción, lotes FEFO, conteo físico."
+    },
+    {
+      "titulo": "Fase 3 · Analizar y Alertar",
+      "descripcion": "Demanda diaria, rotación, anomalías, motor de alertas y dashboard."
+    },
+    {
+      "titulo": "Fase 4 · Predecir y Recomendar",
+      "descripcion": "Pronóstico, punto de reorden y pedido sugerido explicado."
+    },
+    {
+      "titulo": "Fase 5 · Reportes y Móvil",
+      "descripcion": "Reportes con exportación, PWA y API REST."
+    },
+    {
+      "titulo": "Fase 6 · Producción",
+      "descripcion": "Despliegue, backups, seguridad y manual de usuario."
+    }
+  ],
+  "etiquetas": [
+    {
+      "nombre": "tipo:historia",
+      "color": "1d76db",
+      "descripcion": "Funcionalidad visible para el usuario"
+    },
+    {
+      "nombre": "tipo:tecnica",
+      "color": "5319e7",
+      "descripcion": "Tarea técnica / infraestructura"
+    },
+    {
+      "nombre": "tipo:bug",
+      "color": "d73a4a",
+      "descripcion": "Error"
+    },
+    {
+      "nombre": "tipo:docs",
+      "color": "0075ca",
+      "descripcion": "Documentación"
+    },
+    {
+      "nombre": "prioridad:alta",
+      "color": "b60205",
+      "descripcion": ""
+    },
+    {
+      "nombre": "prioridad:media",
+      "color": "fbca04",
+      "descripcion": ""
+    },
+    {
+      "nombre": "prioridad:baja",
+      "color": "c2e0c6",
+      "descripcion": ""
+    },
+    {
+      "nombre": "base-implementada",
+      "color": "0e8a16",
+      "descripcion": "El modelo/servicio ya existe en el esqueleto; falta UI, pulir o ampliar"
+    },
+    {
+      "nombre": "inteligencia",
+      "color": "f9a8d4",
+      "descripcion": "Parte del motor inteligente (analítica, alertas, recomendaciones)"
+    },
+    {
+      "nombre": "adaptativo",
+      "color": "a2eeef",
+      "descripcion": "Relacionado con plantillas de giro y configuración"
+    },
+    {
+      "nombre": "modulo:core",
+      "color": "ededed",
+      "descripcion": "apps/core"
+    },
+    {
+      "nombre": "modulo:usuarios",
+      "color": "ededed",
+      "descripcion": "apps/usuarios"
+    },
+    {
+      "nombre": "modulo:catalogo",
+      "color": "ededed",
+      "descripcion": "apps/catalogo"
+    },
+    {
+      "nombre": "modulo:proveedores",
+      "color": "ededed",
+      "descripcion": "apps/proveedores"
+    },
+    {
+      "nombre": "modulo:inventario",
+      "color": "ededed",
+      "descripcion": "apps/inventario"
+    },
+    {
+      "nombre": "modulo:ventas",
+      "color": "ededed",
+      "descripcion": "apps/ventas"
+    },
+    {
+      "nombre": "modulo:compras",
+      "color": "ededed",
+      "descripcion": "apps/compras"
+    },
+    {
+      "nombre": "modulo:analitica",
+      "color": "ededed",
+      "descripcion": "apps/analitica"
+    },
+    {
+      "nombre": "modulo:alertas",
+      "color": "ededed",
+      "descripcion": "apps/alertas"
+    },
+    {
+      "nombre": "modulo:recomendaciones",
+      "color": "ededed",
+      "descripcion": "apps/recomendaciones"
+    },
+    {
+      "nombre": "modulo:dashboard",
+      "color": "ededed",
+      "descripcion": "apps/dashboard"
+    },
+    {
+      "nombre": "modulo:reportes",
+      "color": "ededed",
+      "descripcion": "apps/reportes"
+    },
+    {
+      "nombre": "modulo:frontend",
+      "color": "ededed",
+      "descripcion": "frontend"
+    },
+    {
+      "nombre": "modulo:infra",
+      "color": "ededed",
+      "descripcion": "infra"
+    }
+  ],
+  "issues": [
+    {
+      "titulo": "Configurar entorno local y Docker Compose (Django + PostgreSQL)",
+      "hito": "Fase 0 · Fundaciones",
+      "etiquetas": [
+        "modulo:infra",
+        "tipo:tecnica",
+        "prioridad:alta",
+        "base-implementada"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] `docker compose up` levanta web + db\n- [ ] `.env.example` documentado\n- [ ] README con pasos de instalación probados\n"
+    },
+    {
+      "titulo": "Pipeline de CI: ruff, migraciones y pytest en GitHub Actions",
+      "hito": "Fase 0 · Fundaciones",
+      "etiquetas": [
+        "modulo:infra",
+        "tipo:tecnica",
+        "prioridad:alta",
+        "base-implementada"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] CI corre en cada PR y en main\n- [ ] Falla si faltan migraciones\n- [ ] Badge de estado en el README\n"
+    },
+    {
+      "titulo": "Registro de negocio con asistente de plantilla de giro",
+      "hito": "Fase 0 · Fundaciones",
+      "etiquetas": [
+        "modulo:core",
+        "tipo:historia",
+        "prioridad:alta",
+        "base-implementada",
+        "adaptativo"
+      ],
+      "cuerpo": "**Como** emprendedor **quiero** registrar mi negocio eligiendo su tipo **para** que el sistema se configure solo.\n\n### Criterios de aceptación\n- [ ] Formulario de 2 pasos: datos del negocio → giro\n- [ ] Al guardar se aplica `aplicar_plantilla()`\n- [ ] Se crea el usuario administrador del negocio\n- [ ] Se muestra resumen de funciones activadas\n\n### Notas técnicas\nVer `apps/core/plantillas.py` y la señal en `apps/core/signals.py`.\n"
+    },
+    {
+      "titulo": "Pantalla de configuración del negocio (banderas y umbrales)",
+      "hito": "Fase 0 · Fundaciones",
+      "etiquetas": [
+        "modulo:core",
+        "tipo:historia",
+        "prioridad:media",
+        "adaptativo"
+      ],
+      "cuerpo": "**Como** administrador **quiero** activar/desactivar vencimientos, lotes, variantes y fracciones **para** adaptar el sistema a mi negocio.\n\n### Criterios de aceptación\n- [ ] Editar todas las banderas de `ConfiguracionNegocio`\n- [ ] Editar umbrales del semáforo\n- [ ] Los menús y campos se ocultan según las banderas\n"
+    },
+    {
+      "titulo": "Gestión de usuarios y roles (Administrador, Vendedor, Encargado de inventario)",
+      "hito": "Fase 0 · Fundaciones",
+      "etiquetas": [
+        "modulo:usuarios",
+        "tipo:historia",
+        "prioridad:alta",
+        "base-implementada"
+      ],
+      "cuerpo": "**Como** administrador **quiero** crear usuarios con un rol **para** controlar qué puede hacer cada persona.\n\n### Criterios de aceptación\n- [ ] CRUD de usuarios limitado al propio negocio\n- [ ] Asignación de rol\n- [ ] Vistas protegidas con `@requiere_permiso`\n- [ ] Test: un vendedor no puede registrar ajustes\n"
+    },
+    {
+      "titulo": "Aislamiento multi-negocio en todas las consultas",
+      "hito": "Fase 0 · Fundaciones",
+      "etiquetas": [
+        "modulo:core",
+        "tipo:tecnica",
+        "prioridad:alta"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Ningún queryset de vistas devuelve datos de otro negocio\n- [ ] Mixin/helper `del_negocio(request)` reutilizable\n- [ ] Tests de aislamiento entre dos negocios\n"
+    },
+    {
+      "titulo": "Bitácora de auditoría visible para el administrador",
+      "hito": "Fase 0 · Fundaciones",
+      "etiquetas": [
+        "modulo:core",
+        "tipo:historia",
+        "prioridad:media",
+        "base-implementada"
+      ],
+      "cuerpo": "**Como** administrador **quiero** ver quién modificó el inventario **para** tener trazabilidad.\n\n### Criterios de aceptación\n- [ ] Listado filtrable por usuario, acción y fecha\n- [ ] Solo lectura\n"
+    },
+    {
+      "titulo": "CRUD de productos (móvil primero)",
+      "hito": "Fase 1 · MVP Registrar y Controlar",
+      "etiquetas": [
+        "modulo:catalogo",
+        "tipo:historia",
+        "prioridad:alta",
+        "base-implementada"
+      ],
+      "cuerpo": "**Como** administrador **quiero** registrar productos con SKU, precios, stock mínimo, unidad, imagen y estado.\n\n### Criterios de aceptación\n- [ ] Crear/editar/desactivar producto\n- [ ] SKU único por negocio\n- [ ] Imagen opcional\n- [ ] `stock_actual` no editable en el formulario\n- [ ] Stock inicial se registra como movimiento ENTRADA_INICIAL\n"
+    },
+    {
+      "titulo": "Atributos personalizados por categoría en el formulario de producto",
+      "hito": "Fase 1 · MVP Registrar y Controlar",
+      "etiquetas": [
+        "modulo:catalogo",
+        "tipo:historia",
+        "prioridad:media",
+        "base-implementada",
+        "adaptativo"
+      ],
+      "cuerpo": "**Como** tienda de ropa **quiero** que al elegir 'Camisas' me pida Talla y Color.\n\n### Criterios de aceptación\n- [ ] El formulario genera campos dinámicos según `AtributoPersonalizado`\n- [ ] Valida obligatorios y opciones\n- [ ] Se guardan en `Producto.atributos`\n"
+    },
+    {
+      "titulo": "Variantes de producto (talla/color/tono) con stock independiente",
+      "hito": "Fase 1 · MVP Registrar y Controlar",
+      "etiquetas": [
+        "modulo:catalogo",
+        "tipo:historia",
+        "prioridad:media",
+        "adaptativo"
+      ],
+      "cuerpo": "**Como** negocio con `usa_variantes` **quiero** manejar 'Camisa azul M' y 'Camisa azul L' por separado.\n\n### Criterios de aceptación\n- [ ] Modelo de variantes o producto padre/hijo\n- [ ] Stock y alertas por variante\n- [ ] Solo visible si la bandera está activa\n"
+    },
+    {
+      "titulo": "Listado de productos con semáforo, búsqueda y filtros",
+      "hito": "Fase 1 · MVP Registrar y Controlar",
+      "etiquetas": [
+        "modulo:catalogo",
+        "tipo:historia",
+        "prioridad:alta"
+      ],
+      "cuerpo": "**Como** empresario **quiero** ver de un vistazo qué productos están 🟢 🟡 🔴.\n\n### Criterios de aceptación\n- [ ] Columnas: producto, stock, mínimo, precio, estado\n- [ ] Buscar por nombre/SKU/código de barras\n- [ ] Filtrar por categoría y estado\n- [ ] Paginado, usable en celular\n"
+    },
+    {
+      "titulo": "Categorías, marcas y unidades de medida",
+      "hito": "Fase 1 · MVP Registrar y Controlar",
+      "etiquetas": [
+        "modulo:catalogo",
+        "tipo:historia",
+        "prioridad:media",
+        "base-implementada"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] CRUD simple\n- [ ] Unidades con/ sin decimales según `permite_fracciones`\n"
+    },
+    {
+      "titulo": "Registrar entradas y salidas de inventario con motivo",
+      "hito": "Fase 1 · MVP Registrar y Controlar",
+      "etiquetas": [
+        "modulo:inventario",
+        "tipo:historia",
+        "prioridad:alta",
+        "base-implementada"
+      ],
+      "cuerpo": "**Como** encargado de inventario **quiero** registrar compras, devoluciones, dañados, vencidos y ajustes.\n\n### Criterios de aceptación\n- [ ] Formulario rápido: producto + tipo + cantidad + motivo\n- [ ] Motivo obligatorio en ajustes/dañados/devoluciones\n- [ ] No permite stock negativo\n- [ ] Usa `registrar_movimiento()`\n"
+    },
+    {
+      "titulo": "Kárdex del producto: '¿por qué tengo solo 8 unidades?'",
+      "hito": "Fase 1 · MVP Registrar y Controlar",
+      "etiquetas": [
+        "modulo:inventario",
+        "tipo:historia",
+        "prioridad:alta",
+        "base-implementada"
+      ],
+      "cuerpo": "**Como** empresario **quiero** ver el historial de movimientos de un producto.\n\n### Criterios de aceptación\n- [ ] Tabla con fecha, tipo, cantidad (+/−), saldo, usuario y motivo\n- [ ] Filtro por rango de fechas\n- [ ] Exportable a CSV\n"
+    },
+    {
+      "titulo": "Punto de venta simple (registrar venta)",
+      "hito": "Fase 1 · MVP Registrar y Controlar",
+      "etiquetas": [
+        "modulo:ventas",
+        "tipo:historia",
+        "prioridad:alta",
+        "base-implementada"
+      ],
+      "cuerpo": "**Como** vendedor **quiero** registrar una venta rápido desde el celular.\n\n### Criterios de aceptación\n- [ ] Buscar producto por nombre o código de barras\n- [ ] Carrito con cantidades y descuento\n- [ ] Medio de pago\n- [ ] Toda la venta falla si algún producto no tiene stock\n- [ ] Muestra total y confirma\n"
+    },
+    {
+      "titulo": "Anular venta con reversión de inventario",
+      "hito": "Fase 1 · MVP Registrar y Controlar",
+      "etiquetas": [
+        "modulo:ventas",
+        "tipo:historia",
+        "prioridad:media"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Solo administrador\n- [ ] Genera ENTRADA_DEVOLUCION_CLIENTE por cada línea\n- [ ] Queda en auditoría con motivo\n"
+    },
+    {
+      "titulo": "Consulta rápida de disponibilidad",
+      "hito": "Fase 1 · MVP Registrar y Controlar",
+      "etiquetas": [
+        "modulo:catalogo",
+        "tipo:historia",
+        "prioridad:media"
+      ],
+      "cuerpo": "**Como** vendedor **quiero** preguntar '¿cuánto tengo de X?' desde el celular.\n\n### Criterios de aceptación\n- [ ] Búsqueda instantánea\n- [ ] Muestra stock, estado y precio de venta (no costo para vendedores)\n"
+    },
+    {
+      "titulo": "Lector de código de barras con la cámara del celular",
+      "hito": "Fase 1 · MVP Registrar y Controlar",
+      "etiquetas": [
+        "modulo:frontend",
+        "tipo:historia",
+        "prioridad:baja"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Escanear en venta y en entradas\n- [ ] Fallback a búsqueda manual\n"
+    },
+    {
+      "titulo": "CRUD de proveedores y productos que suministran",
+      "hito": "Fase 2 · Proveedores, Compras y Vencimientos",
+      "etiquetas": [
+        "modulo:proveedores",
+        "tipo:historia",
+        "prioridad:alta",
+        "base-implementada"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Datos de contacto y WhatsApp\n- [ ] Productos con precio, tiempo de entrega y múltiplo de empaque\n- [ ] Proveedor principal por producto\n"
+    },
+    {
+      "titulo": "Desempeño del proveedor: tiempo real de entrega y cumplimiento",
+      "hito": "Fase 2 · Proveedores, Compras y Vencimientos",
+      "etiquetas": [
+        "modulo:proveedores",
+        "tipo:historia",
+        "prioridad:media",
+        "base-implementada",
+        "inteligencia"
+      ],
+      "cuerpo": "**Como** empresario **quiero** saber que el Proveedor A tarda 3 días y el B 7.\n\n### Criterios de aceptación\n- [ ] Tiempo promedio real calculado desde órdenes recibidas\n- [ ] % de órdenes completas y a tiempo\n- [ ] Historial de compras por proveedor\n"
+    },
+    {
+      "titulo": "Órdenes de compra: crear, enviar y recibir (total/parcial)",
+      "hito": "Fase 2 · Proveedores, Compras y Vencimientos",
+      "etiquetas": [
+        "modulo:compras",
+        "tipo:historia",
+        "prioridad:alta",
+        "base-implementada"
+      ],
+      "cuerpo": "**Como** empresario **quiero** generar una orden, enviarla y registrar lo que llega.\n\n### Criterios de aceptación\n- [ ] Estados BORRADOR→ENVIADA→CONFIRMADA→PARCIAL/RECIBIDA\n- [ ] Recepción crea movimientos ENTRADA_COMPRA y lotes\n- [ ] Calcula días de entrega\n- [ ] Actualiza último costo\n"
+    },
+    {
+      "titulo": "Enviar orden de compra al proveedor (PDF y enlace de WhatsApp)",
+      "hito": "Fase 2 · Proveedores, Compras y Vencimientos",
+      "etiquetas": [
+        "modulo:compras",
+        "tipo:historia",
+        "prioridad:media"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] PDF con logo, productos y cantidades\n- [ ] Botón 'Enviar por WhatsApp' con mensaje prellenado\n"
+    },
+    {
+      "titulo": "Ingreso rápido de factura de proveedor (sin OCR)",
+      "hito": "Fase 2 · Proveedores, Compras y Vencimientos",
+      "etiquetas": [
+        "modulo:compras",
+        "tipo:historia",
+        "prioridad:media"
+      ],
+      "cuerpo": "**Como** negocio cuyos proveedores entregan facturas a mano **quiero** un formulario rápido para cargar la compra.\n\n### Criterios de aceptación\n- [ ] Agregar líneas con autocompletado\n- [ ] Crear producto nuevo en línea\n- [ ] Total y costo por línea\n"
+    },
+    {
+      "titulo": "Lotes y fechas de vencimiento con salida FEFO",
+      "hito": "Fase 2 · Proveedores, Compras y Vencimientos",
+      "etiquetas": [
+        "modulo:inventario",
+        "tipo:historia",
+        "prioridad:alta",
+        "base-implementada",
+        "adaptativo"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Pedir fecha de vencimiento en entradas si `usa_vencimientos`\n- [ ] Salidas consumen primero el lote que vence antes\n- [ ] Vista de lotes por producto con 🔴🟡🟢\n"
+    },
+    {
+      "titulo": "Conteo físico vs. inventario del sistema",
+      "hito": "Fase 2 · Proveedores, Compras y Vencimientos",
+      "etiquetas": [
+        "modulo:inventario",
+        "tipo:historia",
+        "prioridad:alta",
+        "base-implementada"
+      ],
+      "cuerpo": "**Como** encargado **quiero** registrar lo que cuento físicamente y que el sistema calcule la diferencia.\n\n### Criterios de aceptación\n- [ ] Crear conteo (total o por categoría)\n- [ ] Capturar cantidades en celular\n- [ ] Motivo obligatorio para cada diferencia\n- [ ] Administrador aprueba → ajustes automáticos\n"
+    },
+    {
+      "titulo": "Agregado de demanda diaria y reconstrucción histórica",
+      "hito": "Fase 3 · Analizar y Alertar",
+      "etiquetas": [
+        "modulo:analitica",
+        "tipo:tecnica",
+        "prioridad:alta",
+        "base-implementada",
+        "inteligencia"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] `DemandaDiaria` se actualiza en cada venta\n- [ ] Comando para reconstruir desde movimientos\n- [ ] Descontar anulaciones\n"
+    },
+    {
+      "titulo": "Demanda censurada: no subestimar productos que estuvieron agotados",
+      "hito": "Fase 3 · Analizar y Alertar",
+      "etiquetas": [
+        "modulo:analitica",
+        "tipo:tecnica",
+        "prioridad:media",
+        "inteligencia"
+      ],
+      "cuerpo": "Un producto agotado no vende, y el sistema cree que su demanda bajó (caso 'Arroz' del demo).\n\n### Criterios de aceptación\n- [ ] Excluir del cálculo los días con stock 0\n- [ ] Test con producto agotado 10 días\n"
+    },
+    {
+      "titulo": "Clasificación de rotación (alta/media/baja) y análisis ABC",
+      "hito": "Fase 3 · Analizar y Alertar",
+      "etiquetas": [
+        "modulo:analitica",
+        "tipo:historia",
+        "prioridad:media",
+        "base-implementada",
+        "inteligencia"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Rotación por producto visible en listado\n- [ ] ABC por ingresos (80/15/5)\n- [ ] Valor de inventario inmovilizado\n"
+    },
+    {
+      "titulo": "Motor de alertas: bandeja con severidad y acciones",
+      "hito": "Fase 3 · Analizar y Alertar",
+      "etiquetas": [
+        "modulo:alertas",
+        "tipo:historia",
+        "prioridad:alta",
+        "base-implementada",
+        "inteligencia"
+      ],
+      "cuerpo": "**Como** empresario **quiero** ver qué debo atender primero.\n\n### Criterios de aceptación\n- [ ] Bandeja agrupada 🔴 / 🟡 / 🔵\n- [ ] Marcar vista / resuelta / descartada\n- [ ] Enlace a la acción sugerida\n- [ ] Las alertas se autorresuelven cuando la condición desaparece\n"
+    },
+    {
+      "titulo": "Detección de movimientos anómalos (ventas y ajustes)",
+      "hito": "Fase 3 · Analizar y Alertar",
+      "etiquetas": [
+        "modulo:alertas",
+        "tipo:historia",
+        "prioridad:media",
+        "base-implementada",
+        "inteligencia"
+      ],
+      "cuerpo": "El sistema **detecta y solicita revisión, no acusa**.\n\n### Criterios de aceptación\n- [ ] Z-score robusto en ventas diarias (hecho)\n- [ ] Aplicar también a ajustes de inventario\n- [ ] El usuario puede justificar la anomalía\n"
+    },
+    {
+      "titulo": "Análisis programado nocturno (cron) y tras cada movimiento",
+      "hito": "Fase 3 · Analizar y Alertar",
+      "etiquetas": [
+        "modulo:alertas",
+        "tipo:tecnica",
+        "prioridad:media",
+        "base-implementada"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] `manage.py analizar_inventario` en cron\n- [ ] Evaluación por producto en `on_commit`\n- [ ] Logs de ejecución\n"
+    },
+    {
+      "titulo": "Dashboard '¿Cómo está mi negocio?'",
+      "hito": "Fase 3 · Analizar y Alertar",
+      "etiquetas": [
+        "modulo:dashboard",
+        "tipo:historia",
+        "prioridad:alta",
+        "base-implementada"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Tarjetas: inventario, ventas del mes (+% vs anterior), inmovilizado, alertas\n- [ ] Carga < 1 s con 5.000 productos\n- [ ] Legible en celular\n"
+    },
+    {
+      "titulo": "Notificaciones de alertas críticas (email / WhatsApp / push)",
+      "hito": "Fase 3 · Analizar y Alertar",
+      "etiquetas": [
+        "modulo:alertas",
+        "tipo:historia",
+        "prioridad:baja"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Resumen diario configurable\n- [ ] Solo alertas 🔴\n"
+    },
+    {
+      "titulo": "Pronóstico de demanda por período (Holt) con rango",
+      "hito": "Fase 4 · Predecir y Recomendar",
+      "etiquetas": [
+        "modulo:analitica",
+        "tipo:historia",
+        "prioridad:alta",
+        "base-implementada",
+        "inteligencia"
+      ],
+      "cuerpo": "**Como** empresario **quiero** saber cuánto venderé el próximo mes, como un rango aproximado.\n\n### Criterios de aceptación\n- [ ] Gráfico histórico + pronóstico en la ficha del producto\n- [ ] Mostrar como rango, no número exacto\n- [ ] Texto explicativo sin tecnicismos\n"
+    },
+    {
+      "titulo": "Estacionalidad y temporadas (ropa, fechas especiales)",
+      "hito": "Fase 4 · Predecir y Recomendar",
+      "etiquetas": [
+        "modulo:analitica",
+        "tipo:historia",
+        "prioridad:baja",
+        "inteligencia",
+        "adaptativo"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Holt-Winters cuando hay ≥ 2 años de datos\n- [ ] Marcar temporadas manualmente (Navidad, regreso a clases)\n"
+    },
+    {
+      "titulo": "Recomendaciones de compra explicadas",
+      "hito": "Fase 4 · Predecir y Recomendar",
+      "etiquetas": [
+        "modulo:recomendaciones",
+        "tipo:historia",
+        "prioridad:alta",
+        "base-implementada",
+        "inteligencia"
+      ],
+      "cuerpo": "**Como** empresario **quiero** que el sistema me diga cuánto pedir y por qué; yo decido.\n\n### Criterios de aceptación\n- [ ] Lista con cantidad sugerida y explicación\n- [ ] Editar cantidad antes de aceptar\n- [ ] Descartar con motivo\n- [ ] Considera en tránsito, múltiplo de empaque y tiempo de entrega\n"
+    },
+    {
+      "titulo": "Convertir recomendaciones en órdenes de compra agrupadas por proveedor",
+      "hito": "Fase 4 · Predecir y Recomendar",
+      "etiquetas": [
+        "modulo:recomendaciones",
+        "tipo:historia",
+        "prioridad:alta",
+        "base-implementada"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Seleccionar varias recomendaciones → una orden por proveedor\n- [ ] Queda en BORRADOR para revisión\n"
+    },
+    {
+      "titulo": "Medir la precisión del pronóstico (error MAPE) y ajustar parámetros",
+      "hito": "Fase 4 · Predecir y Recomendar",
+      "etiquetas": [
+        "modulo:analitica",
+        "tipo:tecnica",
+        "prioridad:baja",
+        "inteligencia"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Guardar pronóstico vs. real\n- [ ] Reporte de precisión por producto\n- [ ] Parámetros α/β por negocio\n"
+    },
+    {
+      "titulo": "Reportes: inventario, movimientos, ventas, compras",
+      "hito": "Fase 5 · Reportes y Móvil",
+      "etiquetas": [
+        "modulo:reportes",
+        "tipo:historia",
+        "prioridad:alta",
+        "base-implementada"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Filtros por fecha, categoría y producto\n- [ ] Vista en pantalla + exportar\n"
+    },
+    {
+      "titulo": "Reportes: más/menos vendidos, por vencer, agotados, valor e utilidad estimada",
+      "hito": "Fase 5 · Reportes y Móvil",
+      "etiquetas": [
+        "modulo:reportes",
+        "tipo:historia",
+        "prioridad:media"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Cada reporte con exportación\n- [ ] Utilidad = ventas − costo de lo vendido\n"
+    },
+    {
+      "titulo": "Exportación a PDF",
+      "hito": "Fase 5 · Reportes y Móvil",
+      "etiquetas": [
+        "modulo:reportes",
+        "tipo:historia",
+        "prioridad:media"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Plantilla PDF con encabezado del negocio\n- [ ] WeasyPrint o ReportLab\n"
+    },
+    {
+      "titulo": "PWA instalable (manifest, service worker, modo sin conexión para consulta)",
+      "hito": "Fase 5 · Reportes y Móvil",
+      "etiquetas": [
+        "modulo:frontend",
+        "tipo:historia",
+        "prioridad:media"
+      ],
+      "cuerpo": "**Como** empresario **quiero** consultar mi inventario desde el celular fuera del negocio.\n\n### Criterios de aceptación\n- [ ] Instalable en Android/iOS\n- [ ] Caché de la última consulta\n"
+    },
+    {
+      "titulo": "API REST (Django REST Framework) con autenticación por token",
+      "hito": "Fase 5 · Reportes y Móvil",
+      "etiquetas": [
+        "modulo:core",
+        "tipo:tecnica",
+        "prioridad:baja"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Endpoints de productos, movimientos, ventas, alertas\n- [ ] Documentación OpenAPI\n"
+    },
+    {
+      "titulo": "Importar productos desde Excel/CSV",
+      "hito": "Fase 5 · Reportes y Móvil",
+      "etiquetas": [
+        "modulo:catalogo",
+        "tipo:historia",
+        "prioridad:media"
+      ],
+      "cuerpo": "**Como** negocio que ya tiene una lista en Excel **quiero** cargarla de una vez.\n\n### Criterios de aceptación\n- [ ] Plantilla descargable\n- [ ] Validación con reporte de errores por fila\n- [ ] Crea stock inicial\n"
+    },
+    {
+      "titulo": "Despliegue en producción (Render / Railway / VPS) con PostgreSQL",
+      "hito": "Fase 6 · Producción",
+      "etiquetas": [
+        "modulo:infra",
+        "tipo:tecnica",
+        "prioridad:alta"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] HTTPS\n- [ ] Variables de entorno seguras\n- [ ] Static files con WhiteNoise\n- [ ] Cron del análisis nocturno\n"
+    },
+    {
+      "titulo": "Backups automáticos de la base de datos",
+      "hito": "Fase 6 · Producción",
+      "etiquetas": [
+        "modulo:infra",
+        "tipo:tecnica",
+        "prioridad:alta"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Backup diario\n- [ ] Prueba de restauración documentada\n"
+    },
+    {
+      "titulo": "Endurecimiento de seguridad (OWASP)",
+      "hito": "Fase 6 · Producción",
+      "etiquetas": [
+        "modulo:infra",
+        "tipo:tecnica",
+        "prioridad:alta"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] `manage.py check --deploy` sin advertencias\n- [ ] Límite de intentos de login\n- [ ] Revisión de permisos por rol\n"
+    },
+    {
+      "titulo": "Manual de usuario para el empresario",
+      "hito": "Fase 6 · Producción",
+      "etiquetas": [
+        "modulo:core",
+        "tipo:docs",
+        "prioridad:media"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Guía con capturas: primeros pasos, vender, comprar, alertas\n- [ ] Lenguaje sin tecnicismos\n"
+    },
+    {
+      "titulo": "Prueba piloto con los 5 negocios que validaron la idea",
+      "hito": "Fase 6 · Producción",
+      "etiquetas": [
+        "modulo:core",
+        "tipo:historia",
+        "prioridad:alta"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Onboarding de cada negocio\n- [ ] Encuesta de satisfacción\n- [ ] Lista de mejoras priorizadas\n"
+    }
+  ]
+}

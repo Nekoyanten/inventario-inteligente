@@ -1,0 +1,9 @@
+line-length = 130
+target-version = "py311"
+extend-exclude = ["**/migrations/*"]
+[lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E741"]
+
+[lint.per-file-ignores]
+"scripts/generar_backlog.py" = ["E501"]

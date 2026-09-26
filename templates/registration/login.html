@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block contenido %}
+<section class="tarjeta" style="max-width:380px;margin:2rem auto">
+  <h1>Ingresar</h1>
+  <form method="post">{% csrf_token %}{{ form.as_p }}<button class="boton">Entrar</button></form>
+</section>
+{% endblock %}

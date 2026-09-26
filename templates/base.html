@@ -1,0 +1,18 @@
+{% load static %}<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Inventario Inteligente{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+  <header class="barra">
+    <strong>📦 {{ negocio|default:"Inventario Inteligente" }}</strong>
+    {% if user.is_authenticated %}
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="enlace">Salir</button></form>
+    {% endif %}
+  </header>
+  <main class="contenedor">{% block contenido %}{% endblock %}</main>
+</body>
+</html>

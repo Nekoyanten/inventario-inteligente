@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block contenido %}
+<h1>¿Cómo está mi negocio?</h1>
+{% if not resumen %}
+  <p class="tarjeta">Tu usuario aún no está asociado a un negocio. Pide al administrador que te asigne uno.</p>
+{% else %}
+<div class="rejilla">
+  <section class="tarjeta">
+    <h2>Inventario</h2>
+    <p class="grande">{{ resumen.inventario.productos }} <small>productos</small></p>
+    <ul>
+      <li>🟡 {{ resumen.inventario.stock_bajo }} con stock bajo</li>
+      <li>⚫ {{ resumen.inventario.agotados }} agotados</li>
+      {% if config_negocio.usa_vencimientos %}<li>⚠️ {{ resumen.inventario.por_vencer }} próximos a vencer</li>{% endif %}
+      <li>Valor: ${{ resumen.inventario.valor_total|floatformat:0|intcomma }}</li>
+    </ul>
+  </section>
+  <section class="tarjeta">
+    <h2>Ventas</h2>
+    <p class="grande">${{ resumen.ventas.mes|floatformat:0|intcomma }} <small>este mes</small></p>
+    {% if resumen.ventas.variacion_pct is not None %}
+      <p>{% if resumen.ventas.variacion_pct >= 0 %}▲ +{% else %}▼ {% endif %}{{ resumen.ventas.variacion_pct|floatformat:0 }}% vs mes anterior</p>
+    {% endif %}
+  </section>
+  <section class="tarjeta">
+    <h2>Inventario inmovilizado</h2>
+    <p class="grande">${{ resumen.inmovilizado|floatformat:0|intcomma }}</p>
+    <p>en productos de baja rotación</p>
+  </section>
+  <section class="tarjeta">
+    <h2>Alertas</h2>
+    <ul>
+      <li>🔴 {{ resumen.alertas.actuar }} para actuar</li>
+      <li>🟡 {{ resumen.alertas.revisar }} para revisar</li>
+      <li>⚠️ {{ resumen.alertas.vencimientos }} de vencimiento</li>
+    </ul>
+  </section>
+</div>
+<section class="tarjeta">
+  <h2>Últimas alertas</h2>
+  {% for a in resumen.alertas.ultimas %}
+    <p class="alerta s{{ a.severidad }}">{{ a.mensaje }} <em>{{ a.accion_sugerida }}</em></p>
+  {% empty %}<p>🟢 Todo en orden.</p>{% endfor %}
+</section>
+{% endif %}
+{% endblock %}
