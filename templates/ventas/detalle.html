@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Venta #{{ venta.pk }}{% endblock %}
+{% block cabeza %}<style>@media print { .barra, .menu-lateral, .no-imprimir { display:none !important } body.con-menu .contenedor { margin:0 } .tarjeta { border:0; box-shadow:none } }</style>{% endblock %}
+{% block contenido %}
+<section class="tarjeta formulario">
+  <div class="encabezado"><h1>Venta #{{ venta.pk }}</h1>{% if venta.estado == 'ANULADA' %}<span class="insignia gris">Anulada</span>{% endif %}</div>
+  <p class="suave">{{ negocio.nombre }}{% if negocio.nit %} · NIT {{ negocio.nit }}{% endif %}<br>{{ venta.fecha|date:"d/m/Y H:i" }} · atendió {{ venta.vendedor }}{% if venta.cliente %} · cliente {{ venta.cliente }}{% endif %}</p>
+  <table class="tabla">
+    <thead><tr><th>Producto</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Subtotal</th></tr></thead>
+    <tbody>{% for d in detalles %}<tr><td>{{ d.producto.nombre }}</td><td class="num" data-titulo="Cantidad">{{ d.cantidad|cantidad }}</td><td class="num" data-titulo="Precio">{{ d.precio_unitario|moneda }}</td><td class="num" data-titulo="Subtotal">{{ d.subtotal|moneda }}</td></tr>{% endfor %}</tbody>
+  </table>
+  <p class="encabezado" style="margin-top:1rem"><span>{{ venta.get_medio_pago_display }}</span><span class="total">{{ venta.total|moneda }}</span></p>
+  <div class="acciones no-imprimir">
+    <button class="boton boton-auto" onclick="window.print()">Imprimir</button>
+    <a class="boton boton-auto boton-secundario" href="{% url 'ventas:pos' %}">Nueva venta</a>
+  </div>
+  {% if venta.estado != 'ANULADA' and "configurar_negocio" in permisos %}
+  <details class="no-imprimir" style="margin-top:1.5rem"><summary>Anular venta</summary>
+    <form method="post" action="{% url 'ventas:anular' venta.pk %}" class="formulario-libre">{% csrf_token %}
+      <p><label for="motivo">Motivo</label><input id="motivo" name="motivo" required maxlength="200"></p>
+      <button class="boton boton-auto boton-peligro">Anular y devolver al inventario</button>
+    </form>
+  </details>
+  {% endif %}
+</section>
+{% endblock %}

@@ -18,6 +18,18 @@ class ErrorInventario(Exception):
     pass
 
 
+def permite_decimales(producto: Producto) -> bool:
+    config = getattr(producto.negocio, "config", None)
+    if not (config and config.permite_fracciones):
+        return False
+    return producto.unidad is None or producto.unidad.permite_decimales
+
+
+def validar_cantidad(producto: Producto, cantidad: Decimal) -> None:
+    if cantidad != cantidad.to_integral_value() and not permite_decimales(producto):
+        raise ErrorInventario(f"{producto.nombre} se maneja en unidades enteras.")
+
+
 @transaction.atomic
 def registrar_movimiento(
     *,
@@ -49,6 +61,10 @@ def registrar_movimiento(
 
     # of=("self",): bloquea solo la fila del producto. PostgreSQL no permite FOR UPDATE sobre
     # el lado opcional de un LEFT JOIN (negocio__config es una relación inversa opcional).
+    if producto.es_agrupador:
+        raise ErrorInventario(f"{producto.nombre} agrupa variantes; registre el movimiento en una variante.")
+    validar_cantidad(producto, cantidad)
+
     producto = Producto.objects.select_for_update(of=("self",)).select_related("negocio__config").get(pk=producto.pk)
     config = getattr(producto.negocio, "config", None)
     usa_lotes = bool(config and config.usa_lotes)

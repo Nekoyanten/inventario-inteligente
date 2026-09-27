@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% load static %}
+{% block titulo %}Vender{% endblock %}
+{% block contenido %}
+<div class="pos">
+  <section class="tarjeta">
+    <div class="campo-linea">
+      <input id="pos-buscar" type="search" placeholder="Busca o escanea un producto…" autocomplete="off" aria-label="Buscar producto">
+      <button id="pos-escanear" class="boton boton-auto boton-secundario" type="button" hidden title="Escanear con la cámara">📷</button>
+    </div>
+    <div id="pos-resultados" class="resultados"></div>
+  </section>
+  <section class="tarjeta">
+    <h2>Venta actual</h2>
+    <div id="pos-carrito"></div>
+    <p class="encabezado" style="margin-top:1rem"><span>Total</span><span id="pos-total" class="total">$0</span></p>
+    <p><label for="pos-medio">Medio de pago</label>
+      <select id="pos-medio">{% for v, t in medios %}<option value="{{ v }}">{{ t }}</option>{% endfor %}</select></p>
+    <p><label for="pos-recibido">Recibido (efectivo)</label><input id="pos-recibido" type="number" min="0" inputmode="numeric"><span id="pos-cambio" class="suave"></span></p>
+    <p><label for="pos-cliente">Cliente (opcional)</label><input id="pos-cliente" maxlength="120"></p>
+    <p id="pos-error" class="mensaje error" hidden></p>
+    <button id="pos-cobrar" class="boton" disabled>Cobrar</button>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/app.js' %}"></script>
+<script>Inventario.pos({ urlRegistrar: "{% url 'ventas:registrar' %}", urlTicket: "{% url 'ventas:detalle' 0 %}" });</script>{% endblock %}

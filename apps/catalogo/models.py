@@ -89,6 +89,11 @@ class Producto(ModeloBase):
     stock_maximo = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
 
     atributos = models.JSONField(default=dict, blank=True, help_text="Valores de atributos personalizados")
+    # Variantes: 'Camisa básica' (padre, agrupador sin stock) → 'Camisa básica · M · Azul' (hijo con stock propio)
+    padre = models.ForeignKey(
+        "self", null=True, blank=True, on_delete=models.CASCADE, related_name="variantes"
+    )
+    es_agrupador = models.BooleanField(default=False, help_text="Producto padre de variantes; no se vende ni maneja stock")
     imagen = models.ImageField(upload_to="productos/", null=True, blank=True)
     activo = models.BooleanField(default=True)
 
@@ -99,6 +104,14 @@ class Producto(ModeloBase):
 
     def __str__(self):
         return f"{self.nombre} ({self.sku})"
+
+    @property
+    def nombre_corto(self):
+        return self.nombre
+
+    @property
+    def vendible(self) -> bool:
+        return self.activo and not self.es_agrupador
 
     @property
     def valor_inventario(self) -> Decimal:

@@ -1,0 +1,6 @@
+<nav class="acciones" style="margin-bottom:1rem">
+  <a class="boton boton-auto boton-chico {% if request.resolver_match.url_name != 'movimiento' %}boton-secundario{% endif %}" href="{% url 'inventario:movimiento' %}">Entrada / salida</a>
+  <a class="boton boton-auto boton-chico {% if request.resolver_match.url_name != 'historial' %}boton-secundario{% endif %}" href="{% url 'inventario:historial' %}">Historial</a>
+  {% url 'inventario:conteos' as u_conteos %}{% if u_conteos %}<a class="boton boton-auto boton-chico {% if 'conteo' not in request.resolver_match.url_name %}boton-secundario{% endif %}" href="{{ u_conteos }}">Conteo físico</a>{% endif %}
+  {% url 'inventario:lotes' as u_lotes %}{% if u_lotes and config_negocio.usa_vencimientos %}<a class="boton boton-auto boton-chico {% if request.resolver_match.url_name != 'lotes' %}boton-secundario{% endif %}" href="{{ u_lotes }}">Vencimientos</a>{% endif %}
+</nav>

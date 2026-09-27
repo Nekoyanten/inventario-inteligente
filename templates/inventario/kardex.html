@@ -1,0 +1,25 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Kárdex {{ producto.nombre }}{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div><a class="suave" href="{% url 'catalogo:detalle' producto.pk %}">← {{ producto.nombre }}</a><h1>Kárdex</h1></div>
+  <a class="boton boton-auto boton-chico boton-secundario" href="{% url_con formato='csv' %}">Descargar CSV</a>
+</div>
+<p class="explicacion">¿Por qué hay <strong>{{ producto.stock_actual|cantidad }}</strong> unidades? Cada fila es un movimiento con su responsable y motivo; el saldo muestra cómo quedó el stock después de cada uno.</p>
+<form method="get" class="filtros tarjeta">{{ form.tipo }}{{ form.desde }}{{ form.hasta }}<button class="boton boton-auto">Filtrar</button></form>
+<section class="tarjeta">
+  <table class="tabla">
+    <thead><tr><th>Fecha</th><th>Tipo</th><th class="num">Entrada</th><th class="num">Salida</th><th class="num">Saldo</th><th>Usuario</th><th>Motivo</th></tr></thead>
+    <tbody>
+    {% for m in pagina %}
+      <tr><td>{{ m.fecha|date:"d/m/Y H:i" }}</td><td data-titulo="Tipo">{{ m.get_tipo_display }}{% if m.lote %}<br><small class="suave">Lote {{ m.lote.codigo|default:m.lote_id }}</small>{% endif %}</td>
+        <td class="num" data-titulo="Entrada">{% if m.es_entrada %}{{ m.cantidad|cantidad }}{% endif %}</td>
+        <td class="num" data-titulo="Salida">{% if not m.es_entrada %}{{ m.cantidad|cantidad }}{% endif %}</td>
+        <td class="num" data-titulo="Saldo"><strong>{{ m.stock_resultante|cantidad }}</strong></td>
+        <td data-titulo="Usuario">{{ m.usuario|default:"—" }}</td><td data-titulo="Motivo">{{ m.motivo|default:"—" }}</td></tr>
+    {% empty %}<tr><td colspan="7" class="vacio">Sin movimientos.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  {% include "parciales/paginacion.html" %}
+</section>
+{% endblock %}

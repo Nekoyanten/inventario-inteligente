@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block titulo %}Variantes{% endblock %}
+{% block contenido %}
+<section class="tarjeta formulario formulario-libre">
+  <h1>Variantes de {{ producto.nombre }}</h1>
+  <p class="suave">Escribe los valores y crearemos una variante por cada combinación, cada una con su propio stock y alertas. Ej: Talla <em>S, M, L</em> × Color <em>Azul, Negro</em> = 6 variantes.</p>
+  <form method="post">{% csrf_token %}
+    {{ form.non_field_errors }}
+    {{ form.as_p }}
+    <button class="boton">Crear variantes</button>
+  </form>
+  <p><a href="{% url 'catalogo:detalle' producto.pk %}">← Volver</a></p>
+</section>
+{% endblock %}

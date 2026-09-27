@@ -113,16 +113,50 @@ def analizar_producto(producto: Producto, hoy: date | None = None) -> AnalisisPr
     )
 
 
-def pronostico_mensual(producto: Producto, meses: int = 6) -> alg.Pronostico:
-    """Pronóstico del próximo mes con Holt sobre ventas mensuales."""
+def pronostico_mensual(producto: Producto, meses: int = 6, hoy: date | None = None) -> alg.Pronostico:
+    """Pronóstico de unidades para los próximos 30 días.
+
+    - Con ≥ 3 meses COMPLETOS de historia: método de Holt sobre ventas mensuales (el mes en curso,
+      incompleto, se excluye porque haría parecer que las ventas cayeron).
+    - Con menos historia: ritmo diario actual × 30, con un rango basado en la variabilidad diaria.
+    """
     from django.db.models.functions import TruncMonth
 
+    hoy = hoy or timezone.localdate()
+    inicio_mes = hoy.replace(day=1)
+    primera = DemandaDiaria.objects.filter(producto=producto).order_by("fecha").values_list("fecha", flat=True).first()
     filas = (
-        DemandaDiaria.objects.filter(producto=producto)
-        .annotate(mes=TruncMonth("fecha"))
-        .values("mes")
-        .annotate(total=Sum("cantidad"))
-        .order_by("mes")
+        DemandaDiaria.objects.filter(producto=producto, fecha__lt=inicio_mes)
+        .annotate(mes=TruncMonth("fecha")).values("mes").annotate(total=Sum("cantidad")).order_by("mes")
     )
-    serie = [float(f["total"]) for f in filas][-meses:]
-    return alg.pronostico_holt(serie)
+    completos = [f for f in filas if primera and f["mes"] >= primera.replace(day=1) and
+                 (f["mes"] > primera.replace(day=1) or primera.day == 1)]
+    serie = [float(f["total"]) for f in completos][-meses:]
+    if len(serie) >= 3:
+        return alg.pronostico_holt(serie)
+    diaria = serie_ventas_diarias(producto, PARAMS["DIAS_HISTORIA"], hoy)
+    d = alg.suavizado_exponencial(diaria, PARAMS["ALFA_SUAVIZADO"])
+    sigma = alg.desviacion(diaria)
+    valor = d * 30
+    margen = 1.28 * sigma * (30 ** 0.5)  # ~80 % de confianza
+    return alg.Pronostico(valor, max(0.0, valor - margen), valor + margen)
+
+
+MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+
+
+def ventas_mensuales(producto: Producto, meses: int = 6, hoy: date | None = None) -> list[dict]:
+    """Unidades vendidas por mes (incluye meses sin ventas) para gráficos."""
+    hoy = hoy or timezone.localdate()
+    inicio = hoy.replace(day=1)
+    for _ in range(meses - 1):
+        inicio = (inicio - timedelta(days=1)).replace(day=1)
+    totales = {}
+    for fecha, cant in DemandaDiaria.objects.filter(producto=producto, fecha__gte=inicio).values_list("fecha", "cantidad"):
+        clave = (fecha.year, fecha.month)
+        totales[clave] = totales.get(clave, 0) + float(cant)
+    datos, cursor = [], inicio
+    for _ in range(meses):
+        datos.append({"etiqueta": f"{MESES[cursor.month - 1]}", "valor": totales.get((cursor.year, cursor.month), 0)})
+        cursor = (cursor + timedelta(days=32)).replace(day=1)
+    return datos

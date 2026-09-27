@@ -45,3 +45,26 @@ def registrar_venta(*, negocio, vendedor, lineas, medio_pago=Venta.MedioPago.EFE
     venta.total = total
     venta.save(update_fields=["total"])
     return venta
+
+
+@transaction.atomic
+def anular_venta(venta: Venta, usuario, motivo: str) -> Venta:
+    """Revierte el inventario (devolución de cliente) y descuenta la demanda registrada."""
+    from apps.analitica.services import acumular_demanda_diaria
+    from apps.core.auditoria import auditar
+
+    if venta.estado == Venta.Estado.ANULADA:
+        raise ValueError("La venta ya está anulada.")
+    if not motivo.strip():
+        raise ValueError("Indica el motivo de la anulación.")
+    dia = timezone.localdate(venta.fecha)
+    for d in venta.detalles.select_related("producto"):
+        registrar_movimiento(
+            producto=d.producto, tipo=TipoMovimiento.ENTRADA_DEVOLUCION_CLIENTE, cantidad=d.cantidad, usuario=usuario,
+            motivo=f"Anulación venta #{venta.pk}: {motivo}", referencia_tipo="venta", referencia_id=venta.pk,
+        )
+        acumular_demanda_diaria(d.producto, dia, -d.cantidad)
+    venta.estado = Venta.Estado.ANULADA
+    venta.save(update_fields=["estado"])
+    auditar(venta.negocio, usuario, "anular_venta", venta, motivo=motivo, total=str(venta.total))
+    return venta

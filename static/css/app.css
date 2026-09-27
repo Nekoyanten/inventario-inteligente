@@ -96,6 +96,12 @@ textarea { min-height:80px; }
   .tabla td.num { text-align:right; }
   .tabla td[data-titulo]::before { content:attr(data-titulo); color:var(--suave); text-align:left; }
   .tabla td:first-child { font-weight:600; }
+  .tabla .solo-escritorio { display:none !important; }
+  .tabla.compacta thead { display:table-header-group; }
+  .tabla.compacta tr { display:table-row; padding:0; }
+  .tabla.compacta td { display:table-cell; padding:.4rem .3rem; border-bottom:1px solid var(--borde); text-align:left; font-weight:400; font-size:.88rem; }
+  .tabla.compacta td.num { text-align:right; }
+  .tabla.compacta td[data-titulo]::before { content:none; }
 }
 
 /* Insignias y mensajes */

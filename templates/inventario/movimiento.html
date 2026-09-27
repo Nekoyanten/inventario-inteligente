@@ -1,0 +1,34 @@
+{% extends "base.html" %}{% load ui static %}
+{% block titulo %}Entrada / salida{% endblock %}
+{% block contenido %}
+<h1>Inventario</h1>
+{% include "inventario/_pestanas.html" %}
+<div class="rejilla-2">
+<section class="tarjeta formulario-libre">
+  <h2>Registrar entrada o salida</h2>
+  <form method="post">{% csrf_token %}
+    {{ form.non_field_errors }}
+    <p><label for="buscar-producto">Producto</label>
+      <input id="buscar-producto" type="search" placeholder="Busca por nombre, código o escanea…" autocomplete="off">
+      <span id="producto-elegido" class="suave">{% if producto %}<strong>{{ producto.nombre }}</strong> · stock actual {{ producto.stock_actual|cantidad }}{% else %}Ningún producto elegido{% endif %}</span>
+      {{ form.producto }}{{ form.producto.errors }}</p>
+    <p>{{ form.tipo.label_tag }}{{ form.tipo }}</p>
+    <p>{{ form.cantidad.label_tag }}{{ form.cantidad }}{{ form.cantidad.errors }}</p>
+    <p>{{ form.motivo.label_tag }}{{ form.motivo }}<span class="helptext">{{ form.motivo.help_text }}</span></p>
+    {% if form.costo_unitario %}<p id="fila-costo">{{ form.costo_unitario.label_tag }}{{ form.costo_unitario }}<span class="helptext">Si lo dejas vacío se usa el costo actual.</span></p>{% endif %}
+    {% if form.fecha_vencimiento %}<p id="fila-vencimiento">{{ form.fecha_vencimiento.label_tag }}{{ form.fecha_vencimiento }}</p>{% endif %}
+    <button class="boton">Registrar</button>
+  </form>
+</section>
+<section class="tarjeta">
+  <h2>Últimos movimientos</h2>
+  <table class="tabla"><tbody>
+  {% for m in recientes %}
+    <tr><td>{{ m.producto.nombre }}<br><small class="suave">{{ m.get_tipo_display }} · {{ m.usuario|default:"" }} · {{ m.fecha|date:"d/m H:i" }}</small></td>
+    <td class="num">{% if m.es_entrada %}+{% else %}−{% endif %}{{ m.cantidad|cantidad }}</td></tr>
+  {% empty %}<tr><td class="vacio">Aún no hay movimientos.</td></tr>{% endfor %}
+  </tbody></table>
+</section>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/app.js' %}"></script><script>Inventario.formularioMovimiento();</script>{% endblock %}

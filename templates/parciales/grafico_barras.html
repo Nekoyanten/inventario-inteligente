@@ -1,0 +1,14 @@
+{% load ui l10n %}{% localize off %}<svg class="grafico" viewBox="0 0 {{ ancho }} {{ alto }}" role="img" aria-label="Unidades vendidas por mes y pronóstico">
+  <line class="eje" x1="0" x2="{{ ancho }}" y1="{{ base }}" y2="{{ base }}"/>
+  {% for b in barras %}
+    {% if b.pron %}
+      <rect x="{{ b.x }}" y="{{ b.y_max }}" width="{{ b.w }}" height="{{ b.h_banda }}" rx="4" class="banda"><title>Rango estimado</title></rect>
+      <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" rx="4" fill="none" stroke="var(--amarillo)" stroke-width="2" stroke-dasharray="5 3"/>
+    {% else %}
+      <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" rx="4" class="barra-g"><title>{{ b.etiqueta }}: {{ b.valor|cantidad }}</title></rect>
+    {% endif %}
+    <text x="{{ b.cx }}" y="{{ b.y_texto }}" text-anchor="middle">{{ b.valor|cantidad }}</text>
+    <text x="{{ b.cx }}" y="{{ y_etiqueta }}" text-anchor="middle">{{ b.etiqueta }}</text>
+  {% endfor %}
+</svg>
+{% endlocalize %}

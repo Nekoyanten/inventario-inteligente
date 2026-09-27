@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block titulo %}Categorías y marcas{% endblock %}
+{% block contenido %}
+<h1>Categorías, marcas y atributos</h1>
+<div class="rejilla-2">
+  <section class="tarjeta formulario-libre">
+    <h2>Categorías</h2>
+    <form method="post" class="campo-linea">{% csrf_token %}<input type="hidden" name="tipo" value="categoria">{{ form_categoria.nombre }}<button class="boton boton-auto">Agregar</button></form>
+    {{ form_categoria.nombre.errors }}
+    <table class="tabla"><tbody>
+    {% for c in categorias %}
+      <tr><td>{{ c.nombre }}<br><small class="suave">{% for a in c.atributos.all %}{{ a.nombre }}{% if a.opciones %} ({{ a.opciones|join:", " }}){% endif %}<form method="post" action="{% url 'catalogo:eliminar_catalogo' 'atributo' a.pk %}" style="display:inline">{% csrf_token %}<button class="enlace" title="Quitar atributo" aria-label="Quitar {{ a.nombre }}">✕</button></form>{% if not forloop.last %} · {% endif %}{% empty %}Sin atributos{% endfor %}</small></td>
+        <td><form method="post" action="{% url 'catalogo:eliminar_catalogo' 'categoria' c.pk %}" onsubmit="return confirm('¿Eliminar la categoría {{ c.nombre }}? Los productos quedarán sin categoría.')">{% csrf_token %}<button class="enlace">Eliminar</button></form></td></tr>
+    {% endfor %}
+    </tbody></table>
+  </section>
+  <section class="tarjeta formulario-libre">
+    <h2>Atributos personalizados</h2>
+    <p class="suave">Campos extra que se piden al crear productos de una categoría: Talla, Color, Tono, Principio activo…</p>
+    <form method="post">{% csrf_token %}<input type="hidden" name="tipo" value="atributo">{{ form_atributo.as_p }}<button class="boton boton-auto">Agregar atributo</button></form>
+  </section>
+  <section class="tarjeta formulario-libre">
+    <h2>Marcas</h2>
+    <form method="post" class="campo-linea">{% csrf_token %}<input type="hidden" name="tipo" value="marca">{{ form_marca.nombre }}<button class="boton boton-auto">Agregar</button></form>
+    {{ form_marca.nombre.errors }}
+    <ul class="lista-simple">{% for m in marcas %}<li>{{ m }} <form method="post" action="{% url 'catalogo:eliminar_catalogo' 'marca' m.pk %}" style="display:inline">{% csrf_token %}<button class="enlace">✕</button></form></li>{% empty %}<li class="suave">Sin marcas.</li>{% endfor %}</ul>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Productos{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <h1>Productos</h1>
+  <div class="acciones">
+    {% if "gestionar_productos" in permisos %}
+      <a class="boton boton-auto boton-secundario boton-chico" href="{% url 'catalogo:catalogos' %}">Categorías y marcas</a>
+      <a class="boton boton-auto boton-chico" href="{% url 'catalogo:crear' %}">+ Nuevo producto</a>
+    {% endif %}
+  </div>
+</div>
+<form method="get" class="filtros tarjeta">
+  <input type="search" name="q" value="{{ request.GET.q }}" placeholder="Buscar por nombre, código o marca…" aria-label="Buscar" autofocus>
+  <select name="categoria" aria-label="Categoría"><option value="">Todas las categorías</option>
+    {% for c in categorias %}<option value="{{ c.pk }}" {% if request.GET.categoria == c.pk|stringformat:"s" %}selected{% endif %}>{{ c }}</option>{% endfor %}
+  </select>
+  <select name="estado" aria-label="Estado"><option value="">Todos los estados</option>
+    {% for v, t in estados %}{% if v != "EXCESO" %}<option value="{{ v }}" {% if request.GET.estado == v %}selected{% endif %}>{{ t }}</option>{% endif %}{% endfor %}
+  </select>
+  <select name="activo" aria-label="Activos"><option value="1">Activos</option><option value="0" {% if request.GET.activo == "0" %}selected{% endif %}>Inactivos</option><option value="todos" {% if request.GET.activo == "todos" %}selected{% endif %}>Todos</option></select>
+  <button class="boton boton-auto">Filtrar</button>
+</form>
+<section class="tarjeta">
+  <table class="tabla">
+    <thead><tr><th>Producto</th><th class="num">Stock</th><th class="num solo-escritorio">Mínimo</th><th class="num">Precio venta</th>{% if ver_costos %}<th class="num solo-escritorio">Costo</th>{% endif %}<th>Estado</th></tr></thead>
+    <tbody>
+    {% for p in pagina %}
+      <tr class="{% if not p.activo %}inactivo{% endif %}">
+        <td><a href="{% url 'catalogo:detalle' p.pk %}">{{ p.nombre }}</a><br><small class="suave">{{ p.sku }}{% if p.categoria %} · {{ p.categoria }}{% endif %}</small></td>
+        <td class="num" data-titulo="Stock">{{ p.stock_actual|cantidad }} {{ p.unidad.abreviatura|default:"" }}</td>
+        <td class="num solo-escritorio" data-titulo="Mínimo">{{ p.stock_minimo|cantidad }}</td>
+        <td class="num" data-titulo="Precio venta">{{ p.precio_venta|moneda }}</td>
+        {% if ver_costos %}<td class="num solo-escritorio" data-titulo="Costo">{{ p.precio_compra|moneda }}</td>{% endif %}
+        <td data-titulo="Estado">{{ p.estado|insignia }}</td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="vacio">No hay productos con esos filtros.{% if "gestionar_productos" in permisos %} <a href="{% url 'catalogo:crear' %}">Crea el primero</a>.{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% include "parciales/paginacion.html" %}
+</section>
+{% endblock %}

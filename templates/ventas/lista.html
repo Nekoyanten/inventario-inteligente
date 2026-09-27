@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Ventas{% endblock %}
+{% block contenido %}
+<div class="encabezado"><h1>Ventas</h1><a class="boton boton-auto boton-chico" href="{% url 'ventas:pos' %}">+ Nueva venta</a></div>
+<form method="get" class="filtros tarjeta">
+  <input type="date" name="desde" value="{{ request.GET.desde }}" aria-label="Desde">
+  <input type="date" name="hasta" value="{{ request.GET.hasta }}" aria-label="Hasta">
+  <select name="medio" aria-label="Medio de pago"><option value="">Todos los medios</option>{% for v, t in medios %}<option value="{{ v }}" {% if request.GET.medio == v %}selected{% endif %}>{{ t }}</option>{% endfor %}</select>
+  <button class="boton boton-auto">Filtrar</button>
+</form>
+<div class="rejilla">
+  <section class="tarjeta"><h2>Total vendido</h2><p class="kpi">{{ resumen.total|moneda }}</p></section>
+  <section class="tarjeta"><h2>Ventas</h2><p class="kpi">{{ resumen.cantidad }}</p></section>
+</div>
+<section class="tarjeta">
+  <table class="tabla">
+    <thead><tr><th>#</th><th>Fecha</th><th>Vendedor</th><th>Medio</th><th class="num">Total</th><th>Estado</th></tr></thead>
+    <tbody>
+    {% for v in pagina %}
+      <tr class="{% if v.estado == 'ANULADA' %}inactivo{% endif %}"><td><a href="{% url 'ventas:detalle' v.pk %}">#{{ v.pk }}</a></td>
+        <td data-titulo="Fecha">{{ v.fecha|date:"d/m/Y H:i" }}</td><td data-titulo="Vendedor">{{ v.vendedor }}</td>
+        <td data-titulo="Medio">{{ v.get_medio_pago_display }}</td><td class="num" data-titulo="Total">{{ v.total|moneda }}</td>
+        <td data-titulo="Estado">{% if v.estado == 'ANULADA' %}<span class="insignia gris">Anulada</span>{% else %}<span class="insignia verde">Completada</span>{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="6" class="vacio">No hay ventas en este período.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  {% include "parciales/paginacion.html" %}
+</section>
+{% endblock %}

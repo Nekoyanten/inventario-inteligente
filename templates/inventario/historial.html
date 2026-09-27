@@ -1,0 +1,28 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Historial de movimientos{% endblock %}
+{% block contenido %}
+<h1>Inventario</h1>
+{% include "inventario/_pestanas.html" %}
+<form method="get" class="filtros tarjeta">
+  {{ form.tipo }}{{ form.desde }}{{ form.hasta }}
+  <label class="campo-linea" style="align-items:center"><input type="checkbox" name="anomalos" value="1" {% if request.GET.anomalos %}checked{% endif %}> Solo inusuales</label>
+  <button class="boton boton-auto">Filtrar</button>
+</form>
+<section class="tarjeta">
+  <table class="tabla">
+    <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th class="num">Cantidad</th><th class="num">Saldo</th><th>Usuario</th><th>Motivo</th></tr></thead>
+    <tbody>
+    {% for m in pagina %}
+      <tr><td>{{ m.fecha|date:"d/m/Y H:i" }}{% if m.marcado_anomalo %} ⚠️{% endif %}</td>
+        <td data-titulo="Producto"><a href="{% url 'inventario:kardex' m.producto_id %}">{{ m.producto.nombre }}</a></td>
+        <td data-titulo="Tipo">{{ m.get_tipo_display }}</td>
+        <td class="num" data-titulo="Cantidad">{% if m.es_entrada %}+{% else %}−{% endif %}{{ m.cantidad|cantidad }}</td>
+        <td class="num" data-titulo="Saldo">{{ m.stock_resultante|cantidad }}</td>
+        <td data-titulo="Usuario">{{ m.usuario|default:"—" }}</td>
+        <td data-titulo="Motivo">{{ m.motivo|default:"—" }}</td></tr>
+    {% empty %}<tr><td colspan="7" class="vacio">Sin movimientos.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  {% include "parciales/paginacion.html" %}
+</section>
+{% endblock %}
