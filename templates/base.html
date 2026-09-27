@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   {% url "pwa:manifest" as url_manifest %}{% if url_manifest %}<link rel="manifest" href="{{ url_manifest }}">{% endif %}
   <link rel="icon" href="{% static 'img/icono.svg' %}" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="{% static 'img/icono-192.png' %}">
   {% block cabeza %}{% endblock %}
 </head>
 <body class="{% if user.is_authenticated and negocio %}con-menu{% endif %}">

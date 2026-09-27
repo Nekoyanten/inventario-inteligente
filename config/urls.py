@@ -21,5 +21,7 @@ urlpatterns = [
     path("compras/que-comprar/", include("apps.recomendaciones.urls")),
     path("compras/", include("apps.compras.urls")),
     path("alertas/", include("apps.alertas.urls")),
+    path("api/", include("apps.api.urls")),
+    path("", include("apps.core.urls_pwa")),
     path("", include("apps.dashboard.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

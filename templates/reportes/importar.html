@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block titulo %}Importar productos{% endblock %}
+{% block contenido %}
+<section class="tarjeta formulario formulario-libre">
+  <h1>Importar productos desde Excel</h1>
+  <ol>
+    <li><a href="{% url 'reportes:plantilla' %}">Descarga la plantilla</a> (o usa tu propio archivo con las mismas columnas).</li>
+    <li>Llena una fila por producto. Solo <strong>sku</strong> y <strong>nombre</strong> son obligatorios.</li>
+    <li>Súbela aquí. Si algo está mal te decimos en qué fila, y no se importa nada hasta que esté todo correcto.</li>
+  </ol>
+  {% if errores %}
+    <div class="mensaje error"><strong>Revisa estos errores:</strong><ul>{% for e in errores %}<li>{{ e }}</li>{% endfor %}</ul>{% if mas_errores %}<p>…y {{ mas_errores }} más.</p>{% endif %}</div>
+  {% endif %}
+  <form method="post" enctype="multipart/form-data">{% csrf_token %}
+    <p><label for="archivo">Archivo (.xlsx o .csv)</label><input id="archivo" type="file" name="archivo" accept=".xlsx,.csv" required></p>
+    <button class="boton">Importar</button>
+  </form>
+  <details><summary>Columnas disponibles</summary><ul class="lista-simple">{% for c, d in columnas %}<li><code>{{ c }}</code> — {{ d }}</li>{% endfor %}</ul></details>
+</section>
+{% endblock %}

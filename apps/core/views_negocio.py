@@ -101,3 +101,17 @@ def temporadas(request):
     return render(request, "negocio/temporadas.html", {
         "form": form, "temporadas": del_negocio(request.negocio, Temporada).select_related("categoria"),
     })
+
+
+@negocio_requerido
+@requiere_permiso("configurar_negocio")
+def api_token(request):
+    from rest_framework.authtoken.models import Token
+
+    token = Token.objects.filter(user=request.user).first()
+    if request.method == "POST":
+        Token.objects.filter(user=request.user).delete()
+        token = Token.objects.create(user=request.user)
+        auditar(request.negocio, request.user, "generar_token_api", request.user)
+        messages.success(request, "Nuevo token generado. El anterior dejó de funcionar.")
+    return render(request, "negocio/api.html", {"token": token})

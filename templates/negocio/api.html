@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block titulo %}API{% endblock %}
+{% block contenido %}
+<section class="tarjeta formulario formulario-libre">
+  <a class="suave" href="{% url 'negocio:configuracion' %}">← Ajustes</a>
+  <h1>Conectar otros sistemas (API)</h1>
+  <p>Con la API puedes conectar tu tienda en línea, una app o un sistema contable. Documentación: <a href="{% url 'api-docs' %}" target="_blank">/api/docs/</a>.</p>
+  {% if token %}<p><label>Tu token</label><input readonly value="{{ token.key }}" onclick="this.select()"></p>
+  <p class="helptext">Envíalo en cada petición: <code>Authorization: Token {{ token.key|slice:":6" }}…</code>. Guárdalo en un lugar seguro; da acceso a los datos de tu negocio.</p>{% endif %}
+  <form method="post">{% csrf_token %}<button class="boton boton-auto {% if token %}boton-secundario{% endif %}">{% if token %}Regenerar token{% else %}Generar token{% endif %}</button></form>
+</section>
+{% endblock %}

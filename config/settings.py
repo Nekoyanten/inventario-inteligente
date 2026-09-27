@@ -27,6 +27,9 @@ DJANGO_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.humanize",
+    "rest_framework",
+    "rest_framework.authtoken",
+    "drf_spectacular",
 ]
 
 LOCAL_APPS = [
@@ -42,6 +45,7 @@ LOCAL_APPS = [
     "apps.recomendaciones",
     "apps.dashboard",
     "apps.reportes",
+    "apps.api",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + LOCAL_APPS
@@ -112,6 +116,25 @@ EMAIL_CONFIG = env.email_url("EMAIL_URL", default="consolemail://")
 vars().update(EMAIL_CONFIG)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Inventario Inteligente <no-responder@localhost>")
 URL_SITIO = env("URL_SITIO", default="http://localhost:8000")
+
+# API REST
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 50,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_THROTTLE_CLASSES": ["rest_framework.throttling.UserRateThrottle"],
+    "DEFAULT_THROTTLE_RATES": {"user": "600/min"},
+}
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Inventario Inteligente API",
+    "DESCRIPTION": "Productos, movimientos, ventas y alertas. Autenticación: `Authorization: Token <token>`.",
+    "VERSION": "1.0.0",
+}
 
 # Parámetros por defecto del motor inteligente (se pueden sobreescribir por negocio).
 INVENTARIO_INTELIGENTE = {

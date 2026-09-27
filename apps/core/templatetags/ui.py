@@ -38,7 +38,7 @@ def cantidad(valor):
 @register.filter
 def porcentaje(valor, decimales=0):
     n = _num(valor)
-    return "—" if n is None else f"{n:.{int(decimales)}f} %"
+    return "—" if n is None else f"{n:.{int(decimales)}f} %".replace(".", ",")
 
 
 ESTADOS = {

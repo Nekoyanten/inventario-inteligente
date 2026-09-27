@@ -1,0 +1,32 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}{{ titulo }}{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div><a class="suave" href="{% url 'reportes:inicio' %}">← Reportes</a><h1>{{ titulo }}</h1><span class="suave">{{ descripcion }}</span></div>
+  <div class="acciones">
+    <a class="boton boton-auto boton-chico boton-secundario" href="{% url 'reportes:exportar' clave 'xlsx' %}{% url_con %}">Excel</a>
+    <a class="boton boton-auto boton-chico boton-secundario" href="{% url 'reportes:exportar' clave 'pdf' %}{% url_con %}">PDF</a>
+    <a class="boton boton-auto boton-chico boton-secundario" href="{% url 'reportes:exportar' clave 'csv' %}{% url_con %}">CSV</a>
+  </div>
+</div>
+<form method="get" class="filtros tarjeta">
+  <select name="categoria" aria-label="Categoría"><option value="">Todas las categorías</option>{% for c in categorias %}<option value="{{ c.pk }}" {% if filtros.categoria == c.pk %}selected{% endif %}>{{ c }}</option>{% endfor %}</select>
+  <label>Desde<input type="date" name="desde" value="{{ request.GET.desde }}"></label>
+  <label>Hasta<input type="date" name="hasta" value="{{ request.GET.hasta }}"></label>
+  <button class="boton boton-auto">Aplicar</button>
+</form>
+<section class="tarjeta tabla-scroll">
+  <table class="tabla">
+    <thead><tr>{% for e in tabla.encabezados %}<th class="{% if tabla.tipos|slice:forloop.counter|last in 'moneda numero porcentaje' %}num{% endif %}">{{ e }}</th>{% endfor %}</tr></thead>
+    <tbody>
+    {% for fila in filas %}
+      <tr>{% for valor, tipo in fila %}{% with titulo=tabla.encabezados|slice:forloop.counter|last %}
+        <td class="{% if tipo in 'moneda numero porcentaje' %}num{% endif %}" data-titulo="{{ titulo }}">{% if tipo == 'moneda' %}{{ valor|moneda }}{% elif tipo == 'numero' %}{{ valor|cantidad }}{% elif tipo == 'porcentaje' %}{{ valor|porcentaje:1 }}{% elif tipo == 'fecha' %}{{ valor|date:"d/m/Y"|default:"—" }}{% else %}{{ valor|default:"" }}{% endif %}</td>
+      {% endwith %}{% endfor %}</tr>
+    {% empty %}<tr><td colspan="{{ tabla.encabezados|length }}" class="vacio">Sin datos para estos filtros.</td></tr>{% endfor %}
+    </tbody>
+    {% if totales and filas %}<tfoot><tr>{% for valor, tipo in totales %}<td class="{% if tipo in 'moneda numero porcentaje' %}num{% endif %}"><strong>{% if tipo == 'moneda' %}{{ valor|moneda }}{% elif tipo == 'porcentaje' and valor != '' %}{{ valor|porcentaje:1 }}{% elif tipo == 'numero' and valor != '' %}{{ valor|cantidad }}{% else %}{{ valor }}{% endif %}</strong></td>{% endfor %}</tr></tfoot>{% endif %}
+  </table>
+  {% if recortado %}<p class="suave">Se muestran las primeras 500 filas. Descarga el archivo para ver todo.</p>{% endif %}
+</section>
+{% endblock %}
