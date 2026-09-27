@@ -47,7 +47,9 @@ def registrar_movimiento(
     if tipo in TIPOS_CON_MOTIVO_OBLIGATORIO and not motivo.strip():
         raise ErrorInventario("Este tipo de movimiento requiere un motivo.")
 
-    producto = Producto.objects.select_for_update().select_related("negocio__config").get(pk=producto.pk)
+    # of=("self",): bloquea solo la fila del producto. PostgreSQL no permite FOR UPDATE sobre
+    # el lado opcional de un LEFT JOIN (negocio__config es una relación inversa opcional).
+    producto = Producto.objects.select_for_update(of=("self",)).select_related("negocio__config").get(pk=producto.pk)
     config = getattr(producto.negocio, "config", None)
     usa_lotes = bool(config and config.usa_lotes)
     es_entrada = TipoMovimiento.es_entrada(tipo)
