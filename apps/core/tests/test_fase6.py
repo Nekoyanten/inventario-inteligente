@@ -101,3 +101,20 @@ def test_matriz_de_permisos_por_rol(client, negocio, url, vendedor, encargado):
     assert client.get(url).status_code == vendedor
     client.force_login(e)
     assert client.get(url).status_code == encargado
+
+
+def test_no_hay_redireccion_abierta(client, admin):
+    client.force_login(admin)
+    resp = client.post("/comentarios/", {"texto": "hola", "pagina": "https://sitio-malicioso.example/robar"})
+    assert resp["Location"] == "/"
+    resp = client.post("/comentarios/", {"texto": "hola", "pagina": "/productos/"})
+    assert resp["Location"] == "/productos/"
+
+
+def test_importacion_rechaza_archivos_grandes(client, admin, settings):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    settings.TAMANO_MAX_ARCHIVO_MB = 0
+    client.force_login(admin)
+    archivo = SimpleUploadedFile("p.csv", b"sku,nombre\nA,B\n")
+    assert "supera" in client.post("/reportes/importar/", {"archivo": archivo}).content.decode()

@@ -62,6 +62,14 @@ class ProductoForm(forms.ModelForm):
                 self.fields[nombre] = campo
                 self.atributos.append((a, nombre))
 
+    def clean_imagen(self):
+        from django.conf import settings
+
+        imagen = self.cleaned_data.get("imagen")
+        if imagen and hasattr(imagen, "size") and imagen.size > settings.TAMANO_MAX_ARCHIVO_MB * 1024 * 1024:
+            raise forms.ValidationError(f"La imagen supera {settings.TAMANO_MAX_ARCHIVO_MB} MB.")
+        return imagen
+
     def clean_sku(self):
         sku = self.cleaned_data["sku"].strip().upper()
         qs = Producto.objects.filter(negocio=self.negocio, sku=sku).exclude(pk=self.instance.pk)

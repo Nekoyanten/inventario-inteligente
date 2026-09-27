@@ -12,7 +12,7 @@ def productos_con_estado(negocio):
     return (
         del_negocio(negocio, Producto)
         .filter(es_agrupador=False)
-        .select_related("categoria", "marca", "unidad", "padre")
+        .select_related("categoria", "marca", "unidad", "padre", "negocio__config")
         .annotate(
             estado=Case(
                 When(stock_actual__lte=0, then=Value(EstadoStock.AGOTADO)),

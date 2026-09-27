@@ -3,6 +3,7 @@ from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.core.negocio import del_negocio, negocio_requerido, obtener_del_negocio
+from apps.core.seguridad import url_segura as _url_segura
 from apps.usuarios.permisos import requiere_permiso
 
 from .models import Alerta
@@ -45,7 +46,7 @@ def cambiar_estado(request, pk):
         alerta.nota = request.POST.get("nota", "")[:255]
         alerta.save(update_fields=["estado", "resuelta_por", "nota", "actualizado"])
         messages.success(request, "Alerta " + ("resuelta." if nuevo == Alerta.Estado.RESUELTA else "descartada."))
-    return redirect(request.POST.get("volver") or "alertas:lista")
+    return redirect(_url_segura(request, request.POST.get("volver")) or "alertas:lista")
 
 
 @negocio_requerido

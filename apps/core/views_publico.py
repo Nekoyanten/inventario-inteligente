@@ -12,6 +12,7 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
+from apps.core.seguridad import url_segura as _url_segura
 from apps.usuarios.permisos import requiere_permiso
 
 from .auditoria import auditar
@@ -52,7 +53,7 @@ def comentario(request):
             calificacion=int(calif) if calif.isdigit() and 1 <= int(calif) <= 5 else None,
         )
         messages.success(request, "¡Gracias! Leemos todos los comentarios.")
-        return redirect(request.POST.get("pagina") or "dashboard:inicio")
+        return redirect(_url_segura(request, request.POST.get("pagina")) or "dashboard:inicio")
     return render(request, "publico/comentario.html", {"tipos": Comentario.Tipo.choices,
                                                        "pagina": request.GET.get("desde", "")})
 

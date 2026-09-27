@@ -44,6 +44,7 @@ def a_excel(nombre: str, encabezados: list[str], filas, tipos=None, totales=None
         c.fill = PatternFill("solid", fgColor="1F7A4D")
     formatos = {"moneda": '"$"#,##0', "numero": "#,##0.##", "porcentaje": '0.0"%"', "fecha": "yyyy-mm-dd"}
     tipos = tipos or []
+    fila_actual = 1  # ws.max_row recorre toda la hoja en cada llamada (lento con miles de filas)
     for fila in list(filas) + ([totales] if totales else []):
         valores = []
         for v in fila:
@@ -53,11 +54,12 @@ def a_excel(nombre: str, encabezados: list[str], filas, tipos=None, totales=None
                 v = timezone.localtime(v).replace(tzinfo=None)
             valores.append(v)
         ws.append(valores)
+        fila_actual += 1
         for i, t in enumerate(tipos):
             if t in formatos:
-                ws.cell(row=ws.max_row, column=i + 1).number_format = formatos[t]
+                ws.cell(row=fila_actual, column=i + 1).number_format = formatos[t]
     if totales:
-        for c in ws[ws.max_row]:
+        for c in ws[fila_actual]:
             c.font = Font(bold=True)
     for i, enc in enumerate(encabezados, start=1):
         ws.column_dimensions[get_column_letter(i)].width = max(12, min(45, len(enc) + 6))

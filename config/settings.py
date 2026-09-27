@@ -121,6 +121,11 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# Archivos subidos (imágenes de productos, importación de Excel)
+TAMANO_MAX_ARCHIVO_MB = 5
+FILE_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+
 LOGIN_URL = "login"
 LOGIN_REDIRECT_URL = "dashboard:inicio"
 LOGOUT_REDIRECT_URL = "login"

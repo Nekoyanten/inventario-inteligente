@@ -21,7 +21,7 @@ def registrar_venta(*, negocio, vendedor, lineas, medio_pago=Venta.MedioPago.EFE
         negocio=negocio, vendedor=vendedor, fecha=fecha, cliente=cliente, medio_pago=medio_pago
     )
     total = Decimal("0")
-    for linea in lineas:
+    for linea in sorted(lineas, key=lambda linea_: linea_["producto"].pk):
         producto = linea["producto"]
         detalle = DetalleVenta.objects.create(
             venta=venta,

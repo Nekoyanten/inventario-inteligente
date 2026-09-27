@@ -225,14 +225,41 @@ def compras(negocio, f):
 # ------------------------------------------------------------------ Inteligencia
 
 def rotacion_abc(negocio, f):
-    from apps.analitica.services import analizar_producto, clasificacion_abc
+    """Versión masiva: 3 consultas para todo el catálogo (antes, ~9 por producto)."""
+    from django.conf import settings
 
+    from apps.analitica import algoritmos as alg
+    from apps.analitica.models import DemandaDiaria
+    from apps.analitica.services import clasificacion_abc
+
+    params = settings.INVENTARIO_INTELIGENTE
+    config = negocio.config
+    hoy = timezone.localdate()
+    dias = params["DIAS_HISTORIA"]
+    desde = hoy - timedelta(days=dias - 1)
     abc = clasificacion_abc(negocio)
+    productos = list(_productos(negocio, f))
+    series: dict[int, dict] = {}
+    for pid, fecha, cant in DemandaDiaria.objects.filter(
+        producto__in=productos, fecha__range=(desde, hoy)
+    ).values_list("producto_id", "fecha", "cantidad"):
+        series.setdefault(pid, {})[fecha] = float(cant)
+    ultimas = dict(
+        DemandaDiaria.objects.filter(producto__in=productos, cantidad__gt=0)
+        .values("producto_id").annotate(u=Max("fecha")).values_list("producto_id", "u")
+    )
+    alfa = float(config.alfa_suavizado)
     filas = []
-    for p in _productos(negocio, f).select_related("negocio__config", "proveedor_principal"):
-        a = analizar_producto(p)
-        filas.append([p.sku, p.nombre, abc.get(p.pk, "C"), a.rotacion.capitalize(), round(a.demanda_diaria, 2),
-                      round(a.cobertura_dias) if a.cobertura_dias is not None else "", p.stock_actual])
+    for p in productos:
+        datos = series.get(p.pk, {})
+        serie = [datos.get(desde + timedelta(days=i), 0.0) for i in range(dias)]
+        d = alg.suavizado_exponencial(serie, alfa)
+        ultima = ultimas.get(p.pk)
+        rot = alg.clasificar_rotacion(sum(1 for x in serie if x > 0), dias, (hoy - ultima).days if ultima else None,
+                                      config.dias_sin_movimiento)
+        cobertura = alg.dias_de_cobertura(float(p.stock_actual), d)
+        filas.append([p.sku, p.nombre, abc.get(p.pk, "C"), rot.capitalize(), round(d, 2),
+                      round(cobertura) if cobertura is not None else "", p.stock_actual])
     filas.sort(key=lambda r: (r[2], -r[4]))
     return Tabla(["SKU", "Producto", "Clase ABC", "Rotación", "Venta diaria", "Días de cobertura", "Stock"], filas,
                  ["texto", "texto", "texto", "texto", "numero", "numero", "numero"])

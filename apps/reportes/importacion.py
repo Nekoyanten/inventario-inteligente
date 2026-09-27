@@ -57,6 +57,10 @@ def plantilla(request):
 
 
 def leer_archivo(archivo) -> list[dict]:
+    from django.conf import settings
+
+    if archivo.size > settings.TAMANO_MAX_ARCHIVO_MB * 1024 * 1024:
+        raise ValueError(f"El archivo supera {settings.TAMANO_MAX_ARCHIVO_MB} MB.")
     nombre = archivo.name.lower()
     if nombre.endswith(".csv"):
         texto = archivo.read().decode("utf-8-sig")
