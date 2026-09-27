@@ -186,5 +186,40 @@ const Inventario = (() => {
     } catch { fin(); alert("No se pudo abrir la cámara."); }
   }
 
-  return { formularioProducto, formularioMovimiento, buscadorProducto, pos, escanearCodigo };
+  /* Editor de líneas (órdenes de compra, facturas): buscar producto → fila con cantidad y costo */
+  function editorLineas({ conVencimiento = false } = {}) {
+    const cuerpo = $("#lineas"), total = $("#lineas-total"), input = $("#lineas-buscar");
+    const recalcular = () => {
+      let t = 0;
+      cuerpo.querySelectorAll("tr").forEach((tr) => {
+        const c = parseFloat(tr.querySelector("[name=lineas-cantidad]").value) || 0;
+        const k = parseFloat(tr.querySelector("[name=lineas-costo]").value) || 0;
+        tr.querySelector(".subtotal").textContent = pesos(c * k);
+        t += c * k;
+      });
+      total.textContent = pesos(t);
+      $("#lineas-vacio").hidden = cuerpo.children.length > 0;
+    };
+    const agregar = (p, cantidad = 1, costo = null) => {
+      if (cuerpo.querySelector(`[data-id="${p.id}"]`)) return;
+      const tr = document.createElement("tr");
+      tr.dataset.id = p.id;
+      tr.innerHTML = `<td>${esc(p.nombre)}<input type="hidden" name="lineas-producto" value="${p.id}"></td>
+        <td data-titulo="Cantidad"><input name="lineas-cantidad" type="number" min="0" step="any" value="${cantidad}" required></td>
+        <td data-titulo="Costo unit."><input name="lineas-costo" type="number" min="0" step="any" value="${costo ?? p.costo ?? ""}"></td>
+        ${conVencimiento ? '<td data-titulo="Vence"><input name="lineas-vencimiento" type="date"></td>' : ""}
+        <td class="num subtotal" data-titulo="Subtotal"></td>
+        <td><button type="button" class="enlace" aria-label="Quitar">✕</button></td>`;
+      tr.querySelector("button").onclick = () => { tr.remove(); recalcular(); };
+      tr.querySelectorAll("input").forEach((i) => i.addEventListener("input", recalcular));
+      cuerpo.append(tr);
+      recalcular();
+    };
+    buscadorProducto(input, (p) => { agregar(p); input.value = ""; });
+    (window.LINEAS_INICIALES || []).forEach((l) => agregar(l, l.cantidad, l.costo));
+    recalcular();
+    return { agregar };
+  }
+
+  return { editorLineas, formularioProducto, formularioMovimiento, buscadorProducto, pos, escanearCodigo };
 })();

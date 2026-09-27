@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block titulo %}Proveedor{% endblock %}
+{% block contenido %}
+<section class="tarjeta formulario formulario-libre">
+  <h1>{% if proveedor %}Editar {{ proveedor }}{% else %}Nuevo proveedor{% endif %}</h1>
+  <form method="post">{% csrf_token %}{{ form.as_p }}<button class="boton">Guardar</button></form>
+  <p><a href="{% if proveedor %}{% url 'proveedores:detalle' proveedor.pk %}{% else %}{% url 'proveedores:lista' %}{% endif %}">← Volver</a></p>
+</section>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block titulo %}Conteo físico{% endblock %}
+{% block contenido %}
+<h1>Inventario</h1>
+{% include "inventario/_pestanas.html" %}
+<div class="rejilla-2">
+<section class="tarjeta formulario-libre">
+  <h2>Nuevo conteo físico</h2>
+  <p class="suave">Cuenta lo que realmente hay en el local. El sistema compara con su registro y pide un motivo para cada diferencia; el administrador aprueba los ajustes.</p>
+  <form method="post">{% csrf_token %}
+    <p><label for="categoria">¿Qué vas a contar?</label><select id="categoria" name="categoria"><option value="">Todo el inventario</option>{% for c in categorias %}<option value="{{ c.pk }}">{{ c }}</option>{% endfor %}</select></p>
+    <button class="boton boton-auto">Empezar conteo</button>
+  </form>
+</section>
+<section class="tarjeta">
+  <h2>Conteos</h2>
+  <table class="tabla compacta"><thead><tr><th>#</th><th>Fecha</th><th>Responsable</th><th>Estado</th></tr></thead><tbody>
+  {% for c in conteos %}<tr><td><a href="{% url 'inventario:conteo' c.pk %}">#{{ c.pk }}</a></td><td>{{ c.creado|date:"d/m/Y" }}</td><td>{{ c.responsable }}</td><td>{{ c.get_estado_display }}</td></tr>
+  {% empty %}<tr><td colspan="4" class="vacio">Aún no hay conteos.</td></tr>{% endfor %}
+  </tbody></table>
+</section>
+</div>
+{% endblock %}

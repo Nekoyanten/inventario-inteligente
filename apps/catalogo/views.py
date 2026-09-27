@@ -43,11 +43,13 @@ def lista(request):
 def buscar_json(request):
     """Búsqueda para el punto de venta y los formularios (autocompletado)."""
     qs = selectors.buscar(selectors.productos_con_estado(request.negocio).filter(activo=True), request.GET.get("q"))
+    ver_costos = request.user.puede("ver_precios_compra")
     datos = [
         {
             "id": p.pk, "nombre": p.nombre, "sku": p.sku, "codigo_barras": p.codigo_barras,
             "precio_venta": float(p.precio_venta), "stock": float(p.stock_actual), "estado": p.estado,
             "unidad": p.unidad.abreviatura if p.unidad else "und", "decimales": permite_decimales(p),
+            **({"costo": float(p.precio_compra)} if ver_costos else {}),
         }
         for p in qs.order_by("nombre")[:20]
     ]

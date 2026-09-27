@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Órdenes de compra{% endblock %}
+{% block contenido %}
+<h1>Compras</h1>
+{% include "compras/_pestanas.html" %}
+<form method="get" class="filtros tarjeta">
+  <select name="estado"><option value="">Todos los estados</option>{% for v, t in estados %}<option value="{{ v }}" {% if request.GET.estado == v %}selected{% endif %}>{{ t }}</option>{% endfor %}</select>
+  <select name="proveedor"><option value="">Todos los proveedores</option>{% for p in proveedores %}<option value="{{ p.pk }}" {% if request.GET.proveedor == p.pk|stringformat:"s" %}selected{% endif %}>{{ p }}</option>{% endfor %}</select>
+  <button class="boton boton-auto">Filtrar</button>
+</form>
+<section class="tarjeta">
+  <table class="tabla">
+    <thead><tr><th>#</th><th>Proveedor</th><th>Fecha</th><th>Estado</th><th class="num">Total</th></tr></thead>
+    <tbody>
+    {% for o in pagina %}
+      <tr><td><a href="{% url 'compras:detalle' o.pk %}">#{{ o.pk }}</a>{% if o.es_compra_directa %} <small class="suave">factura</small>{% endif %}</td>
+        <td data-titulo="Proveedor">{{ o.proveedor }}</td><td data-titulo="Fecha">{{ o.creado|date:"d/m/Y" }}</td>
+        <td data-titulo="Estado">{{ o.get_estado_display }}</td><td class="num" data-titulo="Total">{{ o.total|moneda }}</td></tr>
+    {% empty %}<tr><td colspan="5" class="vacio">No hay órdenes todavía.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  {% include "parciales/paginacion.html" %}
+</section>
+{% endblock %}

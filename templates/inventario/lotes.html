@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Vencimientos{% endblock %}
+{% block contenido %}
+<h1>Inventario</h1>
+{% include "inventario/_pestanas.html" %}
+<div class="encabezado"><h2>Control de vencimientos</h2>
+  <div class="acciones"><a class="boton boton-auto boton-chico {% if request.GET.filtro %}boton-secundario{% endif %}" href="?">Todos</a><a class="boton boton-auto boton-chico {% if not request.GET.filtro %}boton-secundario{% endif %}" href="?filtro=riesgo">Solo en riesgo</a></div></div>
+<section class="tarjeta">
+  <table class="tabla">
+    <thead><tr><th>Producto</th><th>Vence</th><th>Estado</th><th class="num">Cantidad</th><th class="num">Valor</th><th></th></tr></thead>
+    <tbody>
+    {% for f in filas %}
+      <tr><td><a href="{% url 'catalogo:detalle' f.lote.producto_id %}">{{ f.lote.producto.nombre }}</a><br><small class="suave">Lote {{ f.lote.codigo|default:f.lote.pk }}</small></td>
+        <td data-titulo="Vence">{{ f.lote.fecha_vencimiento|date:"d/m/Y" }}<br><small class="suave">{% if f.dias < 0 %}hace {{ f.dias_abs }} días{% else %}en {{ f.dias }} días{% endif %}</small></td>
+        <td data-titulo="Estado"><span class="insignia {{ f.color }}">{{ f.estado }}</span></td>
+        <td class="num" data-titulo="Cantidad">{{ f.lote.cantidad|cantidad }}</td>
+        <td class="num" data-titulo="Valor">{{ f.valor|moneda }}</td>
+        <td>{% if f.dias < 0 %}<form method="post" action="{% url 'inventario:retirar_lote' f.lote.pk %}" onsubmit="return confirm('¿Registrar salida por vencimiento?')">{% csrf_token %}<button class="enlace">Retirar</button></form>{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="6" class="vacio">🟢 No hay productos con fecha de vencimiento en riesgo.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Orden #{{ orden.pk }}{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div><a class="suave" href="{% url 'compras:lista' %}">← Órdenes</a>
+    <h1>{% if orden.es_compra_directa %}Factura{% else %}Orden{% endif %} #{{ orden.pk }} · {{ orden.proveedor }}</h1>
+    <span class="insignia {% if orden.estado == 'RECIBIDA' %}verde{% elif orden.estado == 'CANCELADA' %}gris{% else %}amarillo{% endif %}">{{ orden.get_estado_display }}</span>
+    <span class="suave">{{ orden.creado|date:"d/m/Y" }}{% if orden.fecha_esperada %} · esperada {{ orden.fecha_esperada|date:"d/m/Y" }}{% endif %}{% if orden.dias_entrega is not None %} · llegó en {{ orden.dias_entrega }} días{% endif %}{% if orden.numero_factura %} · factura {{ orden.numero_factura }}{% endif %}</span>
+  </div>
+  <div class="acciones">
+    <a class="boton boton-auto boton-chico boton-secundario" href="{% url 'compras:pdf' orden.pk %}" target="_blank">PDF</a>
+    {% if whatsapp and not orden.es_compra_directa %}<a class="boton boton-auto boton-chico boton-secundario" href="{{ whatsapp }}" target="_blank" rel="noopener">Enviar por WhatsApp</a>{% endif %}
+    {% if orden.estado == 'BORRADOR' %}<form method="post" action="{% url 'compras:accion' orden.pk 'enviar' %}">{% csrf_token %}<button class="boton boton-auto boton-chico">Marcar como enviada</button></form>{% endif %}
+    {% if orden.estado == 'ENVIADA' and not orden.es_compra_directa %}<form method="post" action="{% url 'compras:accion' orden.pk 'confirmar' %}">{% csrf_token %}<button class="boton boton-auto boton-chico boton-secundario">Proveedor confirmó</button></form>{% endif %}
+  </div>
+</div>
+
+<form method="post" action="{% url 'compras:accion' orden.pk 'recibir' %}" class="tarjeta formulario-libre">{% csrf_token %}
+  <table class="tabla">
+    <thead><tr><th>Producto</th><th class="num">Pedido</th><th class="num">Recibido</th><th class="num">Costo</th><th class="num">Subtotal</th>{% if puede_recibir %}<th>Llegó ahora</th>{% if ver_vencimiento %}<th>Vence</th>{% endif %}{% endif %}</tr></thead>
+    <tbody>
+    {% for d in detalles %}
+      <tr><td><a href="{% url 'catalogo:detalle' d.producto_id %}">{{ d.producto.nombre }}</a></td>
+        <td class="num" data-titulo="Pedido">{{ d.cantidad_pedida|cantidad }}</td>
+        <td class="num" data-titulo="Recibido">{{ d.cantidad_recibida|cantidad }}</td>
+        <td class="num" data-titulo="Costo">{{ d.costo_unitario|moneda }}</td>
+        <td class="num" data-titulo="Subtotal">{{ d.subtotal|moneda }}</td>
+        {% if puede_recibir %}<td data-titulo="Llegó ahora">{% if d.pendiente > 0 %}<input type="number" name="recibido-{{ d.pk }}" min="0" max="{{ d.pendiente|num_input }}" step="any" value="{{ d.pendiente|num_input }}" aria-label="Cantidad recibida de {{ d.producto.nombre }}">{% else %}✔{% endif %}</td>
+        {% if ver_vencimiento %}<td data-titulo="Vence">{% if d.pendiente > 0 %}<input type="date" name="vencimiento-{{ d.pk }}" aria-label="Vencimiento">{% endif %}</td>{% endif %}{% endif %}</tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="encabezado"><span>Total</span><span class="total">{{ orden.total|moneda }}</span></p>
+  {% if puede_recibir %}
+    <p><label for="numero_factura">N.° de factura del proveedor</label><input id="numero_factura" name="numero_factura" value="{{ orden.numero_factura }}" maxlength="40"></p>
+    <button class="boton boton-auto">Registrar llegada de mercancía</button>
+  {% endif %}
+</form>
+{% if orden.observaciones %}<section class="tarjeta"><h2>Observaciones</h2><p>{{ orden.observaciones|linebreaksbr }}</p></section>{% endif %}
+{% if orden.estado != 'RECIBIDA' and orden.estado != 'CANCELADA' %}
+<details class="tarjeta"><summary>Cancelar orden</summary>
+  <form method="post" action="{% url 'compras:accion' orden.pk 'cancelar' %}" class="formulario-libre">{% csrf_token %}
+    <p><label for="motivo">Motivo</label><input id="motivo" name="motivo" maxlength="200"></p><button class="boton boton-auto boton-peligro">Cancelar orden</button></form>
+</details>
+{% endif %}
+{% endblock %}

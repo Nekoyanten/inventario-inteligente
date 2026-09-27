@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block titulo %}Proveedores{% endblock %}
+{% block contenido %}
+<div class="encabezado"><h1>Proveedores</h1><a class="boton boton-auto boton-chico" href="{% url 'proveedores:crear' %}">+ Nuevo proveedor</a></div>
+<form method="get" class="filtros tarjeta"><input type="search" name="q" value="{{ request.GET.q }}" placeholder="Buscar proveedor…"><button class="boton boton-auto">Buscar</button></form>
+<section class="tarjeta">
+  <table class="tabla">
+    <thead><tr><th>Proveedor</th><th>Contacto</th><th class="num">Entrega prometida</th><th class="num">Entrega real</th><th class="num">Cumplimiento</th></tr></thead>
+    <tbody>
+    {% for p, ind in filas %}
+      <tr class="{% if not p.activo %}inactivo{% endif %}"><td><a href="{% url 'proveedores:detalle' p.pk %}">{{ p.nombre }}</a></td>
+        <td data-titulo="Contacto">{{ p.contacto|default:"" }} {{ p.telefono|default:"" }}</td>
+        <td class="num" data-titulo="Prometida">{{ p.tiempo_entrega_dias }} días</td>
+        <td class="num" data-titulo="Real">{% if ind.tiempo_promedio is not None %}{{ ind.tiempo_promedio }} días{% else %}—{% endif %}</td>
+        <td class="num" data-titulo="Cumplimiento">{% if ind.cumplimiento_pct is not None %}{{ ind.cumplimiento_pct }} %{% else %}—{% endif %}</td></tr>
+    {% empty %}<tr><td colspan="5" class="vacio">Aún no tienes proveedores. <a href="{% url 'proveedores:crear' %}">Registra el primero</a>.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

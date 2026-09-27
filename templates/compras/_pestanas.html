@@ -1,0 +1,6 @@
+<nav class="acciones" style="margin-bottom:1rem">
+  {% url 'recomendaciones:lista' as u_rec %}{% if u_rec %}<a class="boton boton-auto boton-chico {% if request.resolver_match.app_name != 'recomendaciones' %}boton-secundario{% endif %}" href="{{ u_rec }}">Qué comprar</a>{% endif %}
+  <a class="boton boton-auto boton-chico {% if request.resolver_match.url_name != 'lista' or request.resolver_match.app_name != 'compras' %}boton-secundario{% endif %}" href="{% url 'compras:lista' %}">Órdenes</a>
+  <a class="boton boton-auto boton-chico {% if request.resolver_match.url_name != 'crear' %}boton-secundario{% endif %}" href="{% url 'compras:crear' %}">Nueva orden</a>
+  <a class="boton boton-auto boton-chico {% if request.resolver_match.url_name != 'compra_directa' %}boton-secundario{% endif %}" href="{% url 'compras:compra_directa' %}">Registrar factura</a>
+</nav>

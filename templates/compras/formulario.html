@@ -1,0 +1,29 @@
+{% extends "base.html" %}{% load static %}
+{% block titulo %}{% if directa %}Registrar factura{% else %}Nueva orden{% endif %}{% endblock %}
+{% block contenido %}
+<h1>Compras</h1>
+{% include "compras/_pestanas.html" %}
+<form method="post" class="tarjeta formulario-libre">{% csrf_token %}
+  <h2>{% if directa %}Registrar factura de proveedor{% else %}Nueva orden de compra{% endif %}</h2>
+  {% if directa %}<p class="suave">Para mercancía que ya llegó (por ejemplo, con factura a mano). Los productos entran de una vez al inventario.</p>{% endif %}
+  <div class="rejilla-2">
+    <p><label for="proveedor">Proveedor</label><select id="proveedor" name="proveedor" required><option value="">Elige…</option>
+      {% for p in proveedores %}<option value="{{ p.pk }}" {% if proveedor_id == p.pk|stringformat:"s" %}selected{% endif %}>{{ p }}</option>{% endfor %}</select>
+      {% if not proveedores %}<span class="helptext">Primero <a href="{% url 'proveedores:crear' %}">registra un proveedor</a>.</span>{% endif %}</p>
+    {% if directa %}<p><label for="numero_factura">N.° de factura</label><input id="numero_factura" name="numero_factura" maxlength="40"></p>
+    {% else %}<p><label for="fecha_esperada">Entrega esperada</label><input id="fecha_esperada" name="fecha_esperada" type="date"></p>{% endif %}
+  </div>
+  <p><label for="lineas-buscar">Agregar producto</label><input id="lineas-buscar" type="search" placeholder="Busca por nombre o código…" autocomplete="off"></p>
+  <table class="tabla">
+    <thead><tr><th>Producto</th><th>Cantidad</th><th>Costo unit.</th>{% if ver_vencimiento %}<th>Vence</th>{% endif %}<th class="num">Subtotal</th><th></th></tr></thead>
+    <tbody id="lineas"></tbody>
+  </table>
+  <p id="lineas-vacio" class="vacio">Aún no hay productos.</p>
+  <p class="encabezado"><span>Total</span><span id="lineas-total" class="total">$0</span></p>
+  {% if not directa %}<p><label for="observaciones">Observaciones</label><textarea id="observaciones" name="observaciones" rows="2"></textarea></p>{% endif %}
+  <button class="boton boton-auto">{% if directa %}Ingresar al inventario{% else %}Crear orden{% endif %}</button>
+</form>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/app.js' %}"></script>
+{{ lineas_iniciales|json_script:"lineas-iniciales" }}
+<script>window.LINEAS_INICIALES = JSON.parse(document.getElementById("lineas-iniciales").textContent || "[]") || []; Inventario.editorLineas({ conVencimiento: {{ ver_vencimiento|yesno:"true,false" }} });</script>{% endblock %}

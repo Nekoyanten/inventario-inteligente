@@ -83,3 +83,119 @@ def kardex_producto(request, pk):
         return a_csv(f"kardex-{producto.sku}", ["Fecha", "Tipo", "Cantidad", "Saldo", "Usuario", "Motivo"], filas)
     pagina = Paginator(qs.order_by("-fecha", "-id"), 50).get_page(request.GET.get("pagina"))
     return render(request, "inventario/kardex.html", {"producto": producto, "form": form, "pagina": pagina})
+
+
+# ---------------------------------------------------------------- Vencimientos
+
+@negocio_requerido
+@requiere_permiso("registrar_movimiento")
+def lotes(request):
+    from django.utils import timezone
+
+    from .models import Lote
+
+    config = request.negocio.config
+    hoy = timezone.localdate()
+    qs = del_negocio(request.negocio, Lote).filter(cantidad__gt=0, fecha_vencimiento__isnull=False).select_related(
+        "producto").order_by("fecha_vencimiento")
+    filas = []
+    for lote in qs:
+        dias = lote.dias_para_vencer(hoy)
+        if dias < 0:
+            estado = ("gris", "Vencido")
+        elif dias <= config.dias_vencimiento_rojo:
+            estado = ("rojo", "Vence pronto")
+        elif dias <= config.dias_vencimiento_amarillo:
+            estado = ("amarillo", "Próximo a vencer")
+        else:
+            estado = ("verde", "Vigente")
+        filas.append({"lote": lote, "dias": dias, "dias_abs": abs(dias), "color": estado[0], "estado": estado[1],
+                      "valor": lote.cantidad * lote.producto.precio_compra})
+    if request.GET.get("filtro") == "riesgo":
+        filas = [f for f in filas if f["color"] != "verde"]
+    return render(request, "inventario/lotes.html", {"filas": filas})
+
+
+@negocio_requerido
+@requiere_permiso("registrar_movimiento")
+def retirar_lote(request, pk):
+    from .models import Lote
+    from .services import retirar_lote_vencido
+
+    if request.method == "POST":
+        lote = obtener_del_negocio(request.negocio, Lote, pk=pk)
+        retirar_lote_vencido(lote, request.user)
+        messages.success(request, f"Se registró la salida por vencimiento de {lote.producto.nombre}.")
+    return redirect("inventario:lotes")
+
+
+# ---------------------------------------------------------------- Conteo físico
+
+@negocio_requerido
+@requiere_permiso("registrar_conteo")
+def conteos(request):
+    from apps.catalogo.models import Categoria
+
+    from .models import ConteoFisico
+    from .services import crear_conteo
+
+    if request.method == "POST":
+        categoria = None
+        if request.POST.get("categoria"):
+            categoria = obtener_del_negocio(request.negocio, Categoria, pk=request.POST["categoria"])
+        conteo = crear_conteo(request.negocio, request.user, categoria)
+        return redirect("inventario:conteo", pk=conteo.pk)
+    return render(request, "inventario/conteos.html", {
+        "conteos": del_negocio(request.negocio, ConteoFisico).select_related("responsable").order_by("-creado")[:30],
+        "categorias": del_negocio(request.negocio, Categoria),
+    })
+
+
+@negocio_requerido
+@requiere_permiso("registrar_conteo")
+def conteo(request, pk):
+    from decimal import Decimal, InvalidOperation
+
+    from .models import ConteoFisico
+    from .services import aprobar_conteo, enviar_conteo
+
+    conteo = obtener_del_negocio(request.negocio, ConteoFisico, pk=pk)
+    detalles = list(conteo.detalles.select_related("producto", "producto__categoria").order_by(
+        "producto__categoria__nombre", "producto__nombre"))
+    if request.method == "POST":
+        accion = request.POST.get("accion", "guardar")
+        try:
+            if conteo.estado == ConteoFisico.Estado.EN_PROCESO:
+                for d in detalles:
+                    valor = request.POST.get(f"contado-{d.pk}")
+                    if valor not in (None, ""):
+                        try:
+                            d.stock_contado = Decimal(valor)
+                        except InvalidOperation:
+                            continue
+                    d.motivo = request.POST.get(f"motivo-{d.pk}", d.motivo)[:255]
+                    d.save(update_fields=["stock_contado", "motivo"])
+            if accion == "enviar":
+                enviar_conteo(conteo, request.user)
+                messages.success(request, "Conteo enviado para aprobación.")
+            elif accion == "aprobar":
+                if not request.user.puede("aprobar_ajuste"):
+                    messages.error(request, "Solo el administrador aprueba ajustes.")
+                else:
+                    movs = aprobar_conteo(conteo, request.user)
+                    messages.success(request, f"Conteo aprobado: {len(movs)} ajustes registrados.")
+            elif accion == "anular" and request.user.puede("aprobar_ajuste"):
+                conteo.estado = ConteoFisico.Estado.ANULADO
+                conteo.save(update_fields=["estado"])
+                messages.success(request, "Conteo anulado.")
+            else:
+                messages.success(request, "Avance guardado.")
+        except ErrorInventario as e:
+            messages.error(request, str(e))
+        return redirect("inventario:conteo", pk=pk)
+    diferencias = [d for d in detalles if d.diferencia]
+    valor_dif = sum(d.diferencia * d.producto.precio_compra for d in diferencias)
+    return render(request, "inventario/conteo.html", {
+        "conteo": conteo, "detalles": detalles, "diferencias": diferencias, "valor_diferencia": valor_dif,
+        "editable": conteo.estado == ConteoFisico.Estado.EN_PROCESO,
+    })

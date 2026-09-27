@@ -179,3 +179,42 @@ def aprobar_conteo(conteo: ConteoFisico, aprobado_por) -> list[Movimiento]:
     conteo.save()
     auditar(conteo.negocio, aprobado_por, "aprobar_conteo", conteo, ajustes=len(movimientos))
     return movimientos
+
+
+@transaction.atomic
+def crear_conteo(negocio, responsable, categoria=None) -> ConteoFisico:
+    """Toma una 'foto' del stock del sistema de los productos a contar."""
+    from .models import DetalleConteo
+
+    productos = Producto.objects.filter(negocio=negocio, activo=True, es_agrupador=False)
+    if categoria is not None:
+        productos = productos.filter(categoria=categoria)
+    conteo = ConteoFisico.objects.create(
+        negocio=negocio, responsable=responsable,
+        observaciones=f"Categoría: {categoria}" if categoria else "Inventario completo",
+    )
+    DetalleConteo.objects.bulk_create([
+        DetalleConteo(conteo=conteo, producto=p, stock_sistema=p.stock_actual, stock_contado=p.stock_actual)
+        for p in productos.order_by("categoria__nombre", "nombre")
+    ])
+    auditar(negocio, responsable, "crear_conteo", conteo, productos=productos.count())
+    return conteo
+
+
+def enviar_conteo(conteo: ConteoFisico, usuario):
+    if conteo.estado != ConteoFisico.Estado.EN_PROCESO:
+        raise ErrorInventario("El conteo ya fue enviado.")
+    faltan = [d.producto.nombre for d in conteo.detalles.select_related("producto") if d.diferencia and not d.motivo.strip()]
+    if faltan:
+        raise ErrorInventario("Falta el motivo de la diferencia en: " + ", ".join(faltan[:5]))
+    conteo.estado = ConteoFisico.Estado.PENDIENTE_APROBACION
+    conteo.save(update_fields=["estado", "actualizado"])
+    auditar(conteo.negocio, usuario, "enviar_conteo", conteo)
+
+
+@transaction.atomic
+def retirar_lote_vencido(lote: Lote, usuario) -> list[Movimiento]:
+    return registrar_movimiento(
+        producto=lote.producto, tipo=TipoMovimiento.SALIDA_VENCIDO, cantidad=lote.cantidad, usuario=usuario,
+        lote=lote, motivo=f"Lote {lote.codigo or lote.pk} vencido el {lote.fecha_vencimiento}",
+    )

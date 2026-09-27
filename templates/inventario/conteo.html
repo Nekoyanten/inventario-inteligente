@@ -1,0 +1,35 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Conteo #{{ conteo.pk }}{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><a class="suave" href="{% url 'inventario:conteos' %}">← Conteos</a><h1>Conteo #{{ conteo.pk }}</h1>
+  <span class="suave">{{ conteo.observaciones }} · {{ conteo.responsable }} · {{ conteo.get_estado_display }}</span></div></div>
+<div class="rejilla">
+  <section class="tarjeta"><h2>Productos</h2><p class="kpi">{{ detalles|length }}</p></section>
+  <section class="tarjeta"><h2>Con diferencia</h2><p class="kpi">{{ diferencias|length }}</p></section>
+  <section class="tarjeta"><h2>Valor de la diferencia</h2><p class="kpi">{{ valor_diferencia|moneda }}</p></section>
+</div>
+<form method="post" class="tarjeta">{% csrf_token %}
+  {% if editable %}<p><input type="search" placeholder="Filtrar productos…" oninput="document.querySelectorAll('#filas tr').forEach(tr => tr.hidden = !tr.dataset.nombre.includes(this.value.toLowerCase()))" aria-label="Filtrar"></p>{% endif %}
+  <table class="tabla">
+    <thead><tr><th>Producto</th><th class="num">Sistema</th><th>Contado</th><th class="num">Diferencia</th><th>Motivo</th></tr></thead>
+    <tbody id="filas">
+    {% for d in detalles %}
+      <tr data-nombre="{{ d.producto.nombre|lower }}"><td>{{ d.producto.nombre }}<br><small class="suave">{{ d.producto.sku }}</small></td>
+        <td class="num" data-titulo="Sistema">{{ d.stock_sistema|cantidad }}</td>
+        <td data-titulo="Contado">{% if editable %}<input type="number" step="any" min="0" name="contado-{{ d.pk }}" value="{{ d.stock_contado|num_input }}" aria-label="Contado de {{ d.producto.nombre }}" style="max-width:7rem">{% else %}{{ d.stock_contado|cantidad }}{% endif %}</td>
+        <td class="num" data-titulo="Diferencia">{% if d.diferencia %}<strong style="color:var(--{% if d.diferencia < 0 %}rojo{% else %}azul{% endif %})">{% if d.diferencia > 0 %}+{% endif %}{{ d.diferencia|cantidad }}</strong>{% else %}—{% endif %}</td>
+        <td data-titulo="Motivo">{% if editable %}<input name="motivo-{{ d.pk }}" value="{{ d.motivo }}" placeholder="Si hay diferencia: dañado, robo, error…" maxlength="255">{% else %}{{ d.motivo|default:"" }}{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="acciones" style="margin-top:1rem">
+    {% if editable %}
+      <button class="boton boton-auto boton-secundario" name="accion" value="guardar">Guardar avance</button>
+      <button class="boton boton-auto" name="accion" value="enviar">Enviar para aprobación</button>
+    {% elif conteo.estado == 'PENDIENTE' and "aprobar_ajuste" in permisos %}
+      <button class="boton boton-auto" name="accion" value="aprobar">Aprobar y ajustar inventario</button>
+      <button class="boton boton-auto boton-peligro" name="accion" value="anular">Anular</button>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}

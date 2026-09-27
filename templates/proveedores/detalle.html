@@ -1,0 +1,39 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}{{ proveedor }}{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div><a class="suave" href="{% url 'proveedores:lista' %}">← Proveedores</a><h1>{{ proveedor }}</h1>
+    <span class="suave">{{ proveedor.contacto }} {{ proveedor.telefono }} {{ proveedor.email }}</span></div>
+  <div class="acciones">
+    {% url 'compras:crear' as u_orden %}{% if u_orden %}<a class="boton boton-auto boton-chico" href="{{ u_orden }}?proveedor={{ proveedor.pk }}">Nueva orden</a>{% endif %}
+    {% if proveedor.whatsapp %}<a class="boton boton-auto boton-chico boton-secundario" href="https://wa.me/{{ proveedor.whatsapp }}" target="_blank" rel="noopener">WhatsApp</a>{% endif %}
+    <a class="boton boton-auto boton-chico boton-secundario" href="{% url 'proveedores:editar' proveedor.pk %}">Editar</a>
+  </div>
+</div>
+<div class="rejilla">
+  <section class="tarjeta"><h2>Entrega real promedio</h2><p class="kpi">{% if indicadores.tiempo_promedio is not None %}{{ indicadores.tiempo_promedio }} <small>días</small>{% else %}—{% endif %}</p><p class="suave">Prometido: {{ indicadores.tiempo_prometido }} días</p></section>
+  <section class="tarjeta"><h2>Cumplimiento</h2><p class="kpi">{% if indicadores.cumplimiento_pct is not None %}{{ indicadores.cumplimiento_pct }} %{% else %}—{% endif %}</p><p class="suave">órdenes recibidas a tiempo</p></section>
+  <section class="tarjeta"><h2>Órdenes</h2><p class="kpi">{{ indicadores.ordenes }}</p><p class="suave">{{ indicadores.recibidas }} recibidas · {{ indicadores.parciales }} parciales · {{ indicadores.compras_directas }} facturas directas</p></section>
+</div>
+<div class="rejilla-2">
+  <section class="tarjeta">
+    <h2>Productos que suministra</h2>
+    <table class="tabla compacta"><thead><tr><th>Producto</th><th class="num">Precio</th><th class="num">Empaque</th><th></th></tr></thead><tbody>
+    {% for pp in productos %}<tr><td><a href="{% url 'catalogo:detalle' pp.producto_id %}">{{ pp.producto.nombre }}</a></td><td class="num">{{ pp.precio_compra|moneda }}</td><td class="num">{{ pp.multiplo_empaque }}</td>
+      <td><form method="post" action="{% url 'proveedores:quitar_producto' proveedor.pk pp.pk %}">{% csrf_token %}<button class="enlace" aria-label="Quitar">✕</button></form></td></tr>
+    {% empty %}<tr><td colspan="4" class="vacio">Sin productos asociados.</td></tr>{% endfor %}
+    </tbody></table>
+    <details style="margin-top:1rem"><summary>Asociar producto</summary>
+      <form method="post" class="formulario-libre">{% csrf_token %}{{ form.as_p }}<button class="boton boton-auto">Asociar</button></form>
+    </details>
+  </section>
+  <section class="tarjeta">
+    <h2>Últimas órdenes</h2>
+    <table class="tabla compacta"><thead><tr><th>#</th><th>Fecha</th><th>Estado</th><th class="num">Días</th></tr></thead><tbody>
+    {% for o in ordenes %}<tr><td>{% url 'compras:detalle' o.pk as u %}{% if u %}<a href="{{ u }}">#{{ o.pk }}</a>{% else %}#{{ o.pk }}{% endif %}</td><td>{{ o.creado|date:"d/m/Y" }}</td><td>{{ o.get_estado_display }}</td><td class="num">{{ o.dias_entrega|default:"—" }}</td></tr>
+    {% empty %}<tr><td colspan="4" class="vacio">Sin órdenes.</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+</div>
+{% if form.errors %}<script>document.querySelector("details").open = true</script>{% endif %}
+{% endblock %}

@@ -22,6 +22,8 @@ class OrdenCompra(ModeloBase):
     fecha_envio = models.DateTimeField(null=True, blank=True)
     fecha_recepcion = models.DateTimeField(null=True, blank=True)
     dias_entrega = models.PositiveIntegerField(null=True, blank=True, help_text="Calculado al recibir")
+    fecha_esperada = models.DateField(null=True, blank=True)
+    es_compra_directa = models.BooleanField(default=False, help_text="Factura registrada sin orden previa")
     numero_factura = models.CharField(max_length=40, blank=True)
     observaciones = models.TextField(blank=True)
 
@@ -35,6 +37,16 @@ class OrdenCompra(ModeloBase):
     def total(self):
         return sum(d.cantidad_pedida * d.costo_unitario for d in self.detalles.all())
 
+    @property
+    def a_tiempo(self):
+        if self.dias_entrega is None:
+            return None
+        return self.dias_entrega <= self.proveedor.tiempo_entrega_dias
+
+    @property
+    def editable(self):
+        return self.estado == self.Estado.BORRADOR
+
 
 class DetalleOrdenCompra(models.Model):
     orden = models.ForeignKey(OrdenCompra, on_delete=models.CASCADE, related_name="detalles")
@@ -45,6 +57,10 @@ class DetalleOrdenCompra(models.Model):
     recomendacion = models.ForeignKey(
         "recomendaciones.RecomendacionCompra", null=True, blank=True, on_delete=models.SET_NULL
     )
+
+    @property
+    def subtotal(self):
+        return self.cantidad_pedida * self.costo_unitario
 
     @property
     def pendiente(self):

@@ -98,3 +98,12 @@ def grafico_barras(datos, pronostico=None, alto=160):
 @register.filter
 def get_campo(form, nombre):
     return form[nombre]
+
+
+@register.filter
+def num_input(valor):
+    """Valor para <input type=number>: 1.000 → 1 · 2.500 → 2.5 (punto decimal, sin ceros de sobra)."""
+    n = _num(valor)
+    if n is None:
+        return ""
+    return format(n.normalize(), "f")
