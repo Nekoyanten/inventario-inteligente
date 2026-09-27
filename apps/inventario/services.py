@@ -3,6 +3,8 @@
 REGLA DE ORO: este es el ÚNICO módulo que modifica Producto.stock_actual.
 """
 
+from contextlib import contextmanager
+from contextvars import ContextVar
 from decimal import Decimal
 
 from django.db import transaction
@@ -16,6 +18,21 @@ from .models import TIPOS_CON_MOTIVO_OBLIGATORIO, ConteoFisico, Lote, Movimiento
 
 class ErrorInventario(Exception):
     pass
+
+
+_evaluacion_automatica = ContextVar("evaluacion_automatica", default=True)
+
+
+@contextmanager
+def sin_evaluacion_automatica():
+    """Desactiva la evaluación de alertas tras cada movimiento (cargas masivas, importaciones, simulaciones).
+
+    Al terminar, conviene correr el análisis del negocio una sola vez."""
+    token = _evaluacion_automatica.set(False)
+    try:
+        yield
+    finally:
+        _evaluacion_automatica.reset(token)
 
 
 def permite_decimales(producto: Producto) -> bool:
@@ -135,7 +152,7 @@ def registrar_movimiento(
         dia = timezone.localdate(fecha) if hasattr(fecha, "tzinfo") and fecha.tzinfo else getattr(fecha, "date", lambda: fecha)()
         acumular_demanda_diaria(producto, dia, cantidad)
 
-    if evaluar_alertas:
+    if evaluar_alertas and _evaluacion_automatica.get():
         from apps.alertas.motor import evaluar_ajuste, evaluar_producto
 
         transaction.on_commit(lambda: evaluar_producto(producto.pk))
@@ -156,7 +173,7 @@ def kardex(producto: Producto, desde=None, hasta=None):
 
 
 @transaction.atomic
-def aprobar_conteo(conteo: ConteoFisico, aprobado_por) -> list[Movimiento]:
+def aprobar_conteo(conteo: ConteoFisico, aprobado_por, fecha=None) -> list[Movimiento]:
     """Convierte las diferencias de un conteo físico en movimientos de ajuste."""
     if conteo.estado != ConteoFisico.Estado.PENDIENTE_APROBACION:
         raise ErrorInventario("Solo se pueden aprobar conteos pendientes.")
@@ -175,6 +192,7 @@ def aprobar_conteo(conteo: ConteoFisico, aprobado_por) -> list[Movimiento]:
             motivo=f"Conteo #{conteo.pk}: {d.motivo}",
             referencia_tipo="conteo",
             referencia_id=conteo.pk,
+            fecha=fecha,
         )
     conteo.estado = ConteoFisico.Estado.APROBADO
     conteo.aprobado_por = aprobado_por
@@ -215,8 +233,9 @@ def enviar_conteo(conteo: ConteoFisico, usuario):
 
 
 @transaction.atomic
-def retirar_lote_vencido(lote: Lote, usuario) -> list[Movimiento]:
+def retirar_lote_vencido(lote: Lote, usuario, fecha=None) -> list[Movimiento]:
     return registrar_movimiento(
+        fecha=fecha,
         producto=lote.producto, tipo=TipoMovimiento.SALIDA_VENCIDO, cantidad=lote.cantidad, usuario=usuario,
         lote=lote, motivo=f"Lote {lote.codigo or lote.pk} vencido el {lote.fecha_vencimiento}",
     )

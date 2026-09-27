@@ -10,7 +10,8 @@ from .models import DetalleVenta, Venta
 
 
 @transaction.atomic
-def registrar_venta(*, negocio, vendedor, lineas, medio_pago=Venta.MedioPago.EFECTIVO, cliente="", fecha=None):
+def registrar_venta(*, negocio, vendedor, lineas, medio_pago=Venta.MedioPago.EFECTIVO, cliente="", fecha=None,
+                    evaluar_alertas=True):
     """Registra una venta y descuenta el inventario.
 
     lineas: lista de dicts {"producto": Producto, "cantidad": n, "precio_unitario": opcional, "descuento": opcional}
@@ -40,6 +41,7 @@ def registrar_venta(*, negocio, vendedor, lineas, medio_pago=Venta.MedioPago.EFE
             motivo=f"Venta #{venta.pk}",
             referencia_tipo="venta",
             referencia_id=venta.pk,
+            evaluar_alertas=evaluar_alertas,
         )
         total += detalle.subtotal
     venta.total = total
@@ -48,7 +50,7 @@ def registrar_venta(*, negocio, vendedor, lineas, medio_pago=Venta.MedioPago.EFE
 
 
 @transaction.atomic
-def anular_venta(venta: Venta, usuario, motivo: str) -> Venta:
+def anular_venta(venta: Venta, usuario, motivo: str, fecha=None) -> Venta:
     """Revierte el inventario (devolución de cliente) y descuenta la demanda registrada."""
     from apps.analitica.services import acumular_demanda_diaria
     from apps.core.auditoria import auditar
@@ -62,6 +64,7 @@ def anular_venta(venta: Venta, usuario, motivo: str) -> Venta:
         registrar_movimiento(
             producto=d.producto, tipo=TipoMovimiento.ENTRADA_DEVOLUCION_CLIENTE, cantidad=d.cantidad, usuario=usuario,
             motivo=f"Anulación venta #{venta.pk}: {motivo}", referencia_tipo="venta", referencia_id=venta.pk,
+            fecha=fecha,
         )
         acumular_demanda_diaria(d.producto, dia, -d.cantidad)
     venta.estado = Venta.Estado.ANULADA

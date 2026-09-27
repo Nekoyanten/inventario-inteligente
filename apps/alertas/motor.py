@@ -16,7 +16,7 @@ ABIERTAS = [Alerta.Estado.ABIERTA, Alerta.Estado.VISTA]
 def evaluar_producto(producto_id: int, hoy: date | None = None) -> list[Alerta]:
     hoy = hoy or timezone.localdate()
     producto = Producto.objects.select_related("negocio__config", "proveedor_principal").get(pk=producto_id)
-    if not producto.activo:
+    if not producto.activo or producto.es_agrupador:  # el agrupador de variantes no tiene stock propio
         return []
     analisis = analizar_producto(producto, hoy)
     hallazgos = [h for regla in REGLAS for h in regla.evaluar(analisis, hoy)]
@@ -46,7 +46,7 @@ def _upsert(producto, h):
 
 def evaluar_negocio(negocio, hoy: date | None = None) -> int:
     total = 0
-    for pid in Producto.objects.filter(negocio=negocio, activo=True).values_list("pk", flat=True):
+    for pid in Producto.objects.filter(negocio=negocio, activo=True, es_agrupador=False).values_list("pk", flat=True):
         total += len(evaluar_producto(pid, hoy))
     return total
 

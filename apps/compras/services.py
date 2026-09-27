@@ -8,18 +8,19 @@ from apps.inventario.services import ErrorInventario, registrar_movimiento
 from .models import OrdenCompra
 
 
-def enviar_orden(orden: OrdenCompra, usuario):
+def enviar_orden(orden: OrdenCompra, usuario, fecha=None):
     if orden.estado != OrdenCompra.Estado.BORRADOR:
         raise ErrorInventario("Solo se envían órdenes en borrador.")
     orden.estado = OrdenCompra.Estado.ENVIADA
-    orden.fecha_envio = timezone.now()
+    orden.fecha_envio = fecha or timezone.now()
     orden.save()
     auditar(orden.negocio, usuario, "enviar_orden", orden)
     return orden
 
 
 @transaction.atomic
-def recibir_orden(orden: OrdenCompra, usuario, recibido: dict, numero_factura="", vencimientos: dict | None = None):
+def recibir_orden(orden: OrdenCompra, usuario, recibido: dict, numero_factura="", vencimientos: dict | None = None,
+                  fecha=None):
     """Registra la recepción (total o parcial) de una orden.
 
     recibido: {detalle_id: cantidad}; vencimientos: {detalle_id: date} (si el negocio usa vencimientos)
@@ -31,7 +32,7 @@ def recibir_orden(orden: OrdenCompra, usuario, recibido: dict, numero_factura=""
     ):
         raise ErrorInventario("La orden no está en un estado que permita recepción.")
     vencimientos = vencimientos or {}
-    ahora = timezone.now()
+    ahora = fecha or timezone.now()
     for detalle in orden.detalles.select_related("producto"):
         cant = recibido.get(detalle.pk, 0)
         if not cant:
@@ -48,6 +49,7 @@ def recibir_orden(orden: OrdenCompra, usuario, recibido: dict, numero_factura=""
             motivo=f"OC #{orden.pk} {numero_factura}".strip(),
             referencia_tipo="orden_compra",
             referencia_id=orden.pk,
+            fecha=ahora,
         )
         detalle.cantidad_recibida += cant
         detalle.save(update_fields=["cantidad_recibida"])

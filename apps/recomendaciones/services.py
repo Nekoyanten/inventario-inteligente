@@ -13,8 +13,8 @@ from apps.core.formato import numero as _n
 from .models import RecomendacionCompra
 
 
-def recomendar_producto(producto: Producto) -> RecomendacionCompra | None:
-    a = analizar_producto(producto)
+def recomendar_producto(producto: Producto, hoy=None) -> RecomendacionCompra | None:
+    a = analizar_producto(producto, hoy)
     config = getattr(producto.negocio, "config", None)
     horizonte = config.horizonte_compra_dias if config else 7
     necesita = a.stock + a.en_transito <= a.punto_reorden or a.stock <= float(producto.stock_minimo)
@@ -70,12 +70,12 @@ def recomendar_producto(producto: Producto) -> RecomendacionCompra | None:
     return rec
 
 
-def generar_recomendaciones(negocio) -> list[RecomendacionCompra]:
+def generar_recomendaciones(negocio, hoy=None) -> list[RecomendacionCompra]:
     recs = []
-    for p in Producto.objects.filter(negocio=negocio, activo=True).select_related(
+    for p in Producto.objects.filter(negocio=negocio, activo=True, es_agrupador=False).select_related(
         "negocio__config", "proveedor_principal"
     ):
-        rec = recomendar_producto(p)
+        rec = recomendar_producto(p, hoy)
         if rec:
             recs.append(rec)
     return recs

@@ -1,0 +1,1752 @@
+[
+ {
+  "clave": "mini-rosita",
+  "negocio": "Tienda Doña Rosita",
+  "giro": "MINIMERCADO",
+  "dueno": "Rosa Elvira Burbano",
+  "productos": 320,
+  "dias": 60,
+  "ventas": {
+   "tickets": 3948,
+   "ingreso": 71061240,
+   "utilidad": 19989640,
+   "margen_pct": 28.1
+  },
+  "quiebres": {
+   "lineas_perdidas": 803,
+   "pct_demanda_perdida": 10.3,
+   "pct_dias_agotado_top20": 7.9
+  },
+  "exactitud": {
+   "ventas_bloqueadas_por_sistema": 42,
+   "resueltas_con_ajuste": 31,
+   "ventas_no_registradas": 11,
+   "compras_no_registradas": 3,
+   "compras_registradas_tarde": 2,
+   "danos_no_registrados": 3,
+   "conteos": 2,
+   "diferencia_conteos_valor": [
+    -356300,
+    270050
+   ],
+   "productos_con_diferencia": 0,
+   "valor_diferencia": 0
+  },
+  "errores": {
+   "digitacion": 10,
+   "detectados": 8,
+   "anulados": 7
+  },
+  "compras": {
+   "ordenes_por_recomendacion": 45,
+   "ordenes_a_ojo": 15,
+   "recomendaciones_editadas": 257,
+   "proveedores": {
+    "Mayorista del Sur": {
+     "ordenes": 14,
+     "prometido": 4,
+     "real_promedio": 4.0,
+     "a_tiempo_pct": 71
+    },
+    "Comercializadora Nariño": {
+     "ordenes": 15,
+     "prometido": 2,
+     "real_promedio": 2.7,
+     "a_tiempo_pct": 47
+    },
+    "Distribuidora Andina": {
+     "ordenes": 13,
+     "prometido": 3,
+     "real_promedio": 6.9,
+     "a_tiempo_pct": 0
+    }
+   }
+  },
+  "vencimientos": {
+   "unidades": 523.0,
+   "valor": 2953500,
+   "lotes_retirados_en_sistema": 100
+  },
+  "mermas": {
+   "unidades": 77.0
+  },
+  "pronostico": {
+   "productos_evaluados": 254,
+   "mape_mediana": 66.4,
+   "mape_mediana_top20": 52.0,
+   "wape": 52.4,
+   "sesgo_pct": -3.3
+  },
+  "alertas_abiertas": {
+   "STOCK_BAJO": 15,
+   "VENCIMIENTO": 34,
+   "BAJA_ROTACION": 168,
+   "EXCESO": 81,
+   "ANOMALIA": 6,
+   "AGOTADO": 19,
+   "RIESGO_AGOTAMIENTO": 59,
+   "STOCK_CRITICO": 2
+  },
+  "recomendaciones_pendientes": 49,
+  "cambio_proveedor": null,
+  "fricciones": [],
+  "segundos": 159.5,
+  "alertas_total": 384
+ },
+ {
+  "clave": "mini-el-vecino",
+  "negocio": "Minimercado El Vecino",
+  "giro": "MINIMERCADO",
+  "dueno": "Jairo Andrés Enríquez",
+  "productos": 480,
+  "dias": 60,
+  "ventas": {
+   "tickets": 6103,
+   "ingreso": 114065030,
+   "utilidad": 30408130,
+   "margen_pct": 26.7
+  },
+  "quiebres": {
+   "lineas_perdidas": 1822,
+   "pct_demanda_perdida": 14.8,
+   "pct_dias_agotado_top20": 14.0
+  },
+  "exactitud": {
+   "ventas_bloqueadas_por_sistema": 185,
+   "resueltas_con_ajuste": 105,
+   "ventas_no_registradas": 80,
+   "compras_no_registradas": 4,
+   "compras_registradas_tarde": 3,
+   "danos_no_registrados": 40,
+   "conteos": 2,
+   "diferencia_conteos_valor": [
+    426450,
+    -1082350
+   ],
+   "productos_con_diferencia": 19,
+   "valor_diferencia": 517500
+  },
+  "errores": {
+   "digitacion": 29,
+   "detectados": 16,
+   "anulados": 9
+  },
+  "compras": {
+   "ordenes_por_recomendacion": 36,
+   "ordenes_a_ojo": 24,
+   "recomendaciones_editadas": 333,
+   "proveedores": {
+    "Comercializadora Nariño": {
+     "ordenes": 10,
+     "prometido": 2,
+     "real_promedio": 2.6,
+     "a_tiempo_pct": 60
+    },
+    "Mayorista del Sur": {
+     "ordenes": 11,
+     "prometido": 4,
+     "real_promedio": 4.5,
+     "a_tiempo_pct": 64
+    },
+    "Distribuidora Andina": {
+     "ordenes": 6,
+     "prometido": 3,
+     "real_promedio": 6.3,
+     "a_tiempo_pct": 0
+    },
+    "Proveedor Confiable S.A.S.": {
+     "ordenes": 6,
+     "prometido": 3,
+     "real_promedio": 3.0,
+     "a_tiempo_pct": 83
+    }
+   }
+  },
+  "vencimientos": {
+   "unidades": 723.0,
+   "valor": 3646750,
+   "lotes_retirados_en_sistema": 117
+  },
+  "mermas": {
+   "unidades": 179.0
+  },
+  "pronostico": {
+   "productos_evaluados": 376,
+   "mape_mediana": 69.7,
+   "mape_mediana_top20": 41.1,
+   "wape": 55.8,
+   "sesgo_pct": 11.4
+  },
+  "alertas_abiertas": {
+   "STOCK_BAJO": 15,
+   "VENCIMIENTO": 56,
+   "BAJA_ROTACION": 237,
+   "EXCESO": 133,
+   "AGOTADO": 41,
+   "RIESGO_AGOTAMIENTO": 46,
+   "ANOMALIA": 9,
+   "STOCK_CRITICO": 2,
+   "VENCIDO": 4
+  },
+  "recomendaciones_pendientes": 83,
+  "cambio_proveedor": {
+   "dia": 35,
+   "de": "Distribuidora Andina",
+   "a": "Proveedor Confiable S.A.S.",
+   "productos": 259,
+   "recomendaciones_con_proveedor_viejo": 0,
+   "ordenes_abiertas_proveedor_viejo": 2,
+   "entrega_real_viejo": 6.5
+  },
+  "fricciones": [
+   "Cambio de proveedor: 259 productos reasignados uno por uno (no existe cambio masivo en la interfaz)"
+  ],
+  "segundos": 249.0,
+  "alertas_total": 543
+ },
+ {
+  "clave": "mini-la-esquina",
+  "negocio": "Autoservicio La Esquina",
+  "giro": "MINIMERCADO",
+  "dueno": "Mónica Guerrero",
+  "productos": 150,
+  "dias": 60,
+  "ventas": {
+   "tickets": 2357,
+   "ingreso": 40995140,
+   "utilidad": 11377890,
+   "margen_pct": 27.8
+  },
+  "quiebres": {
+   "lineas_perdidas": 935,
+   "pct_demanda_perdida": 19.4,
+   "pct_dias_agotado_top20": 17.6
+  },
+  "exactitud": {
+   "ventas_bloqueadas_por_sistema": 531,
+   "resueltas_con_ajuste": 228,
+   "ventas_no_registradas": 303,
+   "compras_no_registradas": 18,
+   "compras_registradas_tarde": 5,
+   "danos_no_registrados": 27,
+   "conteos": 0,
+   "diferencia_conteos_valor": [],
+   "productos_con_diferencia": 118,
+   "valor_diferencia": 3335900
+  },
+  "errores": {
+   "digitacion": 2,
+   "detectados": 1,
+   "anulados": 1
+  },
+  "compras": {
+   "ordenes_por_recomendacion": 21,
+   "ordenes_a_ojo": 39,
+   "recomendaciones_editadas": 90,
+   "proveedores": {
+    "Comercializadora Nariño": {
+     "ordenes": 6,
+     "prometido": 2,
+     "real_promedio": 3.2,
+     "a_tiempo_pct": 33
+    },
+    "Mayorista del Sur": {
+     "ordenes": 5,
+     "prometido": 4,
+     "real_promedio": 5.4,
+     "a_tiempo_pct": 20
+    },
+    "Distribuidora Andina": {
+     "ordenes": 4,
+     "prometido": 3,
+     "real_promedio": 9.0,
+     "a_tiempo_pct": 0
+    }
+   }
+  },
+  "vencimientos": {
+   "unidades": 231.0,
+   "valor": 1127200,
+   "lotes_retirados_en_sistema": 10
+  },
+  "mermas": {
+   "unidades": 71.0
+  },
+  "pronostico": {
+   "productos_evaluados": 133,
+   "mape_mediana": 81.0,
+   "mape_mediana_top20": 43.1,
+   "wape": 72.2,
+   "sesgo_pct": 46.7
+  },
+  "alertas_abiertas": {
+   "AGOTADO": 30,
+   "ANOMALIA": 1,
+   "BAJA_ROTACION": 73,
+   "EXCESO": 35,
+   "RIESGO_AGOTAMIENTO": 32,
+   "STOCK_BAJO": 16,
+   "STOCK_CRITICO": 4,
+   "VENCIDO": 15,
+   "VENCIMIENTO": 19
+  },
+  "recomendaciones_pendientes": 31,
+  "cambio_proveedor": null,
+  "fricciones": [],
+  "segundos": 83.9,
+  "alertas_total": 225
+ },
+ {
+  "clave": "ropa-moda-sur",
+  "negocio": "Moda Sur Boutique",
+  "giro": "ROPA",
+  "dueno": "Valentina Rosero",
+  "productos": 427,
+  "dias": 60,
+  "ventas": {
+   "tickets": 812,
+   "ingreso": 124707100,
+   "utilidad": 35411100,
+   "margen_pct": 28.4
+  },
+  "quiebres": {
+   "lineas_perdidas": 783,
+   "pct_demanda_perdida": 39.2,
+   "pct_dias_agotado_top20": 24.3
+  },
+  "exactitud": {
+   "ventas_bloqueadas_por_sistema": 103,
+   "resueltas_con_ajuste": 73,
+   "ventas_no_registradas": 30,
+   "compras_no_registradas": 2,
+   "compras_registradas_tarde": 1,
+   "danos_no_registrados": 2,
+   "conteos": 2,
+   "diferencia_conteos_valor": [
+    7203900,
+    2310300
+   ],
+   "productos_con_diferencia": 0,
+   "valor_diferencia": 0
+  },
+  "errores": {
+   "digitacion": 0,
+   "detectados": 0,
+   "anulados": 0
+  },
+  "compras": {
+   "ordenes_por_recomendacion": 9,
+   "ordenes_a_ojo": 6,
+   "recomendaciones_editadas": 61,
+   "proveedores": {
+    "Comercializadora Nariño": {
+     "ordenes": 2,
+     "prometido": 2,
+     "real_promedio": 2.5,
+     "a_tiempo_pct": 50
+    },
+    "Mayorista del Sur": {
+     "ordenes": 3,
+     "prometido": 4,
+     "real_promedio": 5.3,
+     "a_tiempo_pct": 67
+    },
+    "Distribuidora Andina": {
+     "ordenes": 3,
+     "prometido": 3,
+     "real_promedio": 6.7,
+     "a_tiempo_pct": 0
+    }
+   }
+  },
+  "vencimientos": {
+   "unidades": 0,
+   "valor": 0,
+   "lotes_retirados_en_sistema": 0
+  },
+  "mermas": {
+   "unidades": 27.0
+  },
+  "pronostico": {
+   "productos_evaluados": 114,
+   "mape_mediana": 100.0,
+   "mape_mediana_top20": 95.4,
+   "wape": 182.6,
+   "sesgo_pct": 129.7
+  },
+  "alertas_abiertas": {
+   "BAJA_ROTACION": 357,
+   "STOCK_BAJO": 36,
+   "EXCESO": 90,
+   "AGOTADO": 45,
+   "RIESGO_AGOTAMIENTO": 18,
+   "STOCK_CRITICO": 1
+  },
+  "recomendaciones_pendientes": 84,
+  "cambio_proveedor": null,
+  "fricciones": [],
+  "segundos": 215.4,
+  "alertas_total": 547
+ },
+ {
+  "clave": "ropa-jeans-galeras",
+  "negocio": "Jeans Galeras",
+  "giro": "ROPA",
+  "dueno": "Carlos Mauricio Chamorro",
+  "productos": 301,
+  "dias": 60,
+  "ventas": {
+   "tickets": 559,
+   "ingreso": 64405700,
+   "utilidad": 16345600,
+   "margen_pct": 25.4
+  },
+  "quiebres": {
+   "lineas_perdidas": 774,
+   "pct_demanda_perdida": 49.7,
+   "pct_dias_agotado_top20": 36.8
+  },
+  "exactitud": {
+   "ventas_bloqueadas_por_sistema": 86,
+   "resueltas_con_ajuste": 57,
+   "ventas_no_registradas": 29,
+   "compras_no_registradas": 4,
+   "compras_registradas_tarde": 0,
+   "danos_no_registrados": 3,
+   "conteos": 2,
+   "diferencia_conteos_valor": [
+    2888500,
+    676000
+   ],
+   "productos_con_diferencia": 1,
+   "valor_diferencia": 386400
+  },
+  "errores": {
+   "digitacion": 0,
+   "detectados": 0,
+   "anulados": 0
+  },
+  "compras": {
+   "ordenes_por_recomendacion": 3,
+   "ordenes_a_ojo": 12,
+   "recomendaciones_editadas": 32,
+   "proveedores": {
+    "Comercializadora Nariño": {
+     "ordenes": 1,
+     "prometido": 2,
+     "real_promedio": 2.0,
+     "a_tiempo_pct": 100
+    },
+    "Mayorista del Sur": {
+     "ordenes": 1,
+     "prometido": 4,
+     "real_promedio": 3.0,
+     "a_tiempo_pct": 100
+    },
+    "Proveedor Confiable S.A.S.": {
+     "ordenes": 1,
+     "prometido": 3,
+     "real_promedio": 3.0,
+     "a_tiempo_pct": 100
+    }
+   }
+  },
+  "vencimientos": {
+   "unidades": 0,
+   "valor": 0,
+   "lotes_retirados_en_sistema": 0
+  },
+  "mermas": {
+   "unidades": 25
+  },
+  "pronostico": {
+   "productos_evaluados": 84,
+   "mape_mediana": 215.0,
+   "mape_mediana_top20": 305.0,
+   "wape": 317.3,
+   "sesgo_pct": 282.9
+  },
+  "alertas_abiertas": {
+   "AGOTADO": 9,
+   "ANOMALIA": 4,
+   "BAJA_ROTACION": 239,
+   "EXCESO": 63,
+   "RIESGO_AGOTAMIENTO": 18,
+   "STOCK_BAJO": 24,
+   "STOCK_CRITICO": 3
+  },
+  "recomendaciones_pendientes": 29,
+  "cambio_proveedor": {
+   "dia": 30,
+   "de": "Distribuidora Andina",
+   "a": "Proveedor Confiable S.A.S.",
+   "productos": 68,
+   "recomendaciones_con_proveedor_viejo": 0,
+   "ordenes_abiertas_proveedor_viejo": 0,
+   "entrega_real_viejo": 3.0
+  },
+  "fricciones": [
+   "Cambio de proveedor: 68 productos reasignados uno por uno (no existe cambio masivo en la interfaz)"
+  ],
+  "segundos": 114.2,
+  "alertas_total": 360
+ },
+ {
+  "clave": "ropa-kids",
+  "negocio": "Pequeños Pasos Kids",
+  "giro": "ROPA",
+  "dueno": "Lucía Fernanda Díaz",
+  "productos": 177,
+  "dias": 60,
+  "ventas": {
+   "tickets": 429,
+   "ingreso": 47387800,
+   "utilidad": 10997300,
+   "margen_pct": 23.2
+  },
+  "quiebres": {
+   "lineas_perdidas": 396,
+   "pct_demanda_perdida": 38.1,
+   "pct_dias_agotado_top20": 31.7
+  },
+  "exactitud": {
+   "ventas_bloqueadas_por_sistema": 135,
+   "resueltas_con_ajuste": 70,
+   "ventas_no_registradas": 65,
+   "compras_no_registradas": 6,
+   "compras_registradas_tarde": 0,
+   "danos_no_registrados": 8,
+   "conteos": 0,
+   "diferencia_conteos_valor": [],
+   "productos_con_diferencia": 70,
+   "valor_diferencia": 9721600
+  },
+  "errores": {
+   "digitacion": 0,
+   "detectados": 0,
+   "anulados": 0
+  },
+  "compras": {
+   "ordenes_por_recomendacion": 6,
+   "ordenes_a_ojo": 9,
+   "recomendaciones_editadas": 33,
+   "proveedores": {
+    "Comercializadora Nariño": {
+     "ordenes": 1,
+     "prometido": 2,
+     "real_promedio": 3.0,
+     "a_tiempo_pct": 0
+    },
+    "Mayorista del Sur": {
+     "ordenes": 2,
+     "prometido": 4,
+     "real_promedio": 4.0,
+     "a_tiempo_pct": 100
+    },
+    "Distribuidora Andina": {
+     "ordenes": 1,
+     "prometido": 3,
+     "real_promedio": 6.0,
+     "a_tiempo_pct": 0
+    }
+   }
+  },
+  "vencimientos": {
+   "unidades": 0,
+   "valor": 0,
+   "lotes_retirados_en_sistema": 0
+  },
+  "mermas": {
+   "unidades": 10.0
+  },
+  "pronostico": {
+   "productos_evaluados": 57,
+   "mape_mediana": 149.5,
+   "mape_mediana_top20": 150.0,
+   "wape": 238.8,
+   "sesgo_pct": 217.9
+  },
+  "alertas_abiertas": {
+   "STOCK_BAJO": 18,
+   "BAJA_ROTACION": 133,
+   "EXCESO": 33,
+   "ANOMALIA": 1,
+   "RIESGO_AGOTAMIENTO": 6,
+   "AGOTADO": 36
+  },
+  "recomendaciones_pendientes": 45,
+  "cambio_proveedor": null,
+  "fricciones": [],
+  "segundos": 88.0,
+  "alertas_total": 227
+ },
+ {
+  "clave": "bella-glamour",
+  "negocio": "Glamour Cosméticos",
+  "giro": "BELLEZA",
+  "dueno": "Daniela Martínez",
+  "productos": 380,
+  "dias": 60,
+  "ventas": {
+   "tickets": 1661,
+   "ingreso": 186599110,
+   "utilidad": 50135010,
+   "margen_pct": 26.9
+  },
+  "quiebres": {
+   "lineas_perdidas": 620,
+   "pct_demanda_perdida": 17.8,
+   "pct_dias_agotado_top20": 13.7
+  },
+  "exactitud": {
+   "ventas_bloqueadas_por_sistema": 184,
+   "resueltas_con_ajuste": 134,
+   "ventas_no_registradas": 50,
+   "compras_no_registradas": 1,
+   "compras_registradas_tarde": 1,
+   "danos_no_registrados": 9,
+   "conteos": 2,
+   "diferencia_conteos_valor": [
+    -321500,
+    2542700
+   ],
+   "productos_con_diferencia": 0,
+   "valor_diferencia": 0
+  },
+  "errores": {
+   "digitacion": 0,
+   "detectados": 0,
+   "anulados": 0
+  },
+  "compras": {
+   "ordenes_por_recomendacion": 23,
+   "ordenes_a_ojo": 3,
+   "recomendaciones_editadas": 182,
+   "proveedores": {
+    "Mayorista del Sur": {
+     "ordenes": 8,
+     "prometido": 4,
+     "real_promedio": 4.1,
+     "a_tiempo_pct": 62
+    },
+    "Distribuidora Andina": {
+     "ordenes": 6,
+     "prometido": 3,
+     "real_promedio": 6.8,
+     "a_tiempo_pct": 0
+    },
+    "Comercializadora Nariño": {
+     "ordenes": 7,
+     "prometido": 2,
+     "real_promedio": 3.0,
+     "a_tiempo_pct": 29
+    }
+   }
+  },
+  "vencimientos": {
+   "unidades": 0,
+   "valor": 0,
+   "lotes_retirados_en_sistema": 0
+  },
+  "mermas": {
+   "unidades": 71.0
+  },
+  "pronostico": {
+   "productos_evaluados": 193,
+   "mape_mediana": 95.7,
+   "mape_mediana_top20": 72.6,
+   "wape": 102.4,
+   "sesgo_pct": 47.7
+  },
+  "alertas_abiertas": {
+   "STOCK_BAJO": 24,
+   "BAJA_ROTACION": 296,
+   "EXCESO": 109,
+   "ANOMALIA": 1,
+   "AGOTADO": 17,
+   "RIESGO_AGOTAMIENTO": 38,
+   "STOCK_CRITICO": 3
+  },
+  "recomendaciones_pendientes": 45,
+  "cambio_proveedor": null,
+  "fricciones": [],
+  "segundos": 391.4,
+  "alertas_total": 488
+ },
+ {
+  "clave": "bella-sala-luna",
+  "negocio": "Sala de Belleza Luna",
+  "giro": "BELLEZA",
+  "dueno": "Paola Andrea Ortiz",
+  "productos": 120,
+  "dias": 60,
+  "ventas": {
+   "tickets": 597,
+   "ingreso": 74387440,
+   "utilidad": 19314940,
+   "margen_pct": 26.0
+  },
+  "quiebres": {
+   "lineas_perdidas": 389,
+   "pct_demanda_perdida": 28.8,
+   "pct_dias_agotado_top20": 20.7
+  },
+  "exactitud": {
+   "ventas_bloqueadas_por_sistema": 69,
+   "resueltas_con_ajuste": 33,
+   "ventas_no_registradas": 36,
+   "compras_no_registradas": 7,
+   "compras_registradas_tarde": 3,
+   "danos_no_registrados": 9,
+   "conteos": 0,
+   "diferencia_conteos_valor": [],
+   "productos_con_diferencia": 64,
+   "valor_diferencia": 15839850
+  },
+  "errores": {
+   "digitacion": 0,
+   "detectados": 0,
+   "anulados": 0
+  },
+  "compras": {
+   "ordenes_por_recomendacion": 15,
+   "ordenes_a_ojo": 11,
+   "recomendaciones_editadas": 54,
+   "proveedores": {
+    "Mayorista del Sur": {
+     "ordenes": 4,
+     "prometido": 4,
+     "real_promedio": 4.8,
+     "a_tiempo_pct": 50
+    },
+    "Distribuidora Andina": {
+     "ordenes": 3,
+     "prometido": 3,
+     "real_promedio": 8.3,
+     "a_tiempo_pct": 0
+    },
+    "Comercializadora Nariño": {
+     "ordenes": 3,
+     "prometido": 2,
+     "real_promedio": 4.3,
+     "a_tiempo_pct": 33
+    },
+    "Proveedor Confiable S.A.S.": {
+     "ordenes": 1,
+     "prometido": 3,
+     "real_promedio": 2.0,
+     "a_tiempo_pct": 100
+    }
+   }
+  },
+  "vencimientos": {
+   "unidades": 0,
+   "valor": 0,
+   "lotes_retirados_en_sistema": 0
+  },
+  "mermas": {
+   "unidades": 29.0
+  },
+  "pronostico": {
+   "productos_evaluados": 73,
+   "mape_mediana": 97.1,
+   "mape_mediana_top20": 94.2,
+   "wape": 156.1,
+   "sesgo_pct": 116.5
+  },
+  "alertas_abiertas": {
+   "AGOTADO": 17,
+   "BAJA_ROTACION": 78,
+   "EXCESO": 44,
+   "RIESGO_AGOTAMIENTO": 15,
+   "STOCK_BAJO": 13,
+   "STOCK_CRITICO": 2
+  },
+  "recomendaciones_pendientes": 18,
+  "cambio_proveedor": {
+   "dia": 40,
+   "de": "Distribuidora Andina",
+   "a": "Proveedor Confiable S.A.S.",
+   "productos": 62,
+   "recomendaciones_con_proveedor_viejo": 0,
+   "ordenes_abiertas_proveedor_viejo": 1,
+   "entrega_real_viejo": 7.0
+  },
+  "fricciones": [
+   "Cambio de proveedor: 62 productos reasignados uno por uno (no existe cambio masivo en la interfaz)"
+  ],
+  "segundos": 99.8,
+  "alertas_total": 169
+ },
+ {
+  "clave": "bella-natural",
+  "negocio": "Natural Skin Nariño",
+  "giro": "BELLEZA",
+  "dueno": "Andrés Felipe Pantoja",
+  "productos": 200,
+  "dias": 60,
+  "ventas": {
+   "tickets": 1310,
+   "ingreso": 162892820,
+   "utilidad": 46414920,
+   "margen_pct": 28.5
+  },
+  "quiebres": {
+   "lineas_perdidas": 419,
+   "pct_demanda_perdida": 15.7,
+   "pct_dias_agotado_top20": 10.8
+  },
+  "exactitud": {
+   "ventas_bloqueadas_por_sistema": 0,
+   "resueltas_con_ajuste": 0,
+   "ventas_no_registradas": 0,
+   "compras_no_registradas": 0,
+   "compras_registradas_tarde": 0,
+   "danos_no_registrados": 1,
+   "conteos": 2,
+   "diferencia_conteos_valor": [
+    0,
+    -387450
+   ],
+   "productos_con_diferencia": 0,
+   "valor_diferencia": 0
+  },
+  "errores": {
+   "digitacion": 2,
+   "detectados": 2,
+   "anulados": 2
+  },
+  "compras": {
+   "ordenes_por_recomendacion": 24,
+   "ordenes_a_ojo": 2,
+   "recomendaciones_editadas": 85,
+   "proveedores": {
+    "Comercializadora Nariño": {
+     "ordenes": 8,
+     "prometido": 2,
+     "real_promedio": 2.5,
+     "a_tiempo_pct": 50
+    },
+    "Mayorista del Sur": {
+     "ordenes": 8,
+     "prometido": 4,
+     "real_promedio": 4.0,
+     "a_tiempo_pct": 75
+    },
+    "Distribuidora Andina": {
+     "ordenes": 8,
+     "prometido": 3,
+     "real_promedio": 6.5,
+     "a_tiempo_pct": 0
+    }
+   }
+  },
+  "vencimientos": {
+   "unidades": 0,
+   "valor": 0,
+   "lotes_retirados_en_sistema": 0
+  },
+  "mermas": {
+   "unidades": 14.0
+  },
+  "pronostico": {
+   "productos_evaluados": 128,
+   "mape_mediana": 63.6,
+   "mape_mediana_top20": 48.8,
+   "wape": 59.3,
+   "sesgo_pct": 15.3
+  },
+  "alertas_abiertas": {
+   "AGOTADO": 4,
+   "ANOMALIA": 4,
+   "BAJA_ROTACION": 143,
+   "EXCESO": 70,
+   "RIESGO_AGOTAMIENTO": 28,
+   "STOCK_BAJO": 15
+  },
+  "recomendaciones_pendientes": 48,
+  "cambio_proveedor": null,
+  "fricciones": [],
+  "segundos": 187.9,
+  "alertas_total": 264
+ },
+ {
+  "clave": "farma-san-rafael",
+  "negocio": "Droguería San Rafael",
+  "giro": "FARMACIA",
+  "dueno": "Luis Eduardo Benavides",
+  "productos": 460,
+  "dias": 60,
+  "ventas": {
+   "tickets": 4902,
+   "ingreso": 240591540,
+   "utilidad": 73446390,
+   "margen_pct": 30.5
+  },
+  "quiebres": {
+   "lineas_perdidas": 1003,
+   "pct_demanda_perdida": 10.4,
+   "pct_dias_agotado_top20": 5.2
+  },
+  "exactitud": {
+   "ventas_bloqueadas_por_sistema": 221,
+   "resueltas_con_ajuste": 148,
+   "ventas_no_registradas": 73,
+   "compras_no_registradas": 6,
+   "compras_registradas_tarde": 0,
+   "danos_no_registrados": 3,
+   "conteos": 2,
+   "diferencia_conteos_valor": [
+    2351000,
+    1017700
+   ],
+   "productos_con_diferencia": 1,
+   "valor_diferencia": 231300
+  },
+  "errores": {
+   "digitacion": 11,
+   "detectados": 6,
+   "anulados": 4
+  },
+  "compras": {
+   "ordenes_por_recomendacion": 42,
+   "ordenes_a_ojo": 18,
+   "recomendaciones_editadas": 272,
+   "proveedores": {
+    "Comercializadora Nariño": {
+     "ordenes": 12,
+     "prometido": 2,
+     "real_promedio": 2.7,
+     "a_tiempo_pct": 33
+    },
+    "Mayorista del Sur": {
+     "ordenes": 13,
+     "prometido": 4,
+     "real_promedio": 3.4,
+     "a_tiempo_pct": 92
+    },
+    "Distribuidora Andina": {
+     "ordenes": 13,
+     "prometido": 3,
+     "real_promedio": 7.3,
+     "a_tiempo_pct": 0
+    }
+   }
+  },
+  "vencimientos": {
+   "unidades": 0,
+   "valor": 0,
+   "lotes_retirados_en_sistema": 0
+  },
+  "mermas": {
+   "unidades": 68.0
+  },
+  "pronostico": {
+   "productos_evaluados": 336,
+   "mape_mediana": 70.1,
+   "mape_mediana_top20": 45.4,
+   "wape": 54.4,
+   "sesgo_pct": -17.0
+  },
+  "alertas_abiertas": {
+   "AGOTADO": 22,
+   "ANOMALIA": 5,
+   "BAJA_ROTACION": 290,
+   "EXCESO": 168,
+   "RIESGO_AGOTAMIENTO": 40,
+   "STOCK_BAJO": 17,
+   "STOCK_CRITICO": 4
+  },
+  "recomendaciones_pendientes": 73,
+  "cambio_proveedor": null,
+  "fricciones": [],
+  "segundos": 715.8,
+  "alertas_total": 546
+ },
+ {
+  "clave": "farma-salud-total",
+  "negocio": "Farmacia Salud Total",
+  "giro": "FARMACIA",
+  "dueno": "Ana María Villota",
+  "productos": 350,
+  "dias": 60,
+  "ventas": {
+   "tickets": 3478,
+   "ingreso": 138853400,
+   "utilidad": 39604000,
+   "margen_pct": 28.5
+  },
+  "quiebres": {
+   "lineas_perdidas": 1065,
+   "pct_demanda_perdida": 15.2,
+   "pct_dias_agotado_top20": 12.3
+  },
+  "exactitud": {
+   "ventas_bloqueadas_por_sistema": 715,
+   "resueltas_con_ajuste": 426,
+   "ventas_no_registradas": 289,
+   "compras_no_registradas": 15,
+   "compras_registradas_tarde": 1,
+   "danos_no_registrados": 21,
+   "conteos": 2,
+   "diferencia_conteos_valor": [
+    6787600,
+    2053150
+   ],
+   "productos_con_diferencia": 0,
+   "valor_diferencia": 0
+  },
+  "errores": {
+   "digitacion": 4,
+   "detectados": 2,
+   "anulados": 1
+  },
+  "compras": {
+   "ordenes_por_recomendacion": 39,
+   "ordenes_a_ojo": 21,
+   "recomendaciones_editadas": 201,
+   "proveedores": {
+    "Mayorista del Sur": {
+     "ordenes": 10,
+     "prometido": 4,
+     "real_promedio": 4.0,
+     "a_tiempo_pct": 70
+    },
+    "Comercializadora Nariño": {
+     "ordenes": 10,
+     "prometido": 2,
+     "real_promedio": 2.5,
+     "a_tiempo_pct": 60
+    },
+    "Distribuidora Andina": {
+     "ordenes": 5,
+     "prometido": 3,
+     "real_promedio": 7.0,
+     "a_tiempo_pct": 0
+    },
+    "Proveedor Confiable S.A.S.": {
+     "ordenes": 5,
+     "prometido": 3,
+     "real_promedio": 2.6,
+     "a_tiempo_pct": 80
+    }
+   }
+  },
+  "vencimientos": {
+   "unidades": 0,
+   "valor": 0,
+   "lotes_retirados_en_sistema": 0
+  },
+  "mermas": {
+   "unidades": 82
+  },
+  "pronostico": {
+   "productos_evaluados": 260,
+   "mape_mediana": 74.8,
+   "mape_mediana_top20": 50.0,
+   "wape": 54.6,
+   "sesgo_pct": 12.6
+  },
+  "alertas_abiertas": {
+   "AGOTADO": 45,
+   "ANOMALIA": 4,
+   "BAJA_ROTACION": 209,
+   "EXCESO": 109,
+   "RIESGO_AGOTAMIENTO": 55,
+   "STOCK_BAJO": 30,
+   "STOCK_CRITICO": 1
+  },
+  "recomendaciones_pendientes": 80,
+  "cambio_proveedor": {
+   "dia": 28,
+   "de": "Distribuidora Andina",
+   "a": "Proveedor Confiable S.A.S.",
+   "productos": 57,
+   "recomendaciones_con_proveedor_viejo": 0,
+   "ordenes_abiertas_proveedor_viejo": 4,
+   "entrega_real_viejo": 6.8
+  },
+  "fricciones": [
+   "Cambio de proveedor: 57 productos reasignados uno por uno (no existe cambio masivo en la interfaz)"
+  ],
+  "segundos": 195.6,
+  "alertas_total": 453
+ },
+ {
+  "clave": "farma-express",
+  "negocio": "Droguería Express 24h",
+  "giro": "FARMACIA",
+  "dueno": "Jhon Jairo Muñoz",
+  "productos": 220,
+  "dias": 60,
+  "ventas": {
+   "tickets": 2741,
+   "ingreso": 91140120,
+   "utilidad": 26177620,
+   "margen_pct": 28.7
+  },
+  "quiebres": {
+   "lineas_perdidas": 1080,
+   "pct_demanda_perdida": 19.4,
+   "pct_dias_agotado_top20": 16.8
+  },
+  "exactitud": {
+   "ventas_bloqueadas_por_sistema": 676,
+   "resueltas_con_ajuste": 330,
+   "ventas_no_registradas": 346,
+   "compras_no_registradas": 19,
+   "compras_registradas_tarde": 5,
+   "danos_no_registrados": 13,
+   "conteos": 0,
+   "diferencia_conteos_valor": [],
+   "productos_con_diferencia": 153,
+   "valor_diferencia": 8611000
+  },
+  "errores": {
+   "digitacion": 0,
+   "detectados": 0,
+   "anulados": 0
+  },
+  "compras": {
+   "ordenes_por_recomendacion": 27,
+   "ordenes_a_ojo": 33,
+   "recomendaciones_editadas": 118,
+   "proveedores": {
+    "Mayorista del Sur": {
+     "ordenes": 7,
+     "prometido": 4,
+     "real_promedio": 4.3,
+     "a_tiempo_pct": 71
+    },
+    "Distribuidora Andina": {
+     "ordenes": 7,
+     "prometido": 3,
+     "real_promedio": 8.3,
+     "a_tiempo_pct": 0
+    },
+    "Comercializadora Nariño": {
+     "ordenes": 6,
+     "prometido": 2,
+     "real_promedio": 3.8,
+     "a_tiempo_pct": 50
+    }
+   }
+  },
+  "vencimientos": {
+   "unidades": 0,
+   "valor": 0,
+   "lotes_retirados_en_sistema": 0
+  },
+  "mermas": {
+   "unidades": 44.0
+  },
+  "pronostico": {
+   "productos_evaluados": 182,
+   "mape_mediana": 83.8,
+   "mape_mediana_top20": 45.6,
+   "wape": 75.4,
+   "sesgo_pct": 6.7
+  },
+  "alertas_abiertas": {
+   "AGOTADO": 46,
+   "ANOMALIA": 2,
+   "BAJA_ROTACION": 108,
+   "EXCESO": 52,
+   "RIESGO_AGOTAMIENTO": 34,
+   "STOCK_BAJO": 14,
+   "STOCK_CRITICO": 3
+  },
+  "recomendaciones_pendientes": 58,
+  "cambio_proveedor": null,
+  "fricciones": [],
+  "segundos": 93.7,
+  "alertas_total": 259
+ },
+ {
+  "clave": "resta-el-cuy",
+  "negocio": "Asadero El Cuy Dorado",
+  "giro": "RESTAURANTE",
+  "dueno": "Segundo Arturo Jojoa",
+  "productos": 110,
+  "dias": 60,
+  "ventas": {
+   "tickets": 1884,
+   "ingreso": 70379858,
+   "utilidad": 19952663,
+   "margen_pct": 28.3
+  },
+  "quiebres": {
+   "lineas_perdidas": 1310,
+   "pct_demanda_perdida": 31.1,
+   "pct_dias_agotado_top20": 14.3
+  },
+  "exactitud": {
+   "ventas_bloqueadas_por_sistema": 389,
+   "resueltas_con_ajuste": 232,
+   "ventas_no_registradas": 157,
+   "compras_no_registradas": 20,
+   "compras_registradas_tarde": 4,
+   "danos_no_registrados": 38,
+   "conteos": 2,
+   "diferencia_conteos_valor": [
+    -214190,
+    -4169635
+   ],
+   "productos_con_diferencia": 8,
+   "valor_diferencia": 171860
+  },
+  "errores": {
+   "digitacion": 2,
+   "detectados": 0,
+   "anulados": 0
+  },
+  "compras": {
+   "ordenes_por_recomendacion": 44,
+   "ordenes_a_ojo": 44,
+   "recomendaciones_editadas": 111,
+   "proveedores": {
+    "Comercializadora Nariño": {
+     "ordenes": 11,
+     "prometido": 2,
+     "real_promedio": 3.2,
+     "a_tiempo_pct": 18
+    },
+    "Mayorista del Sur": {
+     "ordenes": 13,
+     "prometido": 4,
+     "real_promedio": 4.8,
+     "a_tiempo_pct": 31
+    },
+    "Distribuidora Andina": {
+     "ordenes": 11,
+     "prometido": 3,
+     "real_promedio": 7.6,
+     "a_tiempo_pct": 0
+    }
+   }
+  },
+  "vencimientos": {
+   "unidades": 1007.4,
+   "valor": 15688435,
+   "lotes_retirados_en_sistema": 90
+  },
+  "mermas": {
+   "unidades": 104.7
+  },
+  "pronostico": {
+   "productos_evaluados": 94,
+   "mape_mediana": 79.4,
+   "mape_mediana_top20": 57.0,
+   "wape": 52.5,
+   "sesgo_pct": -2.5
+  },
+  "alertas_abiertas": {
+   "AGOTADO": 22,
+   "BAJA_ROTACION": 36,
+   "EXCESO": 14,
+   "RIESGO_AGOTAMIENTO": 40,
+   "STOCK_BAJO": 16,
+   "STOCK_CRITICO": 14,
+   "VENCIDO": 2,
+   "VENCIMIENTO": 24
+  },
+  "recomendaciones_pendientes": 51,
+  "cambio_proveedor": null,
+  "fricciones": [],
+  "segundos": 70.8,
+  "alertas_total": 168
+ },
+ {
+  "clave": "resta-sazon",
+  "negocio": "Sazón Pastuso",
+  "giro": "RESTAURANTE",
+  "dueno": "Gloria Inés Ceballos",
+  "productos": 140,
+  "dias": 60,
+  "ventas": {
+   "tickets": 3016,
+   "ingreso": 97996800,
+   "utilidad": 26687905,
+   "margen_pct": 27.2
+  },
+  "quiebres": {
+   "lineas_perdidas": 2004,
+   "pct_demanda_perdida": 30.0,
+   "pct_dias_agotado_top20": 10.9
+  },
+  "exactitud": {
+   "ventas_bloqueadas_por_sistema": 156,
+   "resueltas_con_ajuste": 94,
+   "ventas_no_registradas": 62,
+   "compras_no_registradas": 5,
+   "compras_registradas_tarde": 8,
+   "danos_no_registrados": 31,
+   "conteos": 2,
+   "diferencia_conteos_valor": [
+    2136015,
+    -4455620
+   ],
+   "productos_con_diferencia": 1,
+   "valor_diferencia": 700
+  },
+  "errores": {
+   "digitacion": 4,
+   "detectados": 3,
+   "anulados": 2
+  },
+  "compras": {
+   "ordenes_por_recomendacion": 65,
+   "ordenes_a_ojo": 21,
+   "recomendaciones_editadas": 205,
+   "proveedores": {
+    "Mayorista del Sur": {
+     "ordenes": 19,
+     "prometido": 4,
+     "real_promedio": 4.3,
+     "a_tiempo_pct": 53
+    },
+    "Distribuidora Andina": {
+     "ordenes": 11,
+     "prometido": 3,
+     "real_promedio": 6.9,
+     "a_tiempo_pct": 0
+    },
+    "Comercializadora Nariño": {
+     "ordenes": 21,
+     "prometido": 2,
+     "real_promedio": 3.0,
+     "a_tiempo_pct": 52
+    },
+    "Proveedor Confiable S.A.S.": {
+     "ordenes": 8,
+     "prometido": 3,
+     "real_promedio": 2.9,
+     "a_tiempo_pct": 75
+    }
+   }
+  },
+  "vencimientos": {
+   "unidades": 1289.1,
+   "valor": 19740460,
+   "lotes_retirados_en_sistema": 280
+  },
+  "mermas": {
+   "unidades": 119.3
+  },
+  "pronostico": {
+   "productos_evaluados": 116,
+   "mape_mediana": 56.4,
+   "mape_mediana_top20": 45.5,
+   "wape": 39.9,
+   "sesgo_pct": -7.2
+  },
+  "alertas_abiertas": {
+   "AGOTADO": 25,
+   "ANOMALIA": 6,
+   "BAJA_ROTACION": 56,
+   "EXCESO": 20,
+   "RIESGO_AGOTAMIENTO": 34,
+   "STOCK_BAJO": 7,
+   "STOCK_CRITICO": 12,
+   "VENCIMIENTO": 48
+  },
+  "recomendaciones_pendientes": 41,
+  "cambio_proveedor": {
+   "dia": 33,
+   "de": "Distribuidora Andina",
+   "a": "Proveedor Confiable S.A.S.",
+   "productos": 42,
+   "recomendaciones_con_proveedor_viejo": 0,
+   "ordenes_abiertas_proveedor_viejo": 2,
+   "entrega_real_viejo": 7.1
+  },
+  "fricciones": [
+   "Cambio de proveedor: 42 productos reasignados uno por uno (no existe cambio masivo en la interfaz)"
+  ],
+  "segundos": 114.4,
+  "alertas_total": 208
+ },
+ {
+  "clave": "resta-comidas-rapidas",
+  "negocio": "Comidas Rápidas La 27",
+  "giro": "RESTAURANTE",
+  "dueno": "Kevin Stiven Rosero",
+  "productos": 100,
+  "dias": 60,
+  "ventas": {
+   "tickets": 2781,
+   "ingreso": 56569011,
+   "utilidad": 15253511,
+   "margen_pct": 27.0
+  },
+  "quiebres": {
+   "lineas_perdidas": 1649,
+   "pct_demanda_perdida": 27.3,
+   "pct_dias_agotado_top20": 13.4
+  },
+  "exactitud": {
+   "ventas_bloqueadas_por_sistema": 605,
+   "resueltas_con_ajuste": 250,
+   "ventas_no_registradas": 355,
+   "compras_no_registradas": 26,
+   "compras_registradas_tarde": 6,
+   "danos_no_registrados": 35,
+   "conteos": 0,
+   "diferencia_conteos_valor": [],
+   "productos_con_diferencia": 75,
+   "valor_diferencia": 2140555
+  },
+  "errores": {
+   "digitacion": 8,
+   "detectados": 6,
+   "anulados": 1
+  },
+  "compras": {
+   "ordenes_por_recomendacion": 29,
+   "ordenes_a_ojo": 60,
+   "recomendaciones_editadas": 73,
+   "proveedores": {
+    "Comercializadora Nariño": {
+     "ordenes": 7,
+     "prometido": 2,
+     "real_promedio": 3.7,
+     "a_tiempo_pct": 43
+    },
+    "Distribuidora Andina": {
+     "ordenes": 8,
+     "prometido": 3,
+     "real_promedio": 7.2,
+     "a_tiempo_pct": 0
+    },
+    "Mayorista del Sur": {
+     "ordenes": 7,
+     "prometido": 4,
+     "real_promedio": 4.6,
+     "a_tiempo_pct": 43
+    }
+   }
+  },
+  "vencimientos": {
+   "unidades": 720.5,
+   "valor": 14152290,
+   "lotes_retirados_en_sistema": 120
+  },
+  "mermas": {
+   "unidades": 65.0
+  },
+  "pronostico": {
+   "productos_evaluados": 94,
+   "mape_mediana": 57.0,
+   "mape_mediana_top20": 40.4,
+   "wape": 54.5,
+   "sesgo_pct": -2.9
+  },
+  "alertas_abiertas": {
+   "AGOTADO": 37,
+   "ANOMALIA": 4,
+   "BAJA_ROTACION": 26,
+   "EXCESO": 10,
+   "RIESGO_AGOTAMIENTO": 26,
+   "STOCK_BAJO": 10,
+   "STOCK_CRITICO": 7,
+   "VENCIDO": 14,
+   "VENCIMIENTO": 15
+  },
+  "recomendaciones_pendientes": 60,
+  "cambio_proveedor": null,
+  "fricciones": [],
+  "segundos": 75.5,
+  "alertas_total": 149
+ },
+ {
+  "clave": "gen-ferreteria",
+  "negocio": "Ferretería El Tornillo Feliz",
+  "giro": "GENERICO",
+  "dueno": "Hernando Paz",
+  "productos": 500,
+  "dias": 60,
+  "ventas": {
+   "tickets": 1819,
+   "ingreso": 79037060,
+   "utilidad": 20873710,
+   "margen_pct": 26.4
+  },
+  "quiebres": {
+   "lineas_perdidas": 1020,
+   "pct_demanda_perdida": 25.9,
+   "pct_dias_agotado_top20": 19.7
+  },
+  "exactitud": {
+   "ventas_bloqueadas_por_sistema": 110,
+   "resueltas_con_ajuste": 70,
+   "ventas_no_registradas": 40,
+   "compras_no_registradas": 4,
+   "compras_registradas_tarde": 2,
+   "danos_no_registrados": 7,
+   "conteos": 2,
+   "diferencia_conteos_valor": [
+    1675600,
+    706500
+   ],
+   "productos_con_diferencia": 23,
+   "valor_diferencia": 316450
+  },
+  "errores": {
+   "digitacion": 3,
+   "detectados": 2,
+   "anulados": 0
+  },
+  "compras": {
+   "ordenes_por_recomendacion": 15,
+   "ordenes_a_ojo": 12,
+   "recomendaciones_editadas": 133,
+   "proveedores": {
+    "Comercializadora Nariño": {
+     "ordenes": 5,
+     "prometido": 2,
+     "real_promedio": 2.4,
+     "a_tiempo_pct": 60
+    },
+    "Mayorista del Sur": {
+     "ordenes": 4,
+     "prometido": 4,
+     "real_promedio": 4.2,
+     "a_tiempo_pct": 50
+    },
+    "Distribuidora Andina": {
+     "ordenes": 4,
+     "prometido": 3,
+     "real_promedio": 6.8,
+     "a_tiempo_pct": 0
+    }
+   }
+  },
+  "vencimientos": {
+   "unidades": 0,
+   "valor": 0,
+   "lotes_retirados_en_sistema": 0
+  },
+  "mermas": {
+   "unidades": 37.0
+  },
+  "pronostico": {
+   "productos_evaluados": 214,
+   "mape_mediana": 90.3,
+   "mape_mediana_top20": 74.0,
+   "wape": 105.4,
+   "sesgo_pct": 65.9
+  },
+  "alertas_abiertas": {
+   "STOCK_BAJO": 36,
+   "BAJA_ROTACION": 396,
+   "EXCESO": 159,
+   "RIESGO_AGOTAMIENTO": 32,
+   "AGOTADO": 29,
+   "ANOMALIA": 3,
+   "STOCK_CRITICO": 1
+  },
+  "recomendaciones_pendientes": 53,
+  "cambio_proveedor": null,
+  "fricciones": [],
+  "segundos": 341.3,
+  "alertas_total": 656
+ },
+ {
+  "clave": "gen-papeleria",
+  "negocio": "Papelería Arcoíris",
+  "giro": "GENERICO",
+  "dueno": "Sandra Milena Cabrera",
+  "productos": 260,
+  "dias": 60,
+  "ventas": {
+   "tickets": 2323,
+   "ingreso": 104698900,
+   "utilidad": 30606550,
+   "margen_pct": 29.2
+  },
+  "quiebres": {
+   "lineas_perdidas": 1232,
+   "pct_demanda_perdida": 24.6,
+   "pct_dias_agotado_top20": 19.1
+  },
+  "exactitud": {
+   "ventas_bloqueadas_por_sistema": 339,
+   "resueltas_con_ajuste": 207,
+   "ventas_no_registradas": 132,
+   "compras_no_registradas": 6,
+   "compras_registradas_tarde": 3,
+   "danos_no_registrados": 6,
+   "conteos": 2,
+   "diferencia_conteos_valor": [
+    449650,
+    4346450
+   ],
+   "productos_con_diferencia": 1,
+   "valor_diferencia": 101250
+  },
+  "errores": {
+   "digitacion": 6,
+   "detectados": 1,
+   "anulados": 1
+  },
+  "compras": {
+   "ordenes_por_recomendacion": 21,
+   "ordenes_a_ojo": 6,
+   "recomendaciones_editadas": 114,
+   "proveedores": {
+    "Mayorista del Sur": {
+     "ordenes": 5,
+     "prometido": 4,
+     "real_promedio": 4.0,
+     "a_tiempo_pct": 60
+    },
+    "Comercializadora Nariño": {
+     "ordenes": 6,
+     "prometido": 2,
+     "real_promedio": 3.7,
+     "a_tiempo_pct": 17
+    },
+    "Distribuidora Andina": {
+     "ordenes": 4,
+     "prometido": 3,
+     "real_promedio": 6.8,
+     "a_tiempo_pct": 0
+    },
+    "Proveedor Confiable S.A.S.": {
+     "ordenes": 3,
+     "prometido": 3,
+     "real_promedio": 3.3,
+     "a_tiempo_pct": 33
+    }
+   }
+  },
+  "vencimientos": {
+   "unidades": 0,
+   "valor": 0,
+   "lotes_retirados_en_sistema": 0
+  },
+  "mermas": {
+   "unidades": 27.0
+  },
+  "pronostico": {
+   "productos_evaluados": 192,
+   "mape_mediana": 91.3,
+   "mape_mediana_top20": 71.5,
+   "wape": 87.4,
+   "sesgo_pct": 52.5
+  },
+  "alertas_abiertas": {
+   "STOCK_BAJO": 21,
+   "BAJA_ROTACION": 159,
+   "EXCESO": 78,
+   "ANOMALIA": 4,
+   "RIESGO_AGOTAMIENTO": 32,
+   "AGOTADO": 17,
+   "STOCK_CRITICO": 3
+  },
+  "recomendaciones_pendientes": 46,
+  "cambio_proveedor": {
+   "dia": 38,
+   "de": "Distribuidora Andina",
+   "a": "Proveedor Confiable S.A.S.",
+   "productos": 89,
+   "recomendaciones_con_proveedor_viejo": 0,
+   "ordenes_abiertas_proveedor_viejo": 0,
+   "entrega_real_viejo": 6.8
+  },
+  "fricciones": [
+   "Cambio de proveedor: 89 productos reasignados uno por uno (no existe cambio masivo en la interfaz)"
+  ],
+  "segundos": 255.4,
+  "alertas_total": 314
+ },
+ {
+  "clave": "gen-miscelanea",
+  "negocio": "Miscelánea Todo a Mil",
+  "giro": "GENERICO",
+  "dueno": "Wilson Ordóñez",
+  "productos": 140,
+  "dias": 60,
+  "ventas": {
+   "tickets": 1339,
+   "ingreso": 49051250,
+   "utilidad": 14183700,
+   "margen_pct": 28.9
+  },
+  "quiebres": {
+   "lineas_perdidas": 1553,
+   "pct_demanda_perdida": 44.2,
+   "pct_dias_agotado_top20": 41.1
+  },
+  "exactitud": {
+   "ventas_bloqueadas_por_sistema": 443,
+   "resueltas_con_ajuste": 195,
+   "ventas_no_registradas": 248,
+   "compras_no_registradas": 11,
+   "compras_registradas_tarde": 2,
+   "danos_no_registrados": 11,
+   "conteos": 0,
+   "diferencia_conteos_valor": [],
+   "productos_con_diferencia": 84,
+   "valor_diferencia": 3146550
+  },
+  "errores": {
+   "digitacion": 2,
+   "detectados": 0,
+   "anulados": 0
+  },
+  "compras": {
+   "ordenes_por_recomendacion": 6,
+   "ordenes_a_ojo": 21,
+   "recomendaciones_editadas": 35,
+   "proveedores": {
+    "Comercializadora Nariño": {
+     "ordenes": 2,
+     "prometido": 2,
+     "real_promedio": 2.0,
+     "a_tiempo_pct": 100
+    },
+    "Mayorista del Sur": {
+     "ordenes": 2,
+     "prometido": 4,
+     "real_promedio": 4.5,
+     "a_tiempo_pct": 50
+    },
+    "Distribuidora Andina": {
+     "ordenes": 1,
+     "prometido": 3,
+     "real_promedio": 8.0,
+     "a_tiempo_pct": 0
+    }
+   }
+  },
+  "vencimientos": {
+   "unidades": 0,
+   "valor": 0,
+   "lotes_retirados_en_sistema": 0
+  },
+  "mermas": {
+   "unidades": 27.0
+  },
+  "pronostico": {
+   "productos_evaluados": 117,
+   "mape_mediana": 98.4,
+   "mape_mediana_top20": 86.1,
+   "wape": 166.7,
+   "sesgo_pct": 128.2
+  },
+  "alertas_abiertas": {
+   "AGOTADO": 54,
+   "BAJA_ROTACION": 51,
+   "EXCESO": 28,
+   "RIESGO_AGOTAMIENTO": 16,
+   "STOCK_BAJO": 7,
+   "STOCK_CRITICO": 1
+  },
+  "recomendaciones_pendientes": 75,
+  "cambio_proveedor": null,
+  "fricciones": [],
+  "segundos": 96.5,
+  "alertas_total": 157
+ }
+]

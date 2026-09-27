@@ -87,3 +87,18 @@ def test_precision_de_pronosticos(admin, producto):
     assert reg.real is not None
     filas = precision_pronosticos(producto.negocio)
     assert filas and filas[0]["producto"] == producto
+
+
+def test_agrupador_de_variantes_no_genera_alertas_ni_compras(client, admin, negocio):
+    from apps.alertas.models import Alerta
+    from apps.alertas.motor import evaluar_negocio
+    from apps.catalogo.models import Producto
+
+    padre = Producto.objects.create(negocio=negocio, sku="CAM", nombre="Camisa", stock_minimo=5)
+    client.force_login(admin)
+    client.post(f"/productos/{padre.pk}/variantes/", {"valores__Variante": "S, M"})
+    evaluar_negocio(negocio)
+    generar_recomendaciones(negocio)
+    assert not Alerta.objects.filter(producto=padre).exists()
+    assert not RecomendacionCompra.objects.filter(producto=padre).exists()
+    assert Alerta.objects.filter(producto__padre=padre, tipo=Alerta.Tipo.AGOTADO).count() == 2

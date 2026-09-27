@@ -7,7 +7,7 @@ Sistema de inventarios **inteligente y adaptativo** para pequeños emprendedores
 Un inventario tradicional dice *"tienes 5 unidades"*.
 Este dice: *"Tienes 5 unidades, vendes aproximadamente 3 por día y tu proveedor tarda 4 días. Existe riesgo de agotamiento. Se recomienda pedir 22."*
 
-📐 [Diseño](docs/DISENO.md) · 🩺 [Diagnóstico](docs/DIAGNOSTICO.md) · ▶️ [Puesta en marcha](docs/PUESTA_EN_MARCHA.md) · 🚀 [Despliegue](docs/DESPLIEGUE.md) · 📖 [Manual](docs/MANUAL.md) · 🧪 [Piloto](docs/PILOTO.md) · 🗂️ [Backlog](docs/backlog.json)
+📐 [Diseño](docs/DISENO.md) · 🩺 [Diagnóstico](docs/DIAGNOSTICO.md) · ▶️ [Puesta en marcha](docs/PUESTA_EN_MARCHA.md) · 🚀 [Despliegue](docs/DESPLIEGUE.md) · 📖 [Manual](docs/MANUAL.md) · 🧪 [Piloto](docs/PILOTO.md) · 🤖 [Piloto simulado](docs/PILOTO_SIMULADO.md) · 🗂️ [Backlog](docs/backlog.json)
 
 ---
 
