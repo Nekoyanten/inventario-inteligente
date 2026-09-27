@@ -30,3 +30,4 @@ jobs:
         env:
           SECRET_KEY: ${{ github.run_id }}-clave-de-prueba-larga-y-aleatoria-para-check-deploy-0123456789
           ALLOWED_HOSTS: inventario.example.com
+          SECURE_SSL_REDIRECT: "True"  # revisa la configuración real de producción, no la de pruebas
