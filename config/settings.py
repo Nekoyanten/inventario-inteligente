@@ -112,8 +112,9 @@ USE_THOUSAND_SEPARATOR = True
 STATIC_URL = "static/"
 STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    # En producción: archivos con hash y comprimidos (requiere collectstatic). En desarrollo y pruebas: normales.
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
-                    if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage"},
+                    if not (DEBUG or EN_PRUEBAS) else "django.contrib.staticfiles.storage.StaticFilesStorage"},
 }
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
@@ -141,7 +142,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_REFERRER_POLICY = "same-origin"
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-    SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
+    SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=not EN_PRUEBAS)
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=60 * 60 * 24 * 30)
