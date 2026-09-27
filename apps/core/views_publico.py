@@ -7,7 +7,6 @@ import zipfile
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core import serializers
-from django.db import connection
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
@@ -33,13 +32,15 @@ def privacidad(request):
 
 
 def salud(request):
-    """Para el monitoreo del servidor: responde 200 si la base de datos contesta."""
-    try:
-        with connection.cursor() as c:
-            c.execute("SELECT 1")
-        return JsonResponse({"estado": "ok"})
-    except Exception:  # pragma: no cover
-        return JsonResponse({"estado": "error"}, status=503)
+    """Para Render y los monitores de disponibilidad: 200 si base de datos y caché responden, 503 si no."""
+    from django.conf import settings
+
+    from .salud import revisar
+
+    r = revisar()
+    return JsonResponse({"estado": "ok" if r["ok"] else "error", "version": settings.VERSION_APP,
+                         "base_de_datos": r["base_de_datos"]["ok"], "cache": r["cache"]["ok"]},
+                        status=200 if r["ok"] else 503)
 
 
 @login_required

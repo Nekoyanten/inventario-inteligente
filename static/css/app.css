@@ -160,3 +160,6 @@ textarea { min-height:80px; }
 .beneficios { display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr)); }
 .beneficios .tarjeta h3 { margin:.2rem 0 .4rem; font-size:1.05rem; }
 .frase { font-size:1.05rem; background:var(--tarjeta); border-left:4px solid var(--marca); padding:1rem 1.2rem; border-radius:0 12px 12px 0; }
+
+.miniatura { width:40px; height:40px; object-fit:cover; border-radius:8px; float:left; margin-right:.6rem; background:var(--borde); }
+.miniatura-pos { width:100%; height:80px; object-fit:cover; border-radius:6px; margin-bottom:.3rem; display:block; }

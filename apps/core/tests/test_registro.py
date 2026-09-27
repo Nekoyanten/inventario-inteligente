@@ -42,3 +42,26 @@ def test_contrasenas_distintas(client):
 def test_usuario_repetido(client, admin):
     resp = client.post("/registro/", {**PASO1, "username": "ADMIN"})
     assert "ya existe" in resp.content.decode()
+
+
+@pytest.mark.django_db
+def test_registro_envia_correo_de_bienvenida(client, mailoutbox):
+    client.post("/registro/", PASO1)
+    client.post("/registro/tipo-de-negocio/", {"giro": Giro.BELLEZA})
+    assert len(mailoutbox) == 1 and "Boutique Luna" in mailoutbox[0].body
+    assert mailoutbox[0].alternatives  # versión HTML
+
+
+@pytest.mark.django_db
+def test_registro_no_falla_si_el_correo_falla(client, settings):
+    settings.EMAIL_BACKEND = "servidor.inexistente.Backend"
+    client.post("/registro/", PASO1)
+    resp = client.post("/registro/tipo-de-negocio/", {"giro": Giro.BELLEZA})
+    assert resp.status_code == 302 and Negocio.objects.filter(nombre="Boutique Luna").exists()
+
+
+def test_comando_probar_correo(mailoutbox):
+    from django.core.management import call_command
+
+    call_command("probar_correo", "dueno@example.com", stdout=__import__("io").StringIO())
+    assert mailoutbox[0].to == ["dueno@example.com"]

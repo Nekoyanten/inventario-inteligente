@@ -1,5 +1,6 @@
 """Asistente de registro en 2 pasos: datos del negocio → tipo de negocio."""
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
@@ -53,6 +54,10 @@ def registro_paso2(request):
             auditar(negocio, usuario, "registrar_negocio", negocio, giro=negocio.giro)
         del request.session[CLAVE_SESION]
         login(request, usuario, backend="django.contrib.auth.backends.ModelBackend")
+        from .correo import enviar
+
+        enviar("bienvenida", f"Bienvenido a {settings.EMPRESA['nombre']}", [usuario.email],
+               {"usuario": usuario, "negocio": negocio})
         return redirect("registro:listo")
     return render(request, "registro/paso2.html", {"form": form, "giros": opciones_giro(), "datos": datos})
 

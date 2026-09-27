@@ -1,0 +1,14 @@
+¡Hola {{ usuario.first_name|default:usuario.username }}!
+
+{{ negocio.nombre }} ya está en Inventario Inteligente. Tu prueba gratis con todas las funciones dura hasta el {{ negocio.suscripcion.prueba_hasta|date:"d/m/Y" }}.
+
+Para empezar:
+1. Carga tus productos (uno a uno o desde Excel): {{ url }}/productos/
+2. Registra tus proveedores y cuántos días tardan en entregar: {{ url }}/proveedores/
+3. Empieza a vender: {{ url }}/ventas/vender/
+
+Tu usuario para ingresar es: {{ usuario.username }}
+Manual: {{ url }}/ayuda/
+
+¿Dudas? Responde este correo.
+{{ empresa.nombre }}

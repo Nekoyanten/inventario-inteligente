@@ -71,6 +71,8 @@ Fecha de la revisión: 27/09/2026 · Versión revisada: rama con las fases 0 a 6
 
 ### Bloqueantes para producción
 
+> **Actualización (Fase 7):** el código de B1, B2 y B3 ya está hecho y probado. Falta crear las cuentas y configurar las variables (ver `docs/PUESTA_EN_MARCHA.md`). También quedaron resueltos I4 (Redis incluido en el blueprint de Render) e I5 (cobertura: configuración 97 %, catálogo 95 %, total 93 %).
+
 | ID | Problema | Impacto | Solución |
 |---|---|---|---|
 | B1 | Las imágenes de productos se guardan en el disco del servidor | En Render o Docker el disco se borra en cada despliegue y con `DEBUG=False` las imágenes no se sirven: se pierden | Almacenamiento en la nube (Cloudflare R2, S3 o Cloudinary) con `django-storages` |

@@ -8,14 +8,11 @@
     {% if "gestionar_compras" in permisos %}{% url 'recomendaciones:lista' as u_rec %}{% if u_rec %}<a class="boton boton-auto boton-chico boton-secundario" href="{{ u_rec }}">🛒 Qué comprar</a>{% endif %}{% endif %}
   </div>
 </div>
-{% if not resumen.inventario.productos %}
+{% if arranque and not arranque.completo and "configurar_negocio" in permisos %}
 <section class="tarjeta explicacion">
-  <h2>Empecemos 👋</h2>
-  <ol>
-    <li><a href="{% url 'catalogo:crear' %}">Crea tus productos</a>{% url 'reportes:importar' as u_imp %}{% if u_imp %} o <a href="{{ u_imp }}">impórtalos desde Excel</a>{% endif %}.</li>
-    <li><a href="{% url 'proveedores:crear' %}">Registra tus proveedores</a> y sus tiempos de entrega.</li>
-    <li>Empieza a <a href="{% url 'ventas:pos' %}">vender</a>: el sistema aprende de cada venta.</li>
-  </ol>
+  <div class="encabezado" style="margin-bottom:.4rem"><h2 style="margin:0">Tu arranque: {{ arranque.hechos }} de {{ arranque.total }}</h2><span class="insignia verde">{{ arranque.porcentaje }} %</span></div>
+  <ul class="lista-simple">{% for p in arranque.pasos %}<li>{% if p.ok %}✅ <span class="suave">{{ p.texto }}</span>{% else %}⬜ <a href="{{ p.url }}">{{ p.texto }}</a>{% endif %}</li>{% endfor %}</ul>
+  {% url 'reportes:importar' as u_imp %}<p class="suave" style="margin-bottom:0">¿Tienes tus productos en Excel? <a href="{{ u_imp }}">Impórtalos de una vez</a>.</p>
 </section>
 {% endif %}
 <div class="rejilla">

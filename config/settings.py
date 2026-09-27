@@ -110,8 +110,25 @@ USE_TZ = True
 USE_THOUSAND_SEPARATOR = True
 
 STATIC_URL = "static/"
+# Archivos subidos (imágenes de productos): en la nube si hay bucket S3 compatible (Cloudflare R2, AWS S3,
+# Backblaze B2, DigitalOcean Spaces…); si no, en el disco local (solo sirve en un servidor con disco persistente).
+AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME", default="")
+ALMACENAMIENTO_NUBE = bool(AWS_STORAGE_BUCKET_NAME)
 STORAGES = {
-    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "default": {"BACKEND": "storages.backends.s3.S3Storage", "OPTIONS": {
+        "bucket_name": AWS_STORAGE_BUCKET_NAME,
+        "access_key": env("AWS_ACCESS_KEY_ID", default=""),
+        "secret_key": env("AWS_SECRET_ACCESS_KEY", default=""),
+        "endpoint_url": env("AWS_S3_ENDPOINT_URL", default=None),  # R2: https://<cuenta>.r2.cloudflarestorage.com
+        "region_name": env("AWS_S3_REGION_NAME", default="auto"),
+        "custom_domain": env("AWS_S3_CUSTOM_DOMAIN", default=None),  # dominio público del bucket (opcional)
+        "querystring_auth": not env("AWS_S3_CUSTOM_DOMAIN", default=None),  # sin dominio público: URLs firmadas
+        "querystring_expire": 60 * 60 * 24,
+        "file_overwrite": False,
+        "signature_version": "s3v4",  # obligatorio en Cloudflare R2
+        "default_acl": None,
+        "object_parameters": {"CacheControl": "public, max-age=2592000"},
+    }} if ALMACENAMIENTO_NUBE else {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     # En producción: archivos con hash y comprimidos (requiere collectstatic). En desarrollo y pruebas: normales.
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
                     if not (DEBUG or EN_PRUEBAS) else "django.contrib.staticfiles.storage.StaticFilesStorage"},
@@ -123,6 +140,8 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 # Archivos subidos (imágenes de productos, importación de Excel)
 TAMANO_MAX_ARCHIVO_MB = 5
+IMAGEN_LADO_MAX = 800  # px; las imágenes se reducen y convierten a WebP al subirlas
+SERVIR_MEDIA_LOCAL = env.bool("SERVIR_MEDIA_LOCAL", default=False)  # VPS con disco persistente y sin bucket
 FILE_UPLOAD_MAX_MEMORY_SIZE = 2 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 
@@ -137,6 +156,8 @@ EMAIL_CONFIG = env.email_url("EMAIL_URL", default="consolemail://")
 vars().update(EMAIL_CONFIG)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Inventario Inteligente <no-responder@localhost>")
 URL_SITIO = env("URL_SITIO", default="http://localhost:8000")
+EMAIL_TIMEOUT = 10  # segundos: un servidor de correo caído no debe congelar la aplicación
+CORREO_CONFIGURADO = not EMAIL_CONFIG.get("EMAIL_BACKEND", "").endswith("console.EmailBackend")
 
 # Seguridad (producción)
 SESSION_COOKIE_AGE = 60 * 60 * 12  # 12 horas
@@ -168,6 +189,20 @@ LOGGING = {
     "root": {"handlers": ["consola"], "level": env("LOG_LEVEL", default="INFO")},
     "loggers": {"django.security": {"handlers": ["consola"], "level": "WARNING", "propagate": False}},
 }
+
+# Monitoreo de errores (Sentry). Sin SENTRY_DSN no se envía nada.
+SENTRY_DSN = env("SENTRY_DSN", default="")
+VERSION_APP = env("RENDER_GIT_COMMIT", default=env("VERSION_APP", default="dev"))[:12]
+if SENTRY_DSN and not EN_PRUEBAS:
+    import sentry_sdk
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        environment=env("SENTRY_ENTORNO", default="produccion"),
+        release=VERSION_APP,
+        traces_sample_rate=env.float("SENTRY_TRAZAS", default=0.05),  # 5 % de peticiones para medir lentitud
+        send_default_pii=False,  # no enviar datos personales de los clientes
+    )
 
 # API REST
 REST_FRAMEWORK = {

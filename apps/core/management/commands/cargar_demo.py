@@ -39,6 +39,7 @@ class Command(BaseCommand):
         negocio = Negocio.objects.create(nombre="Minimercado Demo", giro=Giro.MINIMERCADO)
         negocio.suscripcion.plan = "NEGOCIO"
         negocio.suscripcion.pagado_hasta = timezone.localdate() + timedelta(days=365)
+        negocio.suscripcion.prueba_hasta = None
         negocio.suscripcion.save()
         admin = Usuario.objects.create_superuser("admin", "admin@demo.co", "admin12345", negocio=negocio, rol=Rol.ADMIN)
         und, _ = UnidadMedida.objects.get_or_create(nombre="Unidad", defaults={"abreviatura": "und"})

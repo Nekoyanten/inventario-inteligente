@@ -5,7 +5,14 @@ databases:
     databaseName: inventario
     user: inventario
 
+# Caché compartida (Redis): límite de intentos de ingreso y throttling de la API entre procesos.
+
 services:
+  - type: keyvalue
+    name: inventario-cache
+    ipAllowList: []          # solo accesible desde los servicios de Render
+    maxmemoryPolicy: allkeys-lru
+
   - type: web
     name: inventario-web
     runtime: docker
@@ -23,11 +30,32 @@ services:
         value: "https://*.onrender.com"
       - key: ADMIN_URL
         generateValue: true
-      - key: EMAIL_URL
+      - key: CACHE_URL
+        fromService: { type: keyvalue, name: inventario-cache, property: connectionString }
+      # ---- Completar en el panel de Render (no se guardan en el repositorio) ----
+      - key: EMAIL_URL                # smtp+tls://usuario:clave@smtp.gmail.com:587
         sync: false
-      - key: URL_SITIO
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+      - key: URL_SITIO                # https://tu-dominio.com
+        sync: false
+      - key: SENTRY_DSN               # sentry.io → proyecto Django → DSN
+        sync: false
+      - key: AWS_STORAGE_BUCKET_NAME  # imágenes de productos (Cloudflare R2 / S3)
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_S3_ENDPOINT_URL      # R2: https://<id-cuenta>.r2.cloudflarestorage.com
         sync: false
       - key: CONTACTO_VENTAS
+        sync: false
+      - key: EMPRESA_NOMBRE
+        sync: false
+      - key: EMPRESA_NIT
+        sync: false
+      - key: EMPRESA_CORREO
         sync: false
 
   - type: cron
@@ -46,6 +74,12 @@ services:
         fromService: { type: web, name: inventario-web, envVarKey: EMAIL_URL }
       - key: URL_SITIO
         fromService: { type: web, name: inventario-web, envVarKey: URL_SITIO }
+      - key: DEFAULT_FROM_EMAIL
+        fromService: { type: web, name: inventario-web, envVarKey: DEFAULT_FROM_EMAIL }
+      - key: SENTRY_DSN
+        fromService: { type: web, name: inventario-web, envVarKey: SENTRY_DSN }
+      - key: EMPRESA_NOMBRE
+        fromService: { type: web, name: inventario-web, envVarKey: EMPRESA_NOMBRE }
 
   - type: cron
     name: inventario-resumen-diario

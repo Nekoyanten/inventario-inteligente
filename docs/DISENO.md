@@ -345,6 +345,7 @@ Inventario actual · Movimientos (kárdex) · Ventas · Compras · Más vendidos
 | 4 | **Predecir y Recomendar**: Holt / Holt-Winters, temporadas, «Qué comprar» editable, precisión (MAPE) | ✅ |
 | 5 | **Reportes y Móvil**: 14 reportes Excel/PDF/CSV, PWA, API REST, importación | ✅ |
 | 6 | **Producción y venta**: planes y prueba gratis, página comercial, seguridad, respaldos, despliegue, manual, piloto | ✅ |
+| 7 | **Salida a producción y piloto**: imágenes en la nube, correo, Sentry, Redis, panel de la plataforma, arranque; despliegue y 4 semanas de piloto | 🟡 código listo · falta desplegar y ejecutar el piloto |
 
 ### Siguientes pasos sugeridos (después del piloto)
 - Pasarela de pago (Wompi / Mercado Pago) que renueve la suscripción automáticamente.

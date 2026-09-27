@@ -7,7 +7,7 @@ Sistema de inventarios **inteligente y adaptativo** para pequeños emprendedores
 Un inventario tradicional dice *"tienes 5 unidades"*.
 Este dice: *"Tienes 5 unidades, vendes aproximadamente 3 por día y tu proveedor tarda 4 días. Existe riesgo de agotamiento. Se recomienda pedir 22."*
 
-📐 [Diseño](docs/DISENO.md) · 🚀 [Despliegue](docs/DESPLIEGUE.md) · 📖 [Manual](docs/MANUAL.md) · 🧪 [Piloto](docs/PILOTO.md) · 🗂️ [Backlog](docs/backlog.json)
+📐 [Diseño](docs/DISENO.md) · 🩺 [Diagnóstico](docs/DIAGNOSTICO.md) · ▶️ [Puesta en marcha](docs/PUESTA_EN_MARCHA.md) · 🚀 [Despliegue](docs/DESPLIEGUE.md) · 📖 [Manual](docs/MANUAL.md) · 🧪 [Piloto](docs/PILOTO.md) · 🗂️ [Backlog](docs/backlog.json)
 
 ---
 
@@ -28,7 +28,8 @@ Este dice: *"Tienes 5 unidades, vendes aproximadamente 3 por día y tu proveedor
 | **Usuarios** | Administrador, vendedor y encargado de inventario; auditoría de todo |
 | **Plataforma** | App instalable (PWA) con modo sin conexión, API REST con token y documentación OpenAPI |
 | **SaaS** | Registro con prueba gratis, planes con límites, página comercial, términos, privacidad (Ley 1581), exportación de datos, comentarios |
-| **Producción** | Docker, Render blueprint, WhiteNoise, HTTPS/HSTS, límite de intentos de ingreso, respaldos, `check --deploy` en CI |
+| **Producción** | Docker, Render blueprint (web, PostgreSQL, Redis, tareas), imágenes en la nube (S3/R2) optimizadas a WebP, Sentry, `/salud/`, WhiteNoise, HTTPS/HSTS, límite de intentos de ingreso, respaldos, `check --deploy` en CI |
+| **Operación** | Panel de la plataforma con salud, lista de chequeo de producción, métricas del piloto por negocio y registro de tareas nocturnas; lista de arranque para cada negocio |
 
 ---
 
@@ -56,12 +57,13 @@ Con PostgreSQL local: `docker compose up -d db` y en `.env` `DATABASE_URL=postgr
 python manage.py analizar_inventario   # alertas, recomendaciones y pronósticos (cada noche)
 python manage.py enviar_resumen        # correo con alertas críticas (cada mañana)
 python manage.py reconstruir_demanda   # recalcula la demanda desde las ventas
+python manage.py probar_correo tu@correo.com   # verifica la configuración de correo
 ```
 
 ### Pruebas
 
 ```bash
-pytest                                  # 137 pruebas
+pytest                                  # 164 pruebas, 93 % de cobertura
 ruff check .
 DATABASE_URL=postgres://... pytest      # también contra PostgreSQL (como en CI)
 ```

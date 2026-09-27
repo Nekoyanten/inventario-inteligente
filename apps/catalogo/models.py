@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from django.db import models
 
+from apps.core.imagenes import ruta_imagen_producto
 from apps.core.models import ModeloBase
 
 
@@ -94,7 +95,7 @@ class Producto(ModeloBase):
         "self", null=True, blank=True, on_delete=models.CASCADE, related_name="variantes"
     )
     es_agrupador = models.BooleanField(default=False, help_text="Producto padre de variantes; no se vende ni maneja stock")
-    imagen = models.ImageField(upload_to="productos/", null=True, blank=True)
+    imagen = models.ImageField(upload_to=ruta_imagen_producto, null=True, blank=True)
     activo = models.BooleanField(default=True)
 
     class Meta:

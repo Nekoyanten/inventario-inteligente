@@ -19,6 +19,7 @@
     </a>
     {% if user.is_authenticated %}
       <div class="barra-derecha">
+        {% if user.is_superuser %}<a href="{% url 'plataforma:panel' %}">Plataforma</a>{% endif %}
         <span class="suave oculto-movil">{{ user.get_full_name|default:user.username }} · {{ user.get_rol_display }}</span>
         <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="enlace">Salir</button></form>
       </div>

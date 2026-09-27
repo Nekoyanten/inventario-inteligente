@@ -2,6 +2,7 @@
 
 from django.contrib import messages
 from django.core.paginator import Paginator
+from django.db import IntegrityError, transaction
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
@@ -50,6 +51,7 @@ def buscar_json(request):
             "id": p.pk, "nombre": p.nombre, "sku": p.sku, "codigo_barras": p.codigo_barras,
             "precio_venta": float(p.precio_venta), "stock": float(p.stock_actual), "estado": p.estado,
             "unidad": p.unidad.abreviatura if p.unidad else "und", "decimales": permite_decimales(p),
+            "imagen": p.imagen.url if p.imagen else None,
             **({"costo": float(p.precio_compra)} if ver_costos else {}),
         }
         for p in qs.order_by("nombre")[:20]
@@ -182,9 +184,10 @@ def catalogos(request):
             if hasattr(obj, "negocio_id"):
                 obj.negocio = negocio
             try:
-                obj.save()
-            except Exception:  # unique_together
-                form.add_error("nombre", "Ya existe.")
+                with transaction.atomic():  # si el nombre ya existe, se revierte solo este intento
+                    obj.save()
+            except IntegrityError:
+                form.add_error("nombre", "Ya existe con ese nombre.")
             else:
                 messages.success(request, f"{obj} agregado.")
                 return redirect("catalogo:catalogos")

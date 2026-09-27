@@ -12,8 +12,20 @@ class Command(BaseCommand):
     help = "Evalúa reglas de alertas y genera recomendaciones de compra para todos los negocios."
 
     def handle(self, *args, **options):
-        for negocio in Negocio.objects.all():
-            n_alertas = evaluar_negocio(negocio)
-            n_recs = len(generar_recomendaciones(negocio))
-            registrar_y_evaluar_pronosticos(negocio)
-            self.stdout.write(self.style.SUCCESS(f"{negocio}: {n_alertas} alertas, {n_recs} recomendaciones"))
+        from apps.core.tareas import registrar_tarea
+
+        with registrar_tarea("analizar_inventario") as resumen:
+            for negocio in Negocio.objects.all():
+                try:
+                    n_alertas = evaluar_negocio(negocio)
+                    n_recs = len(generar_recomendaciones(negocio))
+                    registrar_y_evaluar_pronosticos(negocio)
+                except Exception:  # un negocio con datos raros no debe frenar el análisis de los demás
+                    import logging
+
+                    logging.getLogger(__name__).exception("Falló el análisis de %s", negocio)
+                    resumen.append(f"ERROR en {negocio}")
+                    continue
+                linea = f"{negocio}: {n_alertas} alertas, {n_recs} recomendaciones"
+                resumen.append(linea)
+                self.stdout.write(self.style.SUCCESS(linea))

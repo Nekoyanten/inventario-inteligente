@@ -90,7 +90,7 @@ const Inventario = (() => {
 
     const pintarResultados = (items) => {
       res.innerHTML = items.map((p, i) => `<button type="button" class="producto-btn" data-i="${i}" ${p.stock <= 0 ? "disabled" : ""}>
-        <b>${esc(p.nombre)}</b>${pesos(p.precio_venta)}<br><small class="suave">${p.stock <= 0 ? "Agotado" : "Stock " + cant(p.stock)}</small></button>`).join("");
+        ${p.imagen ? `<img src="${esc(p.imagen)}" alt="" loading="lazy" class="miniatura-pos">` : ""}<b>${esc(p.nombre)}</b>${pesos(p.precio_venta)}<br><small class="suave">${p.stock <= 0 ? "Agotado" : "Stock " + cant(p.stock)}</small></button>`).join("");
       res.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => agregar(items[b.dataset.i])));
     };
     const agregar = (p) => {

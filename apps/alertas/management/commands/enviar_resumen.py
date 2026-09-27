@@ -14,6 +14,14 @@ class Command(BaseCommand):
     help = "Envía a los administradores un resumen de las alertas que requieren acción."
 
     def handle(self, *args, **opts):
+        from apps.core.tareas import registrar_tarea
+
+        with registrar_tarea("enviar_resumen") as resumen:
+            enviados = self._enviar()
+            resumen.append(f"Resúmenes enviados: {enviados}")
+        self.stdout.write(self.style.SUCCESS(f"Resúmenes enviados: {enviados}"))
+
+    def _enviar(self):
         enviados = 0
         for negocio in Negocio.objects.filter(config__resumen_por_correo=True):
             alertas = list(Alerta.objects.filter(negocio=negocio, estado__in=["ABIERTA", "VISTA"],
@@ -30,4 +38,4 @@ class Command(BaseCommand):
                 html_message=render_to_string("correo/resumen.html", contexto),
             )
             enviados += 1
-        self.stdout.write(self.style.SUCCESS(f"Resúmenes enviados: {enviados}"))
+        return enviados

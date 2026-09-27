@@ -65,9 +65,16 @@ class ProductoForm(forms.ModelForm):
     def clean_imagen(self):
         from django.conf import settings
 
+        from apps.core.imagenes import optimizar_imagen
+
         imagen = self.cleaned_data.get("imagen")
         if imagen and hasattr(imagen, "size") and imagen.size > settings.TAMANO_MAX_ARCHIVO_MB * 1024 * 1024:
             raise forms.ValidationError(f"La imagen supera {settings.TAMANO_MAX_ARCHIVO_MB} MB.")
+        if imagen and hasattr(imagen, "content_type"):  # archivo nuevo (no la imagen ya guardada)
+            try:
+                return optimizar_imagen(imagen)
+            except Exception as e:  # imagen corrupta o formato raro
+                raise forms.ValidationError("No pudimos procesar la imagen. Prueba con una foto JPG o PNG.") from e
         return imagen
 
     def clean_sku(self):

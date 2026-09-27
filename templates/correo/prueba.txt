@@ -1,0 +1,2 @@
+Este es un correo de prueba de {{ empresa.nombre }}. Si lo recibiste, el correo está bien configurado.
+Sitio: {{ url }}

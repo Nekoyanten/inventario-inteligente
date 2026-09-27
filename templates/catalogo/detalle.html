@@ -30,6 +30,7 @@
 </section>
 {% else %}
 <div class="rejilla">
+  {% if producto.imagen %}<section class="tarjeta" style="padding:.5rem"><img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" style="width:100%;max-height:220px;object-fit:contain;border-radius:8px"></section>{% endif %}
   <section class="tarjeta">
     <h2>Stock</h2>
     <p class="kpi">{{ producto.stock_actual|cantidad }} <small>{{ producto.unidad.abreviatura|default:"und" }}</small></p>

@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from apps.core.negocio import NegocioAdminMixin
 
-from .models import Comentario, ConfiguracionNegocio, Negocio, RegistroAuditoria, Suscripcion
+from .models import Comentario, ConfiguracionNegocio, EjecucionTarea, Negocio, RegistroAuditoria, Suscripcion
 
 
 class ConfiguracionInline(admin.StackedInline):
@@ -40,3 +40,9 @@ class ComentarioAdmin(admin.ModelAdmin):
     list_display = ("creado", "negocio", "usuario", "tipo", "calificacion", "atendido", "texto")
     list_filter = ("tipo", "atendido")
     list_editable = ("atendido",)
+
+
+@admin.register(EjecucionTarea)
+class EjecucionTareaAdmin(admin.ModelAdmin):
+    list_display = ("inicio", "nombre", "ok", "duracion_s")
+    list_filter = ("nombre", "ok")

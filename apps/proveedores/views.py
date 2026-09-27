@@ -1,5 +1,5 @@
 from django.contrib import messages
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 
@@ -46,7 +46,8 @@ def detalle(request, pk):
         obj = form.save(commit=False)
         obj.proveedor = proveedor
         try:
-            obj.save()
+            with transaction.atomic():
+                obj.save()
         except IntegrityError:
             form.add_error("producto", "Ese producto ya está asociado a este proveedor.")
         else:

@@ -22,6 +22,7 @@ urlpatterns = [
     path("usuarios/", include("apps.usuarios.urls")),
     path("registro/", include("apps.core.urls")),
     path("negocio/", include("apps.core.urls_negocio")),
+    path("plataforma/", include("apps.core.urls_plataforma")),
     path("productos/", include("apps.catalogo.urls")),
     path("inventario/", include("apps.inventario.urls")),
     path("ventas/", include("apps.ventas.urls")),
@@ -33,4 +34,13 @@ urlpatterns = [
     path("", include("apps.core.urls_pwa")),
     path("", include("apps.core.urls_publico")),
     path("", include("apps.dashboard.urls")),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+elif settings.SERVIR_MEDIA_LOCAL and not settings.ALMACENAMIENTO_NUBE:
+    # Solo para un servidor propio con disco persistente. En Render/Docker usa un bucket (AWS_STORAGE_BUCKET_NAME).
+    from django.urls import re_path
+    from django.views.static import serve
+
+    urlpatterns += [re_path(r"^media/(?P<path>.*)$", serve, {"document_root": settings.MEDIA_ROOT})]

@@ -154,3 +154,23 @@ class Comentario(ModeloBase):
 
     class Meta:
         ordering = ["-creado"]
+
+
+class EjecucionTarea(models.Model):
+    """Registro de cada ejecución de las tareas programadas (para saber si el cron está corriendo)."""
+
+    nombre = models.CharField(max_length=60, db_index=True)
+    inicio = models.DateTimeField(auto_now_add=True)
+    fin = models.DateTimeField(null=True, blank=True)
+    ok = models.BooleanField(default=False)
+    detalle = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-inicio"]
+
+    def __str__(self):
+        return f"{self.nombre} {self.inicio:%Y-%m-%d %H:%M} {'OK' if self.ok else 'ERROR'}"
+
+    @property
+    def duracion_s(self):
+        return round((self.fin - self.inicio).total_seconds(), 1) if self.fin else None

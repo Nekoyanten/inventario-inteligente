@@ -11,6 +11,7 @@ HITOS = [
     ("Fase 4 · Predecir y Recomendar", "Pronóstico, punto de reorden y pedido sugerido explicado."),
     ("Fase 5 · Reportes y Móvil", "Reportes con exportación, PWA y API REST."),
     ("Fase 6 · Producción", "Despliegue, backups, seguridad y manual de usuario."),
+    ("Fase 7 · Salida a producción y piloto", "Publicar el sistema y probarlo 4 semanas con los 5 negocios."),
 ]
 
 ETIQUETAS = {
@@ -27,6 +28,8 @@ ETIQUETAS = {
     "base-implementada": ("0e8a16", "El modelo/servicio ya existe en el esqueleto; falta UI, pulir o ampliar"),
     "inteligencia": ("f9a8d4", "Parte del motor inteligente (analítica, alertas, recomendaciones)"),
     "adaptativo": ("a2eeef", "Relacionado con plantillas de giro y configuración"),
+    "piloto": ("d4c5f9", "Operación y seguimiento del piloto con negocios reales"),
+    "tipo:operacion": ("bfdadc", "Tarea manual de configuración o despliegue (no es código)"),
 }
 MODULOS = ["core", "usuarios", "catalogo", "proveedores", "inventario", "ventas", "compras",
            "analitica", "alertas", "recomendaciones", "dashboard", "reportes", "frontend", "infra"]
@@ -213,6 +216,45 @@ ISSUES = [
           ["Guía con capturas: primeros pasos, vender, comprar, alertas", "Lenguaje sin tecnicismos"]),
     issue(6, "Prueba piloto con los 5 negocios que validaron la idea", "core", "historia", "alta", "",
           ["Onboarding de cada negocio", "Encuesta de satisfacción", "Lista de mejoras priorizadas"]),
+]
+
+ISSUES += [
+    # ------------------------------------------------------------------ FASE 7 (código listo = base-implementada)
+    issue(7, "B1 · Imágenes de productos en almacenamiento en la nube (S3 / Cloudflare R2)", "infra", "tecnica", "alta", "",
+          ["django-storages con cualquier proveedor S3 compatible", "Imágenes reducidas a 800 px y convertidas a WebP",
+           "URLs firmadas si el bucket es privado", "Prueba con bucket simulado"], ["base-implementada"]),
+    issue(7, "B2 · Correo transaccional en producción", "core", "tecnica", "alta", "",
+          ["Correo de bienvenida al registrar un negocio", "Comando probar_correo", "Si el correo falla, el registro no falla"],
+          ["base-implementada"]),
+    issue(7, "B3 · Monitoreo de errores (Sentry) y salud del sistema", "infra", "tecnica", "alta", "",
+          ["Sentry sin datos personales", "/salud/ responde 503 si falla la base o la caché",
+           "Registro de cada ejecución del análisis nocturno y alerta si no corre en 26 h"], ["base-implementada"]),
+    issue(7, "Panel de la plataforma con métricas del piloto", "core", "historia", "alta",
+          "**Como** dueño de la plataforma **quiero** ver qué negocios usan el sistema a diario **para** medir el piloto.",
+          ["Días con ventas en los últimos 21, ventas de 7 días, último ingreso, arranque, comentarios",
+           "Salud y lista de chequeo de producción", "Descarga CSV"], ["base-implementada", "piloto"]),
+    issue(7, "Lista de arranque del negocio en el panel", "dashboard", "historia", "media", "",
+          ["6 pasos: productos, proveedor, conteo inicial, primera venta, equipo, correo"],
+          ["base-implementada", "piloto"]),
+    issue(7, "Crear cuentas: Cloudflare R2, Sentry, correo SMTP y dominio", "infra", "operacion", "alta", "",
+          ["Bucket R2 y token de API", "Proyecto Django en Sentry", "Contraseña de aplicación de Gmail o cuenta Brevo",
+           "Dominio propio"], ["piloto"], notas="Ver docs/PUESTA_EN_MARCHA.md, pasos 1 a 4."),
+    issue(7, "Desplegar en Render con el blueprint y verificar el panel de la plataforma", "infra", "operacion", "alta", "",
+          ["Blueprint aplicado (web, base de datos, Redis, 2 tareas programadas)", "Variables completadas",
+           "probar_correo OK", "Panel de la plataforma sin advertencias", "Monitor de disponibilidad sobre /salud/"],
+          ["piloto"], notas="Ver docs/PUESTA_EN_MARCHA.md, pasos 5 a 8."),
+    issue(7, "Incorporar a los 5 negocios del piloto", "core", "operacion", "alta", "",
+          ["Cuenta creada con el tipo de negocio correcto", "Productos importados y conteo inicial aprobado",
+           "Arranque al 100 % en los 5 negocios"], ["piloto"], notas="Ver docs/PILOTO.md."),
+    issue(7, "Seguimiento semanal del piloto (semanas 2 a 4)", "core", "operacion", "alta", "",
+          ["Revisar el panel de la plataforma cada lunes", "Atender comentarios en menos de 24 h",
+           "Registrar hallazgos en issues nuevos"], ["piloto"]),
+    issue(7, "Cierre del piloto y decisión de la Fase 8", "core", "operacion", "alta", "",
+          ["Encuesta de cierre a los 5 negocios", "Reporte de precisión de pronósticos",
+           "Decisión: precios, cobro automático, POS sin conexión, prioridades"], ["piloto"]),
+    issue(7, "Formalizar la empresa y revisión legal de términos y privacidad", "core", "operacion", "media", "",
+          ["RUT / NIT", "Términos y política de datos revisados por un abogado", "Variables EMPRESA_* actualizadas"],
+          ["piloto"]),
 ]
 
 if __name__ == "__main__":

@@ -27,6 +27,10 @@
     {
       "titulo": "Fase 6 · Producción",
       "descripcion": "Despliegue, backups, seguridad y manual de usuario."
+    },
+    {
+      "titulo": "Fase 7 · Salida a producción y piloto",
+      "descripcion": "Publicar el sistema y probarlo 4 semanas con los 5 negocios."
     }
   ],
   "etiquetas": [
@@ -79,6 +83,16 @@
       "nombre": "adaptativo",
       "color": "a2eeef",
       "descripcion": "Relacionado con plantillas de giro y configuración"
+    },
+    {
+      "nombre": "piloto",
+      "color": "d4c5f9",
+      "descripcion": "Operación y seguimiento del piloto con negocios reales"
+    },
+    {
+      "nombre": "tipo:operacion",
+      "color": "bfdadc",
+      "descripcion": "Tarea manual de configuración o despliegue (no es código)"
     },
     {
       "nombre": "modulo:core",
@@ -683,6 +697,129 @@
         "prioridad:alta"
       ],
       "cuerpo": "### Criterios de aceptación\n- [ ] Onboarding de cada negocio\n- [ ] Encuesta de satisfacción\n- [ ] Lista de mejoras priorizadas\n"
+    },
+    {
+      "titulo": "B1 · Imágenes de productos en almacenamiento en la nube (S3 / Cloudflare R2)",
+      "hito": "Fase 7 · Salida a producción y piloto",
+      "etiquetas": [
+        "modulo:infra",
+        "tipo:tecnica",
+        "prioridad:alta",
+        "base-implementada"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] django-storages con cualquier proveedor S3 compatible\n- [ ] Imágenes reducidas a 800 px y convertidas a WebP\n- [ ] URLs firmadas si el bucket es privado\n- [ ] Prueba con bucket simulado\n"
+    },
+    {
+      "titulo": "B2 · Correo transaccional en producción",
+      "hito": "Fase 7 · Salida a producción y piloto",
+      "etiquetas": [
+        "modulo:core",
+        "tipo:tecnica",
+        "prioridad:alta",
+        "base-implementada"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Correo de bienvenida al registrar un negocio\n- [ ] Comando probar_correo\n- [ ] Si el correo falla, el registro no falla\n"
+    },
+    {
+      "titulo": "B3 · Monitoreo de errores (Sentry) y salud del sistema",
+      "hito": "Fase 7 · Salida a producción y piloto",
+      "etiquetas": [
+        "modulo:infra",
+        "tipo:tecnica",
+        "prioridad:alta",
+        "base-implementada"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Sentry sin datos personales\n- [ ] /salud/ responde 503 si falla la base o la caché\n- [ ] Registro de cada ejecución del análisis nocturno y alerta si no corre en 26 h\n"
+    },
+    {
+      "titulo": "Panel de la plataforma con métricas del piloto",
+      "hito": "Fase 7 · Salida a producción y piloto",
+      "etiquetas": [
+        "modulo:core",
+        "tipo:historia",
+        "prioridad:alta",
+        "base-implementada",
+        "piloto"
+      ],
+      "cuerpo": "**Como** dueño de la plataforma **quiero** ver qué negocios usan el sistema a diario **para** medir el piloto.\n\n### Criterios de aceptación\n- [ ] Días con ventas en los últimos 21, ventas de 7 días, último ingreso, arranque, comentarios\n- [ ] Salud y lista de chequeo de producción\n- [ ] Descarga CSV\n"
+    },
+    {
+      "titulo": "Lista de arranque del negocio en el panel",
+      "hito": "Fase 7 · Salida a producción y piloto",
+      "etiquetas": [
+        "modulo:dashboard",
+        "tipo:historia",
+        "prioridad:media",
+        "base-implementada",
+        "piloto"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] 6 pasos: productos, proveedor, conteo inicial, primera venta, equipo, correo\n"
+    },
+    {
+      "titulo": "Crear cuentas: Cloudflare R2, Sentry, correo SMTP y dominio",
+      "hito": "Fase 7 · Salida a producción y piloto",
+      "etiquetas": [
+        "modulo:infra",
+        "tipo:operacion",
+        "prioridad:alta",
+        "piloto"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Bucket R2 y token de API\n- [ ] Proyecto Django en Sentry\n- [ ] Contraseña de aplicación de Gmail o cuenta Brevo\n- [ ] Dominio propio\n\n### Notas técnicas\nVer docs/PUESTA_EN_MARCHA.md, pasos 1 a 4.\n"
+    },
+    {
+      "titulo": "Desplegar en Render con el blueprint y verificar el panel de la plataforma",
+      "hito": "Fase 7 · Salida a producción y piloto",
+      "etiquetas": [
+        "modulo:infra",
+        "tipo:operacion",
+        "prioridad:alta",
+        "piloto"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Blueprint aplicado (web, base de datos, Redis, 2 tareas programadas)\n- [ ] Variables completadas\n- [ ] probar_correo OK\n- [ ] Panel de la plataforma sin advertencias\n- [ ] Monitor de disponibilidad sobre /salud/\n\n### Notas técnicas\nVer docs/PUESTA_EN_MARCHA.md, pasos 5 a 8.\n"
+    },
+    {
+      "titulo": "Incorporar a los 5 negocios del piloto",
+      "hito": "Fase 7 · Salida a producción y piloto",
+      "etiquetas": [
+        "modulo:core",
+        "tipo:operacion",
+        "prioridad:alta",
+        "piloto"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Cuenta creada con el tipo de negocio correcto\n- [ ] Productos importados y conteo inicial aprobado\n- [ ] Arranque al 100 % en los 5 negocios\n\n### Notas técnicas\nVer docs/PILOTO.md.\n"
+    },
+    {
+      "titulo": "Seguimiento semanal del piloto (semanas 2 a 4)",
+      "hito": "Fase 7 · Salida a producción y piloto",
+      "etiquetas": [
+        "modulo:core",
+        "tipo:operacion",
+        "prioridad:alta",
+        "piloto"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Revisar el panel de la plataforma cada lunes\n- [ ] Atender comentarios en menos de 24 h\n- [ ] Registrar hallazgos en issues nuevos\n"
+    },
+    {
+      "titulo": "Cierre del piloto y decisión de la Fase 8",
+      "hito": "Fase 7 · Salida a producción y piloto",
+      "etiquetas": [
+        "modulo:core",
+        "tipo:operacion",
+        "prioridad:alta",
+        "piloto"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] Encuesta de cierre a los 5 negocios\n- [ ] Reporte de precisión de pronósticos\n- [ ] Decisión: precios, cobro automático, POS sin conexión, prioridades\n"
+    },
+    {
+      "titulo": "Formalizar la empresa y revisión legal de términos y privacidad",
+      "hito": "Fase 7 · Salida a producción y piloto",
+      "etiquetas": [
+        "modulo:core",
+        "tipo:operacion",
+        "prioridad:media",
+        "piloto"
+      ],
+      "cuerpo": "### Criterios de aceptación\n- [ ] RUT / NIT\n- [ ] Términos y política de datos revisados por un abogado\n- [ ] Variables EMPRESA_* actualizadas\n"
     }
   ]
 }
