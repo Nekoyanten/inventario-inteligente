@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block titulo %}¡Listo!{% endblock %}
+{% block contenido %}
+<section class="tarjeta formulario">
+  <h1>🎉 ¡{{ negocio }} está listo!</h1>
+  <p>Configuramos el sistema como <strong>{{ negocio.get_giro_display }}</strong>.</p>
+  <h2>Funciones activadas</h2>
+  <ul>
+    {% for f in funciones %}<li>✅ {{ f }}</li>{% empty %}<li>Configuración básica (puedes activar más después).</li>{% endfor %}
+  </ul>
+  <h2>Categorías iniciales</h2>
+  <ul>
+    {% for c in categorias %}
+      <li>{{ c.nombre }}{% if c.atributos.all %} <small>({% for a in c.atributos.all %}{{ a.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %})</small>{% endif %}</li>
+    {% endfor %}
+  </ul>
+  <a class="boton boton-auto" href="{% url 'dashboard:inicio' %}">Ir a mi negocio →</a>
+</section>
+{% endblock %}

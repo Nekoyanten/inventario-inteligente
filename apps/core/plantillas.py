@@ -8,6 +8,8 @@ from .models import Giro
 
 PLANTILLAS = {
     Giro.MINIMERCADO: {
+        "icono": "🛒",
+        "descripcion": "Alimentos, bebidas y aseo. Controla vencimientos y permite vender por kilo o litro.",
         "config": dict(
             usa_vencimientos=True,
             usa_lotes=True,
@@ -24,6 +26,8 @@ PLANTILLAS = {
         },
     },
     Giro.ROPA: {
+        "icono": "👕",
+        "descripcion": "Prendas y calzado por talla y color, con temporadas.",
         "config": dict(usa_variantes=True, usa_temporadas=True, dias_sin_movimiento=60),
         "categorias": {
             "Camisas": ["Talla", "Color"],
@@ -33,6 +37,8 @@ PLANTILLAS = {
         },
     },
     Giro.BELLEZA: {
+        "icono": "💄",
+        "descripcion": "Cosméticos por tono o tipo de piel, con control de vencimientos.",
         "config": dict(
             usa_vencimientos=True,
             usa_lotes=True,
@@ -49,6 +55,8 @@ PLANTILLAS = {
         },
     },
     Giro.FARMACIA: {
+        "icono": "💊",
+        "descripcion": "Medicamentos por lote, con alertas de vencimiento anticipadas.",
         "config": dict(usa_vencimientos=True, usa_lotes=True, dias_vencimiento_rojo=30, dias_vencimiento_amarillo=90),
         "categorias": {
             "Medicamentos": ["Principio activo", "Registro INVIMA"],
@@ -57,6 +65,8 @@ PLANTILLAS = {
         },
     },
     Giro.RESTAURANTE: {
+        "icono": "🍽️",
+        "descripcion": "Insumos perecederos: vencimientos cortos y compras frecuentes.",
         "config": dict(
             usa_vencimientos=True,
             usa_lotes=True,
@@ -68,6 +78,8 @@ PLANTILLAS = {
         "categorias": {"Carnes": [], "Verduras": [], "Granos": [], "Bebidas": [], "Desechables": []},
     },
     Giro.GENERICO: {
+        "icono": "📦",
+        "descripcion": "Configuración básica; activa funciones cuando las necesites.",
         "config": {},
         "categorias": {"General": []},
     },
@@ -87,3 +99,24 @@ def aplicar_plantilla(negocio):
         for atributo in atributos:
             AtributoPersonalizado.objects.get_or_create(categoria=categoria, nombre=atributo)
     return config
+
+
+FUNCIONES = {
+    "usa_vencimientos": "Control de vencimientos",
+    "usa_lotes": "Lotes con salida FEFO (primero en vencer, primero en salir)",
+    "usa_variantes": "Variantes (talla, color, tono…)",
+    "permite_fracciones": "Ventas fraccionadas (kg, litros)",
+    "usa_temporadas": "Temporadas",
+}
+
+
+def opciones_giro():
+    """Lista para el selector del asistente de registro."""
+    return [
+        {"valor": giro.value, "nombre": giro.label, "icono": p["icono"], "descripcion": p["descripcion"]}
+        for giro, p in PLANTILLAS.items()
+    ]
+
+
+def funciones_activas(config):
+    return [texto for campo, texto in FUNCIONES.items() if getattr(config, campo)]

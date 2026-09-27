@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block titulo %}Usuarios{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <h1>Usuarios</h1>
+  <a class="boton boton-auto" href="{% url 'usuarios:crear' %}">+ Nuevo usuario</a>
+</div>
+<section class="tarjeta">
+  <table class="tabla">
+    <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
+    <tbody>
+    {% for u in usuarios %}
+      <tr>
+        <td data-titulo="Usuario">{{ u.username }}</td>
+        <td data-titulo="Nombre">{{ u.get_full_name|default:"—" }}</td>
+        <td data-titulo="Rol">{{ u.get_rol_display }}</td>
+        <td data-titulo="Estado">{% if u.is_active %}🟢 Activo{% else %}⚫ Inactivo{% endif %}</td>
+        <td><a href="{% url 'usuarios:editar' u.pk %}">Editar</a></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

@@ -16,3 +16,34 @@ ul { padding-left:1.1rem; margin:.25rem 0; }
 .boton { background:var(--verde); color:#fff; border:0; border-radius:8px; padding:.6rem 1rem; font-size:1rem; width:100%; }
 .enlace { background:none; border:0; color:var(--azul); cursor:pointer; font-size:1rem; }
 input { width:100%; padding:.55rem; border-radius:8px; border:1px solid #0003; font-size:1rem; }
+
+/* Navegación y componentes compartidos */
+.marca { color:var(--texto); text-decoration:none; font-weight:700; }
+.menu { display:flex; gap:1rem; align-items:center; flex-wrap:wrap; }
+.menu a { color:var(--azul); text-decoration:none; }
+.encabezado { display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; }
+.boton-auto { width:auto; text-decoration:none; display:inline-block; }
+.formulario { max-width:520px; margin:0 auto; }
+.formulario p { margin:.75rem 0; }
+.formulario label { display:block; font-weight:600; margin-bottom:.25rem; }
+.formulario .helptext, .formulario ul:not(.errorlist) { font-size:.8rem; color:var(--suave); }
+.errorlist { color:var(--rojo); padding-left:1rem; }
+select, textarea { width:100%; padding:.55rem; border-radius:8px; border:1px solid #0003; font-size:1rem; }
+input[type=checkbox], input[type=radio] { width:auto; }
+.mensaje { padding:.6rem 1rem; border-radius:8px; background:#1f9d5522; }
+.mensaje.error { background:#e53e3e22; }
+.tabla { width:100%; border-collapse:collapse; }
+.tabla th, .tabla td { text-align:left; padding:.55rem .4rem; border-bottom:1px solid #0001; }
+@media (max-width: 640px) {
+  .tabla thead { display:none; }
+  .tabla tr { display:block; border-bottom:1px solid #0002; padding:.4rem 0; }
+  .tabla td { display:flex; justify-content:space-between; border:0; padding:.2rem 0; }
+  .tabla td[data-titulo]::before { content:attr(data-titulo); color:var(--suave); }
+}
+/* Selector de giro */
+.giros { display:grid; gap:.75rem; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); }
+.giro { display:block; border:2px solid #0002; border-radius:12px; padding:.9rem; cursor:pointer; }
+.giro:has(input:checked) { border-color:var(--verde); background:#1f9d5512; }
+.giro strong { display:block; margin:.25rem 0; }
+.giro small { color:var(--suave); }
+.pasos { color:var(--suave); font-size:.9rem; }

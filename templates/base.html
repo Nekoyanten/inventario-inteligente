@@ -8,11 +8,20 @@
 </head>
 <body>
   <header class="barra">
-    <strong>📦 {{ negocio|default:"Inventario Inteligente" }}</strong>
+    <a class="marca" href="{% if user.is_authenticated %}{% url 'dashboard:inicio' %}{% else %}/{% endif %}">📦 {{ negocio|default:"Inventario Inteligente" }}</a>
     {% if user.is_authenticated %}
-      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="enlace">Salir</button></form>
+      <nav class="menu">
+        <a href="{% url 'dashboard:inicio' %}">Inicio</a>
+        {% if "gestionar_usuarios" in permisos %}<a href="{% url 'usuarios:lista' %}">Usuarios</a>{% endif %}
+        <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="enlace">Salir</button></form>
+      </nav>
+    {% else %}
+      <nav class="menu"><a href="{% url 'login' %}">Ingresar</a><a href="{% url 'registro:paso1' %}">Crear cuenta</a></nav>
     {% endif %}
   </header>
-  <main class="contenedor">{% block contenido %}{% endblock %}</main>
+  <main class="contenedor">
+    {% for m in messages %}<p class="mensaje {{ m.tags }}">{{ m }}</p>{% endfor %}
+    {% block contenido %}{% endblock %}
+  </main>
 </body>
 </html>

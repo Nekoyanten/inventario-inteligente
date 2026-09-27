@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block titulo %}Tipo de negocio{% endblock %}
+{% block contenido %}
+<section class="tarjeta">
+  <p class="pasos">Paso 2 de 2 · {{ datos.nombre_negocio }}</p>
+  <h1>¿Qué tipo de negocio tienes?</h1>
+  <p>Con esto preparamos el sistema para ti. Puedes cambiar cualquier función después.</p>
+  <form method="post">{% csrf_token %}
+    {{ form.giro.errors }}
+    <div class="giros">
+      {% for g in giros %}
+        <label class="giro">
+          <input type="radio" name="giro" value="{{ g.valor }}" {% if forloop.last %}checked{% endif %}>
+          <span style="font-size:1.6rem">{{ g.icono }}</span>
+          <strong>{{ g.nombre }}</strong>
+          <small>{{ g.descripcion }}</small>
+        </label>
+      {% endfor %}
+    </div>
+    <p style="margin-top:1rem"><button class="boton">Crear mi negocio</button></p>
+  </form>
+  <p><a href="{% url 'registro:paso1' %}">← Volver</a></p>
+</section>
+{% endblock %}
