@@ -43,3 +43,43 @@ class RegistroPaso2Form(forms.Form):
     """Paso 2: tipo de negocio (plantilla de giro)."""
 
     giro = forms.ChoiceField(choices=Giro.choices, widget=forms.RadioSelect, label="¿Qué tipo de negocio tienes?")
+
+
+class NegocioForm(forms.ModelForm):
+    class Meta:
+        from .models import Negocio
+
+        model = Negocio
+        fields = ("nombre", "nit", "telefono", "direccion")
+        labels = {"nit": "NIT / documento", "telefono": "Teléfono / WhatsApp", "direccion": "Dirección"}
+
+
+class ConfiguracionForm(forms.ModelForm):
+    class Meta:
+        from .models import ConfiguracionNegocio
+
+        model = ConfiguracionNegocio
+        exclude = ("negocio",)
+        labels = {
+            "usa_vencimientos": "Controlar fechas de vencimiento",
+            "usa_lotes": "Manejar lotes (salida FEFO)",
+            "usa_variantes": "Productos con variantes (talla, color, tono…)",
+            "permite_fracciones": "Vender por fracciones (kg, litros)",
+            "usa_temporadas": "Manejar temporadas",
+            "dias_vencimiento_rojo": "Días para alerta roja de vencimiento",
+            "dias_vencimiento_amarillo": "Días para alerta amarilla de vencimiento",
+            "dias_sin_movimiento": "Días sin ventas para considerar baja rotación",
+            "dias_exceso": "Días de cobertura que se consideran exceso",
+            "horizonte_compra_dias": "Días que debe cubrir cada pedido",
+            "tiempo_entrega_defecto": "Tiempo de entrega por defecto (días)",
+        }
+
+    def clean(self):
+        datos = super().clean()
+        if datos.get("usa_lotes") and not datos.get("usa_vencimientos"):
+            # Los lotes sin vencimiento son válidos, pero avisamos la combinación más común
+            pass
+        rojo, amarillo = datos.get("dias_vencimiento_rojo"), datos.get("dias_vencimiento_amarillo")
+        if rojo is not None and amarillo is not None and rojo > amarillo:
+            self.add_error("dias_vencimiento_amarillo", "Debe ser mayor o igual a los días de alerta roja.")
+        return datos

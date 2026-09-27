@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block titulo %}Configuración{% endblock %}
+{% block contenido %}
+<h1>Configuración del negocio</h1>
+<form method="post" class="rejilla-2">{% csrf_token %}
+  <section class="tarjeta formulario-libre">
+    <h2>Datos del negocio</h2>
+    <p class="suave">Tipo de negocio: <strong>{{ negocio.get_giro_display }}</strong></p>
+    {{ form_negocio.as_p }}
+  </section>
+  <section class="tarjeta formulario-libre">
+    <h2>Funciones y alertas</h2>
+    {{ form_config.non_field_errors }}
+    {{ form_config.as_p }}
+  </section>
+  <div class="acciones"><button class="boton boton-auto">Guardar cambios</button></div>
+</form>
+<section class="tarjeta">
+  <h2>Restaurar configuración recomendada</h2>
+  <p class="suave">Vuelve a crear las categorías y atributos de la plantilla de tu tipo de negocio. No borra nada.</p>
+  <form method="post" action="{% url 'negocio:restaurar_plantilla' %}">{% csrf_token %}
+    <button class="boton boton-auto boton-secundario">Restaurar</button>
+  </form>
+</section>
+{% endblock %}

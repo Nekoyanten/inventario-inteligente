@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block titulo %}{{ titulo }}{% endblock %}
 {% block contenido %}
-<section class="tarjeta formulario">
+<section class="tarjeta formulario formulario-libre">
   <h1>{{ titulo }}</h1>
   <form method="post">{% csrf_token %}
     {{ form.non_field_errors }}

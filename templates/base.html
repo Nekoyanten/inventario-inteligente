@@ -3,25 +3,42 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block titulo %}Inventario Inteligente{% endblock %}</title>
+  <meta name="theme-color" content="#1f7a4d">
+  <title>{% block titulo %}Inventario Inteligente{% endblock %} · Inventario Inteligente</title>
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  {% url "pwa:manifest" as url_manifest %}{% if url_manifest %}<link rel="manifest" href="{{ url_manifest }}">{% endif %}
+  <link rel="icon" href="{% static 'img/icono.svg' %}" type="image/svg+xml">
+  {% block cabeza %}{% endblock %}
 </head>
-<body>
+<body class="{% if user.is_authenticated and negocio %}con-menu{% endif %}">
   <header class="barra">
-    <a class="marca" href="{% if user.is_authenticated %}{% url 'dashboard:inicio' %}{% else %}/{% endif %}">📦 {{ negocio|default:"Inventario Inteligente" }}</a>
+    <a class="marca" href="{% if user.is_authenticated %}{% url 'dashboard:inicio' %}{% else %}/{% endif %}">
+      <img src="{% static 'img/icono.svg' %}" alt="" width="26" height="26">
+      <span>{{ negocio|default:"Inventario Inteligente" }}</span>
+    </a>
     {% if user.is_authenticated %}
-      <nav class="menu">
-        <a href="{% url 'dashboard:inicio' %}">Inicio</a>
-        {% if "gestionar_usuarios" in permisos %}<a href="{% url 'usuarios:lista' %}">Usuarios</a>{% endif %}
+      <div class="barra-derecha">
+        <span class="suave oculto-movil">{{ user.get_full_name|default:user.username }} · {{ user.get_rol_display }}</span>
         <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="enlace">Salir</button></form>
-      </nav>
+      </div>
     {% else %}
-      <nav class="menu"><a href="{% url 'login' %}">Ingresar</a><a href="{% url 'registro:paso1' %}">Crear cuenta</a></nav>
+      <nav class="barra-derecha"><a href="{% url 'login' %}">Ingresar</a><a class="boton boton-auto boton-chico" href="{% url 'registro:paso1' %}">Prueba gratis</a></nav>
     {% endif %}
   </header>
+
+  {% if user.is_authenticated and negocio %}
+  <nav class="menu-lateral" aria-label="Menú principal">
+    {% for item in menu %}
+      <a href="{{ item.url }}" class="{% if item.activo %}activo{% endif %}">{{ item.icono }} <span>{{ item.texto }}</span>{% if item.contador %}<b class="contador">{{ item.contador }}</b>{% endif %}</a>
+    {% endfor %}
+  </nav>
+  {% endif %}
+
   <main class="contenedor">
-    {% for m in messages %}<p class="mensaje {{ m.tags }}">{{ m }}</p>{% endfor %}
+    {% for m in messages %}<p class="mensaje {{ m.tags }}" role="status">{{ m }}</p>{% endfor %}
     {% block contenido %}{% endblock %}
   </main>
+  {% url "pwa:sw" as url_sw %}{% if url_sw %}<script>if ("serviceWorker" in navigator) navigator.serviceWorker.register("{{ url_sw }}").catch(() => {});</script>{% endif %}
+  {% block scripts %}{% endblock %}
 </body>
 </html>
