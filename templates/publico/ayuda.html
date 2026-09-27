@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block titulo %}Ayuda{% endblock %}
+{% block contenido %}
+<article class="tarjeta ayuda" style="max-width:820px;margin:0 auto">
+<h1>Manual de uso</h1>
+<p class="suave">Todo lo que necesitas para manejar tu inventario, explicado sin tecnicismos.</p>
+
+<h2>1. Primeros pasos (10 minutos)</h2>
+<ol>
+  <li><strong>Crea tu cuenta</strong> y elige tu tipo de negocio. El sistema activa lo que necesitas: vencimientos para alimentos, tallas y colores para ropa, lotes para droguerías.</li>
+  <li><strong>Carga tus productos</strong> uno por uno en <em>Productos → Nuevo producto</em>, o todos de una vez en <em>Reportes → Importar productos</em> con la plantilla de Excel.</li>
+  <li><strong>Registra tus proveedores</strong> y cuántos días tardan en entregar. Con eso el sistema calcula cuándo debes pedir.</li>
+  <li><strong>Crea usuarios</strong> para tus empleados (<em>Usuarios</em>). Cada uno entra con su propia clave.</li>
+  <li><strong>Empieza a vender.</strong> Cada venta enseña al sistema cuánto se mueve cada producto.</li>
+</ol>
+
+<h2>2. El semáforo</h2>
+<ul>
+  <li>🟢 <strong>Normal</strong>: todo bien.</li>
+  <li>🟡 <strong>Bajo / Revisar</strong>: está por debajo del mínimo o hay algo que mirar.</li>
+  <li>🔴 <strong>Crítico / Actuar</strong>: se va a agotar antes de que llegue el pedido, o ya está vencido.</li>
+  <li>⚫ <strong>Agotado</strong>: no hay existencias.</li>
+</ul>
+
+<h2>3. Vender</h2>
+<ol>
+  <li>Entra a <em>Vender</em>. Busca el producto escribiendo parte del nombre, o escanea el código de barras con un lector o con la cámara (📷).</li>
+  <li>Ajusta cantidades en el carrito. Si escribes cuánto te pagaron, el sistema calcula el cambio.</li>
+  <li>Pulsa <em>Cobrar</em>. El inventario se descuenta solo y puedes imprimir el comprobante.</li>
+</ol>
+<p>¿Te equivocaste? El administrador puede <strong>anular</strong> la venta desde su comprobante indicando el motivo; el inventario se devuelve.</p>
+
+<h2>4. Entradas y salidas</h2>
+<p>En <em>Inventario → Entrada / salida</em> registras compras, devoluciones, productos dañados o vencidos y ajustes. Los ajustes y daños <strong>siempre piden un motivo</strong>: así nadie cambia el número sin explicación.</p>
+<p>¿Por qué tengo solo 8 unidades? Abre el producto y pulsa <em>Ver kárdex completo</em>: verás cada movimiento, quién lo hizo y el saldo después de cada uno.</p>
+
+<h2>5. Qué comprar</h2>
+<p>En <em>Compras → Qué comprar</em> el sistema te sugiere cuánto pedir de cada producto y te explica por qué. Puedes cambiar las cantidades, quitar productos y pulsar <em>Crear órdenes de compra</em>: se arma una orden por proveedor. Desde la orden puedes descargar el PDF o enviarla por WhatsApp.</p>
+<p>Cuando llega la mercancía, abre la orden, escribe lo que llegó (y la fecha de vencimiento si aplica) y pulsa <em>Registrar llegada</em>. Si tu proveedor te da una factura a mano sin orden previa, usa <em>Registrar factura</em>.</p>
+
+<h2>6. Alertas</h2>
+<p>El sistema revisa tu inventario todas las noches y después de cada movimiento. En <em>Alertas</em> verás, en orden de urgencia: productos por agotarse, vencimientos, mercancía que no se vende, exceso de inventario y movimientos inusuales.</p>
+<p>Un <strong>movimiento inusual</strong> no significa robo: puede ser una venta grande, un error al digitar o una pérdida. El sistema solo te pide revisarlo. Al cerrar la alerta puedes dejar una nota.</p>
+
+<h2>7. Conteo físico</h2>
+<ol>
+  <li>En <em>Inventario → Conteo físico</em> empieza un conteo de todo o de una categoría.</li>
+  <li>Cuenta lo que realmente hay y escríbelo. Donde haya diferencia, escribe el motivo.</li>
+  <li>Envíalo para aprobación. El administrador lo revisa y el sistema hace los ajustes.</li>
+</ol>
+
+<h2>8. Vencimientos</h2>
+<p>Si tu negocio maneja fechas de vencimiento, al registrar compras escribe la fecha de cada lote. Al vender, el sistema descuenta primero lo que vence antes. En <em>Inventario → Vencimientos</em> ves qué vence pronto y cuánto dinero está en riesgo.</p>
+
+<h2>9. Reportes</h2>
+<p>En <em>Reportes</em> tienes inventario, ventas, utilidad, más y menos vendidos, vencimientos, compras, ajustes y más. Todos se descargan en Excel, PDF o CSV.</p>
+
+<h2>10. Quién puede hacer qué</h2>
+<ul>
+  <li><strong>Administrador</strong>: todo, incluyendo precios de costo, utilidad, usuarios y aprobación de ajustes.</li>
+  <li><strong>Vendedor</strong>: vender y consultar productos y disponibilidad. No ve costos.</li>
+  <li><strong>Encargado de inventario</strong>: entradas, salidas, conteos y compras. No ve costos ni utilidad.</li>
+</ul>
+
+<h2>11. Usarlo en el celular</h2>
+<p>Abre la página en el navegador del celular y elige <em>Agregar a la pantalla de inicio</em> (o <em>Instalar app</em>). Quedará como una aplicación. Si te quedas sin señal, podrás ver las páginas que abriste antes.</p>
+
+<h2>Preguntas frecuentes</h2>
+<p><strong>¿El sistema compra por mí?</strong> No. Sugiere y explica; tú decides.</p>
+<p><strong>¿Qué pasa si se vence mi plan?</strong> Tus datos siguen ahí; solo aplican los límites del plan Gratis.</p>
+<p><strong>¿Puedo llevarme mis datos?</strong> Sí: <em>Ajustes → Descargar todos mis datos</em>.</p>
+<p><strong>¿Necesitas ayuda?</strong> Escríbenos a <a href="mailto:{{ empresa.correo }}">{{ empresa.correo }}</a>{% if user.is_authenticated %} o <a href="{% url 'publico:comentario' %}">envía un comentario</a>{% endif %}.</p>
+</article>
+{% endblock %}

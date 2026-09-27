@@ -115,3 +115,18 @@ def api_token(request):
         auditar(request.negocio, request.user, "generar_token_api", request.user)
         messages.success(request, "Nuevo token generado. El anterior dejó de funcionar.")
     return render(request, "negocio/api.html", {"token": token})
+
+
+@negocio_requerido
+def plan(request):
+    from django.conf import settings
+
+    from apps.catalogo.models import Producto
+    from apps.usuarios.models import Usuario as U
+
+    s = request.suscripcion
+    uso = {"productos": Producto.objects.filter(negocio=request.negocio, es_agrupador=False).count(),
+           "usuarios": U.objects.filter(negocio=request.negocio, is_active=True).count()}
+    planes = [{"clave": k, **v} for k, v in settings.PLANES.items()]
+    return render(request, "negocio/plan.html", {"s": s, "uso": uso, "planes": planes,
+                                                 "contacto": settings.CONTACTO_VENTAS})

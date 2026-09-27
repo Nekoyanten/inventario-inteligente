@@ -7,6 +7,7 @@ from django.shortcuts import redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.core.auditoria import auditar
+from apps.core.limites import LimiteDelPlan, verificar_productos
 from apps.core.negocio import del_negocio, negocio_requerido, obtener_del_negocio
 from apps.inventario.services import ErrorInventario, kardex, permite_decimales
 from apps.usuarios.permisos import requiere_permiso
@@ -73,8 +74,11 @@ def crear(request):
                         puede_ver_costos=request.user.puede("ver_precios_compra"))
     if request.method == "POST" and form.is_valid():
         try:
+            verificar_productos(request.negocio)
             producto = crear_producto(form, request.user, form.cleaned_data.get("stock_inicial"),
                                       form.cleaned_data.get("vencimiento_inicial"))
+        except LimiteDelPlan as e:
+            form.add_error(None, str(e))
         except ErrorInventario as e:
             form.add_error("stock_inicial", str(e))
         else:
@@ -143,8 +147,9 @@ def variantes(request, pk):
             form.add_error(None, "Escribe al menos un valor.")
         else:
             try:
+                verificar_productos(request.negocio, len(combos))
                 creadas = generar_variantes(producto, combos, request.user)
-            except ValueError as e:
+            except (ValueError, LimiteDelPlan) as e:
                 form.add_error(None, str(e))
             else:
                 messages.success(request, f"Se crearon {len(creadas)} variantes.")

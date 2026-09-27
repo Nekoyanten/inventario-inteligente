@@ -12,6 +12,7 @@ from django.shortcuts import redirect, render
 
 from apps.catalogo.models import Categoria, Marca, Producto, UnidadMedida
 from apps.core.auditoria import auditar
+from apps.core.limites import LimiteDelPlan, verificar_productos
 from apps.core.negocio import negocio_requerido
 from apps.inventario.models import TipoMovimiento
 from apps.inventario.services import ErrorInventario, registrar_movimiento
@@ -192,11 +193,13 @@ def importar(request):
             if not filas:
                 errores = ["El archivo no tiene productos."]
             if not errores:
+                existentes = set(Producto.objects.filter(negocio=request.negocio).values_list("sku", flat=True))
+                verificar_productos(request.negocio, sum(1 for f in filas if f["sku"] not in existentes))
                 r = importar_filas(request.negocio, request.user, filas)
                 messages.success(request, f"Importación lista: {r['creados']} productos nuevos y "
                                           f"{r['actualizados']} actualizados.")
                 return redirect("catalogo:lista")
-        except (ValueError, ErrorInventario) as e:
+        except (ValueError, ErrorInventario, LimiteDelPlan) as e:
             errores = [str(e)]
     return render(request, "reportes/importar.html", {"errores": errores[:50], "mas_errores": max(0, len(errores) - 50),
                                                       "columnas": COLUMNAS})

@@ -24,6 +24,7 @@ class ProductoViewSet(viewsets.ReadOnlyModelViewSet):
     """Productos del negocio. Filtros: `?q=texto`, `?estado=AGOTADO|CRITICO|BAJO|NORMAL`."""
 
     serializer_class = s.ProductoSerializer
+    queryset = Producto.objects.none()  # para la documentación; get_queryset filtra por negocio
     permission_classes = [PermisoPorRol]
     permisos_por_metodo = {"GET": "consultar_productos"}
 
@@ -62,6 +63,7 @@ class MovimientoViewSet(mixins.ListModelMixin, mixins.CreateModelMixin, viewsets
 
 
 class VentaViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet):
+    queryset = Venta.objects.none()
     permission_classes = [PermisoPorRol]
     permisos_por_metodo = {"GET": "registrar_venta", "POST": "registrar_venta"}
 
@@ -94,6 +96,7 @@ class VentaViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Crea
 
 class AlertaViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = s.AlertaSerializer
+    queryset = Alerta.objects.none()
     permission_classes = [PermisoPorRol]
     permisos_por_metodo = {"GET": "ver_reportes", "POST": "ver_reportes"}
 

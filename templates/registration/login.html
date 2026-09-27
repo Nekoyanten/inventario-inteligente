@@ -1,7 +1,15 @@
 {% extends "base.html" %}
+{% block titulo %}Ingresar{% endblock %}
 {% block contenido %}
-<section class="tarjeta" style="max-width:380px;margin:2rem auto">
+<section class="tarjeta formulario formulario-libre" style="max-width:420px;margin-top:2rem">
   <h1>Ingresar</h1>
-  <form method="post">{% csrf_token %}{{ form.as_p }}<button class="boton">Entrar</button></form>
+  <form method="post">{% csrf_token %}
+    {{ form.non_field_errors }}
+    <p><label for="id_username">Usuario</label>{{ form.username }}</p>
+    <p><label for="id_password">Contraseña</label>{{ form.password }}</p>
+    <button class="boton">Entrar</button>
+  </form>
+  <p><a href="{% url 'password_reset' %}">¿Olvidaste tu contraseña?</a></p>
+  <p class="suave">¿No tienes cuenta? <a href="{% url 'registro:paso1' %}">Pruébalo gratis</a></p>
 </section>
 {% endblock %}

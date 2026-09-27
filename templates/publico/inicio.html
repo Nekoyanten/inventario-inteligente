@@ -1,0 +1,39 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Inventario que piensa por ti{% endblock %}
+{% block contenido %}
+<section class="hero">
+  <h1>Tu inventario te dice qué comprar, qué se vence y qué no se vende</h1>
+  <p>Para tiendas, minimercados, ropa, belleza, droguerías y restaurantes. Sin conocimientos contables, desde el celular.</p>
+  <div class="acciones" style="justify-content:center">
+    <a class="boton boton-auto" href="{% url 'registro:paso1' %}">Pruébalo gratis {{ dias_prueba }} días</a>
+    <a class="boton boton-auto boton-secundario" href="{% url 'login' %}">Ya tengo cuenta</a>
+  </div>
+  <p class="suave" style="font-size:.9rem;margin-top:.8rem">Sin tarjeta de crédito · Configurado para tu tipo de negocio en 2 minutos</p>
+</section>
+
+<p class="frase">Un inventario común dice <em>“tienes 5 unidades”</em>. Este dice: <strong>“Tienes 5 unidades, vendes unas 3 al día y tu proveedor tarda 4 días. Te vas a quedar sin producto: pide 22.”</strong></p>
+
+<h2 style="margin-top:2rem">Qué hace por ti</h2>
+<div class="beneficios">
+  <section class="tarjeta"><h3>🚨 Te avisa antes del problema</h3><p class="suave">Productos por agotarse, vencimientos cercanos, mercancía quieta y movimientos extraños.</p></section>
+  <section class="tarjeta"><h3>🛒 Te dice cuánto comprar</h3><p class="suave">Calcula el pedido según tus ventas, tu proveedor y la temporada. Tú decides y lo envías por WhatsApp.</p></section>
+  <section class="tarjeta"><h3>🧾 Vende rápido</h3><p class="suave">Punto de venta con lector de código de barras (o la cámara del celular) que descuenta el inventario solo.</p></section>
+  <section class="tarjeta"><h3>🔍 Sabes por qué tienes lo que tienes</h3><p class="suave">Cada entrada y salida queda con responsable y motivo. Conteo físico con aprobación.</p></section>
+  <section class="tarjeta"><h3>📊 Ves cómo va tu negocio</h3><p class="suave">Ventas, utilidad, lo que más se vende y dinero quieto en bodega, en una sola pantalla.</p></section>
+  <section class="tarjeta"><h3>🧩 Se adapta a ti</h3><p class="suave">Tallas y colores para ropa, lotes para droguerías, ventas por kilo para minimercados.</p></section>
+</div>
+
+<h2 style="margin-top:2rem">Planes</h2>
+<div class="planes">
+  {% for p in planes %}
+  <section class="tarjeta plan {% if p.clave == 'EMPRENDEDOR' %}destacado{% endif %}">
+    <h3>{{ p.nombre }}</h3>
+    <p class="kpi">{% if p.precio %}{{ p.precio|moneda }}<small>/mes</small>{% else %}$0{% endif %}</p>
+    <ul class="lista-simple"><li>Hasta {{ p.productos }} productos</li><li>{{ p.usuarios }} usuario{{ p.usuarios|pluralize }}</li>
+      <li>{% if p.reportes_pdf %}Reportes Excel y PDF{% else %}Reportes CSV{% endif %}</li>{% if p.api %}<li>API para tu tienda en línea</li>{% endif %}</ul>
+    <a class="boton boton-secundario" href="{% url 'registro:paso1' %}">Empezar</a>
+  </section>
+  {% endfor %}
+</div>
+<p class="suave" style="text-align:center">Todos los planes empiezan con {{ dias_prueba }} días con todas las funciones. Tus datos son tuyos: puedes descargarlos cuando quieras.</p>
+{% endblock %}

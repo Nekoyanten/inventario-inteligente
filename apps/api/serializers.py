@@ -19,7 +19,7 @@ class ProductoSerializer(serializers.ModelSerializer):
         fields = ("id", "sku", "codigo_barras", "nombre", "categoria", "unidad", "precio_venta", "precio_compra",
                   "stock_actual", "stock_minimo", "estado", "activo", "atributos")
 
-    def get_estado(self, obj):
+    def get_estado(self, obj) -> str:
         return obj.estado_basico()
 
     def to_representation(self, obj):

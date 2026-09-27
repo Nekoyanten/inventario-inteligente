@@ -1,147 +1,107 @@
 # 📦 Inventario Inteligente
 
-Sistema de inventarios **inteligente y adaptativo** para pequeños emprendedores: tiendas, minimercados, ropa, belleza, farmacias y restaurantes.
+Sistema de inventarios **inteligente y adaptativo** para pequeños emprendedores: tiendas, minimercados, ropa, belleza, droguerías y restaurantes. Listo para venderse como servicio (SaaS).
 
 > **Registrar → Controlar → Analizar → Predecir → Recomendar → Actuar**
 
 Un inventario tradicional dice *"tienes 5 unidades"*.
-Este dice: *"Tienes 5 unidades, vendes aproximadamente 3 por día y tu proveedor tarda 4 días en entregar. Existe riesgo de agotamiento. Se recomienda revisar el pedido."*
+Este dice: *"Tienes 5 unidades, vendes aproximadamente 3 por día y tu proveedor tarda 4 días. Existe riesgo de agotamiento. Se recomienda pedir 22."*
 
-📐 **Diseño completo:** [`docs/DISENO.md`](docs/DISENO.md) · 🗂️ **Backlog:** [`docs/backlog.json`](docs/backlog.json)
+📐 [Diseño](docs/DISENO.md) · 🚀 [Despliegue](docs/DESPLIEGUE.md) · 📖 [Manual](docs/MANUAL.md) · 🧪 [Piloto](docs/PILOTO.md) · 🗂️ [Backlog](docs/backlog.json)
 
 ---
 
-## ✨ Qué hace
+## ✨ Funciones
 
-| Módulo | Función |
+| Área | Qué incluye |
 |---|---|
-| Productos | SKU, categoría, marca, proveedor, precios, stock mínimo, unidad, imagen, estado y **atributos personalizados** (talla, color, tono…) |
-| Entradas y salidas | Compras, devoluciones, dañados, vencidos, ajustes, **siempre con usuario y motivo** |
-| Kárdex | Responde *"¿por qué tengo solo 8 unidades?"* |
-| Alertas inteligentes | Agotado, crítico, bajo, **riesgo de agotamiento**, vencimiento, baja rotación, exceso, **anomalías** |
-| Pronóstico | Demanda diaria (suavizado exponencial) y mensual (Holt) como rango |
-| Recomendaciones | Pedido sugerido **explicado** que considera ventas, proveedor, stock de seguridad y lo que ya viene en camino |
-| Proveedores | Tiempo real de entrega calculado desde las órdenes recibidas |
-| Vencimientos | Lotes con salida **FEFO** y semáforo 🔴🟡🟢 |
-| Conteo físico | Diferencias con motivo obligatorio y aprobación |
-| Roles | Administrador · Vendedor · Encargado de inventario |
-| Dashboard | *"¿Cómo está mi negocio?"* en una pantalla |
-| Reportes | CSV y Excel (PDF en la fase 5) |
+| **Adaptativo** | Plantillas por tipo de negocio; vencimientos, lotes, variantes (talla × color), fracciones y temporadas activables; atributos personalizados por categoría |
+| **Productos** | Semáforo de stock, búsqueda por nombre/código/marca, variantes, importación desde Excel, margen en vivo |
+| **Punto de venta** | Buscador, lector de código de barras (teclado o cámara), cambio, medios de pago, comprobante, anulación con motivo |
+| **Inventario** | Entradas y salidas con motivo obligatorio, kárdex, lotes FEFO, vencimientos, conteo físico con aprobación |
+| **Compras** | «Qué comprar» con explicación, órdenes por proveedor, PDF y WhatsApp, recepción parcial, facturas sin orden |
+| **Proveedores** | Entrega prometida vs. real, % de cumplimiento, productos y precios pactados |
+| **Inteligencia** | Demanda con suavizado exponencial y corrección de demanda censurada, Holt / Holt-Winters, temporadas, punto de reorden, stock de seguridad, ABC, rotación, anomalías (ventas y ajustes), precisión de pronósticos (MAPE) |
+| **Alertas** | Agotado, crítico, bajo, riesgo de agotamiento, vencimiento, baja rotación, exceso, inusual; bandeja con acciones y resumen diario por correo |
+| **Panel** | Ventas vs. mes anterior, utilidad, ticket promedio, inventario inmovilizado, gráfico de 30 días, más vendidos |
+| **Reportes** | 14 reportes en pantalla, Excel, PDF y CSV |
+| **Usuarios** | Administrador, vendedor y encargado de inventario; auditoría de todo |
+| **Plataforma** | App instalable (PWA) con modo sin conexión, API REST con token y documentación OpenAPI |
+| **SaaS** | Registro con prueba gratis, planes con límites, página comercial, términos, privacidad (Ley 1581), exportación de datos, comentarios |
+| **Producción** | Docker, Render blueprint, WhiteNoise, HTTPS/HSTS, límite de intentos de ingreso, respaldos, `check --deploy` en CI |
 
-### 🧩 ¿Por qué "adaptativo"?
+---
 
-Al crear el negocio se elige su **giro** y el sistema se configura solo (`apps/core/plantillas.py`):
+## 🚀 Empezar
 
-- **Minimercado** → vencimientos, lotes y ventas fraccionadas (kg, L).
-- **Ropa** → variantes con talla/color y temporadas.
-- **Belleza** → tonos + vencimientos.
-- **Farmacia** → lotes, vencimientos con alertas de 30/90 días y principio activo.
-- **Restaurante** → vencimientos cortos (3/7 días) y compras cada 3 días.
+```bash
+python -m venv .venv
+source .venv/bin/activate            # Windows (Git Bash): source .venv/Scripts/activate
+pip install -r requirements-dev.txt
+cp .env.example .env                 # deja DEBUG=True para desarrollo
+python manage.py migrate
+python manage.py cargar_demo         # minimercado con 60 días de ventas → admin / admin12345
+python manage.py runserver
+```
 
-Agregar un nuevo tipo de negocio = agregar un diccionario. Cada bandera se puede cambiar después.
+- http://127.0.0.1:8000 → página comercial (sin sesión) o panel (con sesión)
+- http://127.0.0.1:8000/registro/ → crear un negocio nuevo
+- http://127.0.0.1:8000/api/docs/ → documentación de la API
+
+Con PostgreSQL local: `docker compose up -d db` y en `.env` `DATABASE_URL=postgres://inventario:inventario@localhost:5432/inventario`.
+
+### Tareas programadas
+
+```bash
+python manage.py analizar_inventario   # alertas, recomendaciones y pronósticos (cada noche)
+python manage.py enviar_resumen        # correo con alertas críticas (cada mañana)
+python manage.py reconstruir_demanda   # recalcula la demanda desde las ventas
+```
+
+### Pruebas
+
+```bash
+pytest                                  # 137 pruebas
+ruff check .
+DATABASE_URL=postgres://... pytest      # también contra PostgreSQL (como en CI)
+```
 
 ---
 
 ## 🏗️ Estructura
 
 ```
-inventario-inteligente/
-├── config/                  # settings, urls, wsgi
-├── apps/
-│   ├── core/                # Negocio, ConfiguracionNegocio, plantillas de giro, auditoría
-│   ├── usuarios/            # Usuario con rol + matriz de permisos
-│   ├── catalogo/            # Producto, Categoría, Marca, Unidad, AtributoPersonalizado
-│   ├── proveedores/         # Proveedor, ProductoProveedor (tiempo de entrega, empaque)
-│   ├── inventario/          # Movimiento (inmutable), Lote, ConteoFisico  ← ÚNICO que cambia stock
-│   ├── ventas/              # Venta, DetalleVenta
-│   ├── compras/             # OrdenCompra (borrador → enviada → recibida)
-│   ├── analitica/           # algoritmos.py (puros) + DemandaDiaria + análisis por producto
-│   ├── alertas/             # reglas.py (una clase por regla) + motor.py + comando nocturno
-│   ├── recomendaciones/     # pedido sugerido explicado → órdenes de compra
-│   ├── dashboard/           # "¿Cómo está mi negocio?"
-│   └── reportes/            # catálogo de reportes + exportadores CSV/Excel
-├── templates/ static/       # UI mobile-first
-├── docs/                    # DISENO.md, backlog.json
-├── scripts/                 # generar_backlog.py, configurar_github.py
-├── .github/                 # CI, plantillas de issues y PR
-└── docker-compose.yml
+config/                 settings (dev/prod por variables de entorno), urls
+apps/
+  core/                 negocio, plantillas de giro, suscripciones y límites, auditoría,
+                        aislamiento multi-negocio, PWA, páginas públicas, registro
+  usuarios/             roles, matriz de permisos, ingreso con límite de intentos
+  catalogo/             productos, variantes, categorías, marcas, atributos
+  proveedores/          proveedores y desempeño
+  inventario/           movimientos (ÚNICO lugar que cambia stock), lotes, conteos, kárdex
+  ventas/               punto de venta, anulaciones
+  compras/              órdenes, recepción, facturas directas, PDF, WhatsApp
+  analitica/            algoritmos puros + demanda diaria, temporadas, pronósticos
+  alertas/              reglas, motor, bandeja, comandos nocturnos
+  recomendaciones/      pedido sugerido explicado → órdenes
+  dashboard/            panel del administrador y del vendedor
+  reportes/             catálogo de reportes, exportadores, importación
+  api/                  API REST v1
+templates/ static/      interfaz mobile-first con modo oscuro
+docs/                   diseño, despliegue, manual, piloto, backlog
+scripts/                arranque, respaldos, backlog de GitHub
 ```
 
-Cada app sigue la misma convención: `models.py` (datos) · `services.py` (reglas de negocio, escrituras) · `selectors.py` (lecturas) · `views.py` (HTTP) · `tests/`.
+Convención por app: `models.py` · `services.py` (escrituras y reglas) · `selectors.py` (lecturas) · `views.py` · `tests/`.
+
+**Reglas de oro**
+1. El stock solo cambia vía `inventario.services.registrar_movimiento()` (transacción + bloqueo de fila).
+2. Toda consulta desde una vista pasa por `del_negocio()` / `NegocioRequeridoMixin` (un negocio nunca ve datos de otro).
+3. El sistema sugiere; el empresario decide. Las alertas detectan, no acusan.
 
 ---
-
-## 🚀 Empezar
-
-### Opción A — Local (SQLite)
-
-```bash
-python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
-pip install -r requirements-dev.txt
-cp .env.example .env
-python manage.py migrate
-python manage.py cargar_demo        # minimercado con 60 días de ventas → admin / admin12345
-python manage.py runserver
-```
-
-Abre http://127.0.0.1:8000 (dashboard) y http://127.0.0.1:8000/admin.
-
-### Opción B — Docker (PostgreSQL)
-
-```bash
-cp .env.example .env
-docker compose up --build
-docker compose exec web python manage.py cargar_demo
-```
-
-### Análisis nocturno
-
-```bash
-python manage.py analizar_inventario      # programar con cron: 0 2 * * *
-```
-
-### Pruebas
-
-```bash
-pytest          # 32 pruebas: algoritmos con los ejemplos del enunciado, FEFO, conteo físico, alertas…
-ruff check .
-```
-
----
-
-## 🧠 El motor inteligente en 30 segundos
-
-```
-d   = demanda diaria (suavizado exponencial, α = 0.3, últimos 28 días)
-L   = tiempo de entrega del proveedor
-SS  = max(stock_mínimo, 1.65 · σd · √L)
-Cobertura       = stock / d                          → "se agota en ~2 días"
-Punto de reorden = d · L + SS
-Pedido sugerido = ⌈d · (L + H) + SS − stock − en_tránsito⌉   (redondeado al empaque)
-Anomalía        = |0.6745 · (x − mediana) / MAD| > 3.5
-```
-
-Ejemplo del enunciado → Café: stock 8, 35/semana, SS 10 ⇒ **pedir 37** ✅ (ver `apps/analitica/tests/test_algoritmos.py`).
-
----
-
-## 🗺️ Hoja de ruta
-
-| Fase | Hito |
-|---|---|
-| 0 | Fundaciones |
-| 1 | MVP Registrar y Controlar |
-| 2 | Proveedores, Compras y Vencimientos |
-| 3 | Analizar y Alertar |
-| 4 | Predecir y Recomendar |
-| 5 | Reportes y Móvil |
-| 6 | Producción |
-
-Las tareas están como **issues** en GitHub, agrupadas por hito, con etiquetas `modulo:*`, `prioridad:*` y `base-implementada` (el modelo/servicio ya existe y falta la interfaz o ampliarlo).
 
 ## 🤝 Flujo de trabajo
 
-1. Toma un issue del tablero → muévelo a *In progress*.
-2. Rama: `feat/<n°-issue>-descripcion-corta`.
-3. PR que diga `Cierra #<n°>`; el CI debe pasar.
-4. **Regla de oro:** el stock solo cambia vía `inventario.services.registrar_movimiento()`.
+1. Toma un issue del tablero y muévelo a *In progress*.
+2. Rama `feat/<n°>-descripcion`, PR con `Cierra #<n°>`; el CI (ruff, migraciones, pytest en PostgreSQL, `check --deploy`) debe pasar.

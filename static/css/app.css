@@ -153,3 +153,10 @@ textarea { min-height:80px; }
 .planes { display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); }
 .plan { text-align:center; } .plan .kpi { font-size:2rem; }
 .plan.destacado { border:2px solid var(--marca); }
+
+.pie { display:flex; flex-wrap:wrap; gap:.4rem 1.2rem; justify-content:center; margin:2.5rem 0 1rem; font-size:.85rem; }
+.pie a { color:var(--suave); }
+.ayuda h2 { margin-top:1.5rem; } .ayuda li { margin:.3rem 0; }
+.beneficios { display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr)); }
+.beneficios .tarjeta h3 { margin:.2rem 0 .4rem; font-size:1.05rem; }
+.frase { font-size:1.05rem; background:var(--tarjeta); border-left:4px solid var(--marca); padding:1rem 1.2rem; border-radius:0 12px 12px 0; }

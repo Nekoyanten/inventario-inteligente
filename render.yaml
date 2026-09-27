@@ -1,0 +1,55 @@
+# Despliegue en Render (https://render.com) con un clic: "New → Blueprint" y elegir este repositorio.
+# Revisa los planes y precios vigentes de Render antes de desplegar.
+databases:
+  - name: inventario-db
+    databaseName: inventario
+    user: inventario
+
+services:
+  - type: web
+    name: inventario-web
+    runtime: docker
+    healthCheckPath: /salud/
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase: { name: inventario-db, property: connectionString }
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: CSRF_TRUSTED_ORIGINS
+        value: "https://*.onrender.com"
+      - key: ADMIN_URL
+        generateValue: true
+      - key: EMAIL_URL
+        sync: false
+      - key: URL_SITIO
+        sync: false
+      - key: CONTACTO_VENTAS
+        sync: false
+
+  - type: cron
+    name: inventario-analisis-nocturno
+    runtime: docker
+    schedule: "0 7 * * *"   # 2:00 a. m. hora Colombia (UTC-5)
+    dockerCommand: python manage.py analizar_inventario
+    envVars: &variables_cron
+      - key: DATABASE_URL
+        fromDatabase: { name: inventario-db, property: connectionString }
+      - key: SECRET_KEY
+        fromService: { type: web, name: inventario-web, envVarKey: SECRET_KEY }
+      - key: DEBUG
+        value: "False"
+      - key: EMAIL_URL
+        fromService: { type: web, name: inventario-web, envVarKey: EMAIL_URL }
+      - key: URL_SITIO
+        fromService: { type: web, name: inventario-web, envVarKey: URL_SITIO }
+
+  - type: cron
+    name: inventario-resumen-diario
+    runtime: docker
+    schedule: "0 12 * * *"  # 7:00 a. m. hora Colombia
+    dockerCommand: python manage.py enviar_resumen
+    envVars: *variables_cron

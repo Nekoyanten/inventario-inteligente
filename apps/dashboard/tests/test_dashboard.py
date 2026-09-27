@@ -13,8 +13,9 @@ def test_resumen_negocio(producto, admin):
     assert r["ventas"]["mes"] == 48000
 
 
-def test_dashboard_requiere_login(client):
-    assert client.get("/").status_code == 302
+def test_visitante_ve_la_pagina_de_inicio(client):
+    resp = client.get("/")
+    assert resp.status_code == 200 and "Pruébalo gratis" in resp.content.decode()
 
 
 def test_dashboard_carga(client, admin, producto):

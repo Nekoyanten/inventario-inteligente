@@ -5,6 +5,7 @@ from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView, UpdateView
 
 from apps.core.auditoria import auditar
+from apps.core.limites import LimiteDelPlan, verificar_usuarios
 from apps.core.negocio import NegocioRequeridoMixin
 
 from .forms import UsuarioCrearForm, UsuarioEditarForm
@@ -28,6 +29,11 @@ class UsuarioCrearView(NegocioRequeridoMixin, CreateView):
     extra_context = {"titulo": "Nuevo usuario"}
 
     def form_valid(self, form):
+        try:
+            verificar_usuarios(self.request.negocio)
+        except LimiteDelPlan as e:
+            form.add_error(None, str(e))
+            return self.form_invalid(form)
         respuesta = super().form_valid(form)  # el mixin asigna el negocio
         auditar(self.request.negocio, self.request.user, "crear_usuario", self.object, rol=self.object.rol)
         messages.success(self.request, f"Usuario {self.object.username} creado.")

@@ -24,7 +24,10 @@ def negocio(request):
             negocio=neg, estado=Alerta.Estado.ABIERTA, severidad=Alerta.Severidad.ACTUAR
         ).count()
         menu = construir_menu(request, permisos, {"alertas:lista": abiertas})
+    from django.conf import settings
+
     return {
+        "empresa": settings.EMPRESA,
         "negocio": neg,
         "config_negocio": getattr(neg, "config", None) if neg else None,
         "permisos": permisos,

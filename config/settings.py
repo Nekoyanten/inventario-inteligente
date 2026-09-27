@@ -3,6 +3,7 @@
 Las variables sensibles se leen de entorno (.env). Ver .env.example.
 """
 
+import sys
 from pathlib import Path
 
 import environ
@@ -12,12 +13,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(
     DEBUG=(bool, False),
     ALLOWED_HOSTS=(list, ["localhost", "127.0.0.1"]),
+    CSRF_TRUSTED_ORIGINS=(list, []),
 )
 environ.Env.read_env(BASE_DIR / ".env")
 
-SECRET_KEY = env("SECRET_KEY", default="dev-inseguro-cambiar-en-produccion")
 DEBUG = env("DEBUG")
+EN_PRUEBAS = "pytest" in sys.modules or "test" in sys.argv
+SECRET_KEY = env("SECRET_KEY", default="dev-inseguro-cambiar-en-produccion" if DEBUG or EN_PRUEBAS else None)
+if not SECRET_KEY:
+    raise RuntimeError("Define SECRET_KEY en el entorno (obligatorio con DEBUG=False).")
 ALLOWED_HOSTS = env("ALLOWED_HOSTS")
+CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")
+ADMIN_URL = env("ADMIN_URL", default="admin/")
 
 DJANGO_APPS = [
     "django.contrib.admin",
@@ -52,6 +59,7 @@ INSTALLED_APPS = DJANGO_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -59,6 +67,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.core.middleware.NegocioActualMiddleware",
+    "apps.core.middleware.SuscripcionMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -83,6 +92,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # PostgreSQL en producción (DATABASE_URL=postgres://...), SQLite por defecto en desarrollo.
 DATABASES = {"default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")}
+DATABASES["default"]["CONN_MAX_AGE"] = env.int("CONN_MAX_AGE", default=60)
 
 AUTH_USER_MODEL = "usuarios.Usuario"
 
@@ -100,6 +110,11 @@ USE_TZ = True
 USE_THOUSAND_SEPARATOR = True
 
 STATIC_URL = "static/"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
+                    if not DEBUG else "django.contrib.staticfiles.storage.StaticFilesStorage"},
+}
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 MEDIA_URL = "media/"
@@ -116,6 +131,37 @@ EMAIL_CONFIG = env.email_url("EMAIL_URL", default="consolemail://")
 vars().update(EMAIL_CONFIG)
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Inventario Inteligente <no-responder@localhost>")
 URL_SITIO = env("URL_SITIO", default="http://localhost:8000")
+
+# Seguridad (producción)
+SESSION_COOKIE_AGE = 60 * 60 * 12  # 12 horas
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False  # el POS lee el token CSRF desde JavaScript
+X_FRAME_OPTIONS = "DENY"
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = env.bool("SECURE_SSL_REDIRECT", default=True)
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=60 * 60 * 24 * 30)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = False  # decisión deliberada: la lista de precarga es difícil de revertir
+SILENCED_SYSTEM_CHECKS = ["security.W021"]
+
+# Límite de intentos de ingreso (por usuario + IP)
+INTENTOS_LOGIN_MAX = 5
+BLOQUEO_LOGIN_MINUTOS = 15
+
+CACHES = {"default": env.cache("CACHE_URL", default="locmemcache://")}
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"consola": {"class": "logging.StreamHandler"}},
+    "root": {"handlers": ["consola"], "level": env("LOG_LEVEL", default="INFO")},
+    "loggers": {"django.security": {"handlers": ["consola"], "level": "WARNING", "propagate": False}},
+}
 
 # API REST
 REST_FRAMEWORK = {
@@ -134,6 +180,25 @@ SPECTACULAR_SETTINGS = {
     "TITLE": "Inventario Inteligente API",
     "DESCRIPTION": "Productos, movimientos, ventas y alertas. Autenticación: `Authorization: Token <token>`.",
     "VERSION": "1.0.0",
+}
+
+# Planes comerciales. Precios en COP/mes: AJÚSTALOS a tu estrategia comercial.
+DIAS_PRUEBA = env.int("DIAS_PRUEBA", default=14)
+PLANES = {
+    "GRATIS": {"nombre": "Gratis", "precio": 0, "productos": 50, "usuarios": 1, "api": False, "reportes_pdf": False},
+    "EMPRENDEDOR": {"nombre": "Emprendedor", "precio": env.int("PRECIO_EMPRENDEDOR", default=39000),
+                    "productos": 500, "usuarios": 3, "api": False, "reportes_pdf": True},
+    "NEGOCIO": {"nombre": "Negocio", "precio": env.int("PRECIO_NEGOCIO", default=79000),
+                "productos": 5000, "usuarios": 10, "api": True, "reportes_pdf": True},
+}
+CONTACTO_VENTAS = env("CONTACTO_VENTAS", default="")  # WhatsApp comercial, ej. 573001234567
+
+# Datos de la empresa que presta el servicio (aparecen en términos, privacidad y correos)
+EMPRESA = {
+    "nombre": env("EMPRESA_NOMBRE", default="Inventario Inteligente"),
+    "nit": env("EMPRESA_NIT", default=""),
+    "correo": env("EMPRESA_CORREO", default="soporte@example.com"),
+    "ciudad": env("EMPRESA_CIUDAD", default="San Juan de Pasto, Colombia"),
 }
 
 # Parámetros por defecto del motor inteligente (se pueden sobreescribir por negocio).

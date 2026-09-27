@@ -1,11 +1,14 @@
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 
 from .selectors import resumen_negocio, resumen_vendedor
 
 
-@login_required
 def inicio(request):
+    if not request.user.is_authenticated:
+        from django.conf import settings
+
+        planes = [{"clave": k, **v} for k, v in settings.PLANES.items()]
+        return render(request, "publico/inicio.html", {"planes": planes, "dias_prueba": settings.DIAS_PRUEBA})
     if request.negocio is None:
         return render(request, "dashboard/sin_negocio.html")
     if request.user.puede("ver_reportes"):

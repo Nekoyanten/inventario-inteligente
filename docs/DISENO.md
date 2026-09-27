@@ -336,12 +336,19 @@ Inventario actual · Movimientos (kárdex) · Ventas · Compras · Más vendidos
 
 ## 12. Hoja de ruta (fases = hitos en GitHub)
 
-| Fase | Hito | Resultado |
-|---|---|---|
-| 0 | **Fundaciones** | Repo, Docker, CI, settings, negocio + plantillas de giro, roles |
-| 1 | **MVP Registrar y Controlar** | Productos, movimientos, ventas, entradas/salidas, kárdex, stock semáforo |
-| 2 | **Proveedores, Compras y Vencimientos** | Proveedores, órdenes de compra, recepción, lotes FEFO, conteo físico |
-| 3 | **Analizar y Alertar** | Demanda diaria, rotación, anomalías, motor de alertas, dashboard |
-| 4 | **Predecir y Recomendar** | Pronóstico Holt, punto de reorden, pedido sugerido explicado |
-| 5 | **Reportes y Móvil** | Reportes + exportación, PWA, API REST |
-| 6 | **Producción** | Despliegue, backups, seguridad, manual de usuario |
+| Fase | Hito | Estado |
+|---|---|:-:|
+| 0 | **Fundaciones**: repo, Docker, CI, negocio + plantillas de giro, roles, aislamiento, configuración, auditoría | ✅ |
+| 1 | **Registrar y Controlar**: productos, variantes, movimientos, kárdex, punto de venta | ✅ |
+| 2 | **Proveedores, Compras y Vencimientos**: órdenes, PDF/WhatsApp, facturas, lotes FEFO, conteo físico | ✅ |
+| 3 | **Analizar y Alertar**: demanda censurada, ABC, bandeja de alertas, anomalías en ajustes, panel, resumen por correo | ✅ |
+| 4 | **Predecir y Recomendar**: Holt / Holt-Winters, temporadas, «Qué comprar» editable, precisión (MAPE) | ✅ |
+| 5 | **Reportes y Móvil**: 14 reportes Excel/PDF/CSV, PWA, API REST, importación | ✅ |
+| 6 | **Producción y venta**: planes y prueba gratis, página comercial, seguridad, respaldos, despliegue, manual, piloto | ✅ |
+
+### Siguientes pasos sugeridos (después del piloto)
+- Pasarela de pago (Wompi / Mercado Pago) que renueve la suscripción automáticamente.
+- Facturación electrónica DIAN (vía proveedor tecnológico autorizado).
+- Lectura de facturas de proveedor con OCR para las impresas (las manuscritas siguen por formulario rápido).
+- Varias sedes / bodegas por negocio y traslados entre ellas.
+- Notificaciones por WhatsApp Business API.

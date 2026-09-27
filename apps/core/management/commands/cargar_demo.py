@@ -37,6 +37,9 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         random.seed(42)
         negocio = Negocio.objects.create(nombre="Minimercado Demo", giro=Giro.MINIMERCADO)
+        negocio.suscripcion.plan = "NEGOCIO"
+        negocio.suscripcion.pagado_hasta = timezone.localdate() + timedelta(days=365)
+        negocio.suscripcion.save()
         admin = Usuario.objects.create_superuser("admin", "admin@demo.co", "admin12345", negocio=negocio, rol=Rol.ADMIN)
         und, _ = UnidadMedida.objects.get_or_create(nombre="Unidad", defaults={"abreviatura": "und"})
         prov_a = Proveedor.objects.create(negocio=negocio, nombre="Distribuidora A", tiempo_entrega_dias=3)

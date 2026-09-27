@@ -1,3 +1,4 @@
+# Desarrollo local:   docker compose up --build
 services:
   db:
     image: postgres:16-alpine
@@ -7,6 +8,10 @@ services:
       POSTGRES_PASSWORD: inventario
     ports: ["5432:5432"]
     volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "inventario"]
+      interval: 5s
+      retries: 10
   web:
     build: .
     command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
@@ -15,6 +20,8 @@ services:
       DATABASE_URL: postgres://inventario:inventario@db:5432/inventario
     ports: ["8000:8000"]
     volumes: [".:/app"]
-    depends_on: [db]
+    depends_on:
+      db:
+        condition: service_healthy
 volumes:
   pgdata:

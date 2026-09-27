@@ -2,7 +2,7 @@ from django.contrib import admin
 
 from apps.core.negocio import NegocioAdminMixin
 
-from .models import ConfiguracionNegocio, Negocio, RegistroAuditoria
+from .models import Comentario, ConfiguracionNegocio, Negocio, RegistroAuditoria, Suscripcion
 
 
 class ConfiguracionInline(admin.StackedInline):
@@ -26,3 +26,17 @@ class RegistroAuditoriaAdmin(NegocioAdminMixin, admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(Suscripcion)
+class SuscripcionAdmin(admin.ModelAdmin):
+    list_display = ("negocio", "plan", "prueba_hasta", "pagado_hasta")
+    list_filter = ("plan",)
+    search_fields = ("negocio__nombre",)
+
+
+@admin.register(Comentario)
+class ComentarioAdmin(admin.ModelAdmin):
+    list_display = ("creado", "negocio", "usuario", "tipo", "calificacion", "atendido", "texto")
+    list_filter = ("tipo", "atendido")
+    list_editable = ("atendido",)

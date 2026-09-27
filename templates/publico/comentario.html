@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block titulo %}Enviar comentario{% endblock %}
+{% block contenido %}
+<section class="tarjeta formulario formulario-libre">
+  <h1>¿Cómo te está yendo?</h1>
+  <p class="suave">Cuéntanos qué mejorarías, qué no funciona o qué te gustaría que hiciera el sistema.</p>
+  <form method="post">{% csrf_token %}<input type="hidden" name="pagina" value="{{ pagina }}">
+    <p><label for="tipo">Tipo</label><select id="tipo" name="tipo">{% for v, t in tipos %}<option value="{{ v }}">{{ t }}</option>{% endfor %}</select></p>
+    <p><label for="texto">Comentario</label><textarea id="texto" name="texto" rows="5" required maxlength="2000"></textarea></p>
+    <p><label for="calificacion">¿Qué tan útil te parece? (1 a 5)</label><select id="calificacion" name="calificacion"><option value="">Sin calificar</option>{% for i in "54321" %}<option>{{ i }}</option>{% endfor %}</select></p>
+    <button class="boton">Enviar</button>
+  </form>
+</section>
+{% endblock %}

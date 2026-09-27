@@ -15,6 +15,8 @@ jobs:
     env:
       DATABASE_URL: postgres://inventario:inventario@localhost:5432/inventario
       SECRET_KEY: ci
+      DEBUG: "False"
+      SECURE_SSL_REDIRECT: "False"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -23,3 +25,8 @@ jobs:
       - run: ruff check .
       - run: python manage.py makemigrations --check --dry-run
       - run: pytest
+      - name: Revisión de seguridad para producción
+        run: python manage.py check --deploy --fail-level WARNING
+        env:
+          SECRET_KEY: ${{ github.run_id }}-clave-de-prueba-larga-y-aleatoria-para-check-deploy-0123456789
+          ALLOWED_HOSTS: inventario.example.com

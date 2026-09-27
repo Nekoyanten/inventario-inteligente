@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block titulo %}Política de privacidad{% endblock %}
+{% block contenido %}
+<article class="tarjeta ayuda" style="max-width:820px;margin:0 auto">
+<h1>Política de tratamiento de datos personales</h1>
+<p class="suave">En cumplimiento de la Ley 1581 de 2012 y el Decreto 1377 de 2013 (Colombia). Última actualización: {% now "d/m/Y" %}</p>
+<h2>Responsable</h2>
+<p>{{ empresa.nombre }}{% if empresa.nit %}, NIT {{ empresa.nit }}{% endif %}, {{ empresa.ciudad }}. Correo: {{ empresa.correo }}.</p>
+<h2>Datos que tratamos</h2>
+<ul>
+  <li>De los usuarios: nombre, usuario, correo, teléfono y registro de actividad (auditoría).</li>
+  <li>Del negocio: nombre, NIT, dirección y la información comercial que registra (productos, ventas, compras, proveedores).</li>
+  <li>De clientes finales solo el nombre, si el negocio decide registrarlo en una venta.</li>
+</ul>
+<h2>Finalidades</h2>
+<p>Prestar el servicio, dar soporte, enviar avisos del servicio (alertas y resúmenes), mejorar el sistema con estadísticas agregadas y cumplir obligaciones legales. No vendemos ni cedemos datos a terceros.</p>
+<h2>Derechos del titular</h2>
+<p>Conocer, actualizar, rectificar y suprimir sus datos, revocar la autorización y presentar quejas ante la Superintendencia de Industria y Comercio. Para ejercerlos escriba a {{ empresa.correo }}; respondemos consultas en máximo 10 días hábiles y reclamos en máximo 15 días hábiles.</p>
+<h2>Seguridad</h2>
+<p>Conexión cifrada (HTTPS), contraseñas cifradas, separación de datos entre negocios, control de acceso por roles, registro de auditoría y copias de seguridad.</p>
+<h2>Encargados</h2>
+<p>El servicio se aloja en proveedores de infraestructura en la nube que actúan como encargados del tratamiento bajo acuerdos de confidencialidad.</p>
+</article>
+{% endblock %}

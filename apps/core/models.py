@@ -86,3 +86,71 @@ class RegistroAuditoria(models.Model):
 
     def __str__(self):
         return f"{self.fecha:%Y-%m-%d %H:%M} {self.usuario} {self.accion} {self.entidad}#{self.entidad_id}"
+
+
+class Suscripcion(ModeloBase):
+    """Plan comercial del negocio. Nunca se bloquean los datos: al vencer, se aplican los límites del plan Gratis."""
+
+    class Plan(models.TextChoices):
+        GRATIS = "GRATIS", "Gratis"
+        EMPRENDEDOR = "EMPRENDEDOR", "Emprendedor"
+        NEGOCIO = "NEGOCIO", "Negocio"
+
+    negocio = models.OneToOneField(Negocio, on_delete=models.CASCADE, related_name="suscripcion")
+    plan = models.CharField(max_length=12, choices=Plan.choices, default=Plan.GRATIS)
+    prueba_hasta = models.DateField(null=True, blank=True)
+    pagado_hasta = models.DateField(null=True, blank=True)
+    notas = models.TextField(blank=True, help_text="Pagos recibidos, acuerdos comerciales…")
+
+    def __str__(self):
+        return f"{self.negocio} · {self.get_plan_display()}"
+
+    def _hoy(self):
+        from django.utils import timezone
+
+        return timezone.localdate()
+
+    @property
+    def en_prueba(self) -> bool:
+        return bool(self.prueba_hasta and self.prueba_hasta >= self._hoy())
+
+    @property
+    def al_dia(self) -> bool:
+        return bool(self.pagado_hasta and self.pagado_hasta >= self._hoy())
+
+    @property
+    def plan_efectivo(self) -> str:
+        if self.en_prueba:
+            return self.Plan.NEGOCIO  # la prueba incluye todo
+        return self.plan if (self.al_dia or self.plan == self.Plan.GRATIS) else self.Plan.GRATIS
+
+    @property
+    def limites(self) -> dict:
+        from django.conf import settings
+
+        return settings.PLANES[self.plan_efectivo]
+
+    @property
+    def dias_restantes(self) -> int | None:
+        fin = self.prueba_hasta if self.en_prueba else self.pagado_hasta
+        return (fin - self._hoy()).days if fin else None
+
+
+class Comentario(ModeloBase):
+    """Comentarios, errores e ideas enviados desde la aplicación (clave durante el piloto)."""
+
+    class Tipo(models.TextChoices):
+        IDEA = "IDEA", "Idea o mejora"
+        ERROR = "ERROR", "Algo no funciona"
+        PREGUNTA = "PREGUNTA", "Pregunta"
+
+    negocio = models.ForeignKey(Negocio, null=True, blank=True, on_delete=models.CASCADE)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL)
+    tipo = models.CharField(max_length=10, choices=Tipo.choices, default=Tipo.IDEA)
+    texto = models.TextField(max_length=2000)
+    pagina = models.CharField(max_length=200, blank=True)
+    calificacion = models.PositiveSmallIntegerField(null=True, blank=True, help_text="1 a 5")
+    atendido = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["-creado"]

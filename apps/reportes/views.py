@@ -1,11 +1,13 @@
 from datetime import date
 
+from django.contrib import messages
 from django.core.exceptions import PermissionDenied
 from django.http import Http404
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from apps.catalogo.models import Categoria
+from apps.core.limites import permite
 from apps.core.negocio import del_negocio, negocio_requerido
 from apps.usuarios.permisos import requiere_permiso
 
@@ -66,6 +68,9 @@ def exportar(request, clave, formato):
     filas = tabla.filas + ([tabla.totales] if tabla.totales and formato == "csv" else [])
     if formato == "csv":
         return a_csv(nombre, tabla.encabezados, filas)
+    if formato in ("xlsx", "pdf") and not permite(request.negocio, "reportes_pdf"):
+        messages.warning(request, "Tu plan permite descargar CSV. Mejora tu plan para Excel y PDF.")
+        return redirect("negocio:plan")
     if formato == "xlsx":
         return a_excel(nombre, tabla.encabezados, tabla.filas, tabla.tipos, tabla.totales, titulo)
     desde, hasta = f.rango()
