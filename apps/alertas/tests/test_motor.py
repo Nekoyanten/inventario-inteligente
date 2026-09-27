@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import timedelta
 
 from django.utils import timezone
 
@@ -60,7 +60,7 @@ def test_vencimiento_proximo(producto, admin):
         tipo=T.ENTRADA_COMPRA,
         cantidad=12,
         usuario=admin,
-        fecha_vencimiento=date.today() + timedelta(days=3),
+        fecha_vencimiento=timezone.localdate() + timedelta(days=3),
         evaluar_alertas=False,
     )
     alertas = evaluar_producto(producto.pk)

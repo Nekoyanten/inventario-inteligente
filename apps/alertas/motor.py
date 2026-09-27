@@ -2,6 +2,8 @@
 
 from datetime import date
 
+from django.utils import timezone
+
 from apps.analitica.services import analizar_producto
 from apps.catalogo.models import Producto
 
@@ -12,7 +14,7 @@ ABIERTAS = [Alerta.Estado.ABIERTA, Alerta.Estado.VISTA]
 
 
 def evaluar_producto(producto_id: int, hoy: date | None = None) -> list[Alerta]:
-    hoy = hoy or date.today()
+    hoy = hoy or timezone.localdate()
     producto = Producto.objects.select_related("negocio__config", "proveedor_principal").get(pk=producto_id)
     if not producto.activo:
         return []

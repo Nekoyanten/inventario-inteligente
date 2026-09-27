@@ -1,5 +1,7 @@
 from django.contrib import admin
 
+from apps.core.negocio import NegocioAdminMixin
+
 from .models import ConfiguracionNegocio, Negocio, RegistroAuditoria
 
 
@@ -15,7 +17,7 @@ class NegocioAdmin(admin.ModelAdmin):
 
 
 @admin.register(RegistroAuditoria)
-class RegistroAuditoriaAdmin(admin.ModelAdmin):
+class RegistroAuditoriaAdmin(NegocioAdminMixin, admin.ModelAdmin):
     list_display = ("fecha", "usuario", "accion", "entidad", "entidad_id")
     list_filter = ("accion", "entidad")
 

@@ -1,6 +1,7 @@
-from datetime import date, timedelta
+from datetime import timedelta
 
 import pytest
+from django.utils import timezone
 
 from apps.inventario.models import ConteoFisico, DetalleConteo, Lote, Movimiento, TipoMovimiento
 from apps.inventario.services import ErrorInventario, aprobar_conteo, kardex, registrar_movimiento
@@ -36,7 +37,7 @@ def test_movimientos_son_inmutables(producto, admin):
 
 
 def test_salidas_consumen_lotes_fefo(producto, admin):
-    hoy = date.today()
+    hoy = timezone.localdate()
     registrar_movimiento(
         producto=producto, tipo=T.ENTRADA_COMPRA, cantidad=10, usuario=admin, fecha_vencimiento=hoy + timedelta(days=60)
     )

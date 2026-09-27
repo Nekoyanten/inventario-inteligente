@@ -4,6 +4,7 @@ from datetime import date
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from apps.core.models import ModeloBase
 
@@ -52,7 +53,7 @@ class Lote(ModeloBase):
     def dias_para_vencer(self, hoy: date | None = None):
         if not self.fecha_vencimiento:
             return None
-        return (self.fecha_vencimiento - (hoy or date.today())).days
+        return (self.fecha_vencimiento - (hoy or timezone.localdate())).days
 
 
 class Movimiento(models.Model):

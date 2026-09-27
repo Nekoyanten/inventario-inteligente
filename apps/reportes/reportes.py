@@ -1,6 +1,7 @@
 """Catálogo de reportes. Cada reporte = función que devuelve (encabezados, filas)."""
 
 from apps.catalogo.models import Producto
+from apps.core.negocio import del_negocio
 from apps.inventario.models import Movimiento, TipoMovimiento
 
 
@@ -18,15 +19,15 @@ def inventario_actual(negocio):
             p.precio_venta,
             p.valor_inventario,
         ]
-        for p in Producto.objects.filter(negocio=negocio, activo=True).select_related("categoria")
+        for p in del_negocio(negocio, Producto).filter(activo=True).select_related("categoria")
     ]
     return enc, filas
 
 
 def historial_ajustes(negocio):
     enc = ["Fecha", "Producto", "Tipo", "Cantidad", "Usuario", "Motivo"]
-    qs = Movimiento.objects.filter(
-        negocio=negocio, tipo__in=[TipoMovimiento.ENTRADA_AJUSTE, TipoMovimiento.SALIDA_AJUSTE]
+    qs = del_negocio(negocio, Movimiento).filter(
+        tipo__in=[TipoMovimiento.ENTRADA_AJUSTE, TipoMovimiento.SALIDA_AJUSTE]
     ).select_related("producto", "usuario")
     return enc, [
         [

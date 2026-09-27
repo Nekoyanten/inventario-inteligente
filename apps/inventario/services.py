@@ -114,7 +114,8 @@ def registrar_movimiento(
     if tipo == TipoMovimiento.SALIDA_VENTA:
         from apps.analitica.services import acumular_demanda_diaria
 
-        acumular_demanda_diaria(producto, fecha.date() if hasattr(fecha, "date") else fecha, cantidad)
+        dia = timezone.localdate(fecha) if hasattr(fecha, "tzinfo") and fecha.tzinfo else getattr(fecha, "date", lambda: fecha)()
+        acumular_demanda_diaria(producto, dia, cantidad)
 
     if evaluar_alertas:
         from apps.alertas.motor import evaluar_producto

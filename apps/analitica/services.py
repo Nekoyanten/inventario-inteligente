@@ -8,6 +8,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db.models import F, Sum
+from django.utils import timezone
 
 from apps.catalogo.models import EstadoStock, Producto
 
@@ -24,7 +25,7 @@ def acumular_demanda_diaria(producto: Producto, fecha: date, cantidad) -> None:
 
 def serie_ventas_diarias(producto: Producto, dias: int, hasta: date | None = None) -> list[float]:
     """Serie completa (con ceros en días sin venta) de los últimos `dias` días."""
-    hasta = hasta or date.today()
+    hasta = hasta or timezone.localdate()
     desde = hasta - timedelta(days=dias - 1)
     datos = dict(
         DemandaDiaria.objects.filter(producto=producto, fecha__range=(desde, hasta)).values_list("fecha", "cantidad")
@@ -73,7 +74,7 @@ class AnalisisProducto:
 
 
 def analizar_producto(producto: Producto, hoy: date | None = None) -> AnalisisProducto:
-    hoy = hoy or date.today()
+    hoy = hoy or timezone.localdate()
     config = getattr(producto.negocio, "config", None)
     dias = PARAMS["DIAS_HISTORIA"]
     serie = serie_ventas_diarias(producto, dias, hoy)
