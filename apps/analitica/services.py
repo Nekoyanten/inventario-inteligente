@@ -105,6 +105,8 @@ class AnalisisProducto:
     rotacion: str
     estado: str
     dias_desde_ultima_venta: int | None
+    temporada: str = ""
+    demanda_base: float = 0.0
 
 
 def analizar_producto(producto: Producto, hoy: date | None = None) -> AnalisisProducto:
@@ -116,10 +118,17 @@ def analizar_producto(producto: Producto, hoy: date | None = None) -> AnalisisPr
     # Sin historia útil (siempre agotado) usamos la serie completa
     if not serie:
         serie = serie_completa
-    d = alg.suavizado_exponencial(serie, PARAMS["ALFA_SUAVIZADO"])
+    alfa = float(config.alfa_suavizado) if config else PARAMS["ALFA_SUAVIZADO"]
+    d = d_base = alg.suavizado_exponencial(serie, alfa)
     sigma = alg.desviacion(serie)
     stock = float(producto.stock_actual)
     L = tiempo_entrega(producto)
+    temporada = ""
+    if config and config.usa_temporadas:
+        horizonte = int(L + config.horizonte_compra_dias)
+        t = temporada_activa(producto, hoy, horizonte)
+        if t is not None:
+            d, temporada = d * float(t.factor), t.nombre
     ss = alg.stock_seguridad(sigma, L, float(producto.stock_minimo), PARAMS["Z_NIVEL_SERVICIO"])
     cobertura = alg.dias_de_cobertura(stock, d)
 
@@ -148,7 +157,26 @@ def analizar_producto(producto: Producto, hoy: date | None = None) -> AnalisisPr
         rotacion=rotacion,
         estado=estado,
         dias_desde_ultima_venta=dias_ultima,
+        temporada=temporada,
+        demanda_base=d_base,
     )
+
+
+def temporada_activa(producto: Producto, hoy: date, dias: int):
+    """Temporada (con mayor factor) que toca los próximos `dias` días para este producto."""
+    from django.db.models import Q
+
+    from .models import Temporada
+
+    candidatas = Temporada.objects.filter(negocio_id=producto.negocio_id).filter(
+        Q(categoria__isnull=True) | Q(categoria_id=producto.categoria_id)
+    )
+    mejor = None
+    for t in candidatas:
+        if any(t.contiene(hoy + timedelta(days=i)) for i in range(max(dias, 1) + 1)):
+            if mejor is None or t.factor > mejor.factor:
+                mejor = t
+    return mejor
 
 
 def pronostico_mensual(producto: Producto, meses: int = 6, hoy: date | None = None) -> alg.Pronostico:
@@ -169,11 +197,16 @@ def pronostico_mensual(producto: Producto, meses: int = 6, hoy: date | None = No
     )
     completos = [f for f in filas if primera and f["mes"] >= primera.replace(day=1) and
                  (f["mes"] > primera.replace(day=1) or primera.day == 1)]
-    serie = [float(f["total"]) for f in completos][-meses:]
+    todos = [float(f["total"]) for f in completos]
+    if len(todos) >= 24:
+        return alg.pronostico_holt_winters(todos[-36:])
+    serie = todos[-meses:]
     if len(serie) >= 3:
         return alg.pronostico_holt(serie)
-    diaria = serie_ventas_diarias(producto, PARAMS["DIAS_HISTORIA"], hoy)
-    d = alg.suavizado_exponencial(diaria, PARAMS["ALFA_SUAVIZADO"])
+    diaria = serie_efectiva(producto, PARAMS["DIAS_HISTORIA"], hoy) or serie_ventas_diarias(
+        producto, PARAMS["DIAS_HISTORIA"], hoy)
+    config = getattr(producto.negocio, "config", None)
+    d = alg.suavizado_exponencial(diaria, float(config.alfa_suavizado) if config else PARAMS["ALFA_SUAVIZADO"])
     sigma = alg.desviacion(diaria)
     valor = d * 30
     margen = 1.28 * sigma * (30 ** 0.5)  # ~80 % de confianza
@@ -219,3 +252,41 @@ def clasificacion_abc(negocio, dias: int = 90, hoy: date | None = None) -> dict[
         proporcion = acumulado / total if total else 1
         resultado[f["producto_id"]] = "A" if proporcion <= 0.80 or not resultado else ("B" if proporcion <= 0.95 else "C")
     return resultado
+
+
+
+def registrar_y_evaluar_pronosticos(negocio, hoy: date | None = None) -> dict:
+    """Guarda el pronóstico de los próximos 30 días y cierra los períodos vencidos con lo realmente vendido.
+
+    Con esto se mide la precisión (error porcentual) del motor por producto."""
+    from .models import RegistroPronostico
+
+    hoy = hoy or timezone.localdate()
+    cerrados = creados = 0
+    for reg in RegistroPronostico.objects.filter(producto__negocio=negocio, real__isnull=True, hasta__lt=hoy):
+        reg.real = DemandaDiaria.objects.filter(producto=reg.producto, fecha__range=(reg.desde, reg.hasta)).aggregate(
+            t=Sum("cantidad"))["t"] or 0
+        reg.save(update_fields=["real"])
+        cerrados += 1
+    for producto in Producto.objects.filter(negocio=negocio, activo=True, es_agrupador=False):
+        if RegistroPronostico.objects.filter(producto=producto, hasta__gte=hoy).exists():
+            continue
+        if not DemandaDiaria.objects.filter(producto=producto).exists():
+            continue
+        p = pronostico_mensual(producto, hoy=hoy)
+        RegistroPronostico.objects.create(producto=producto, desde=hoy, hasta=hoy + timedelta(days=29),
+                                          pronosticado=round(p.valor, 3))
+        creados += 1
+    return {"creados": creados, "cerrados": cerrados}
+
+
+def precision_pronosticos(negocio) -> list[dict]:
+    """Error porcentual medio (MAPE) por producto sobre los períodos ya cerrados."""
+    from .models import RegistroPronostico
+
+    por_producto: dict[int, list] = {}
+    for reg in RegistroPronostico.objects.filter(producto__negocio=negocio, real__isnull=False).select_related("producto"):
+        if reg.error_pct is not None:
+            por_producto.setdefault(reg.producto_id, [reg.producto, []])[1].append(reg.error_pct)
+    filas = [{"producto": p, "periodos": len(e), "mape": sum(e) / len(e)} for p, e in por_producto.values()]
+    return sorted(filas, key=lambda f: f["mape"])

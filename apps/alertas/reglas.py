@@ -9,6 +9,7 @@ from apps.analitica import algoritmos as alg
 from apps.analitica.models import DemandaDiaria
 from apps.analitica.services import AnalisisProducto
 from apps.catalogo.models import EstadoStock
+from apps.core.formato import numero as _n
 
 from .models import Alerta
 
@@ -24,8 +25,6 @@ class Hallazgo:
     datos: dict = field(default_factory=dict)
 
 
-def _n(x: float) -> str:
-    return f"{x:,.0f}".replace(",", ".") if abs(x - round(x)) < 1e-9 else f"{x:,.1f}"
 
 
 class Regla:

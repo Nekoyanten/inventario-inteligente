@@ -56,6 +56,31 @@ def pronostico_holt(serie: list[float], alfa: float = 0.5, beta: float = 0.3, pa
     return Pronostico(valor, max(0.0, valor - error), valor + error)
 
 
+def pronostico_holt_winters(serie: list[float], periodo: int = 12, alfa: float = 0.4, beta: float = 0.1,
+                            gamma: float = 0.3) -> Pronostico:
+    """Holt-Winters aditivo (nivel + tendencia + estacionalidad). Requiere ≥ 2 temporadas completas.
+
+    Útil para negocios con picos anuales (ropa en diciembre, útiles en enero)."""
+    if len(serie) < 2 * periodo:
+        return pronostico_holt(serie)
+    nivel = mean(serie[:periodo])
+    tendencia = (mean(serie[periodo:2 * periodo]) - nivel) / periodo
+    estacional = [x - nivel for x in serie[:periodo]]
+    errores = []
+    for t, x in enumerate(serie):
+        s_idx = t % periodo
+        prediccion = nivel + tendencia + estacional[s_idx]
+        if t >= periodo:
+            errores.append(abs(x - prediccion))
+        nivel_ant = nivel
+        nivel = alfa * (x - estacional[s_idx]) + (1 - alfa) * (nivel + tendencia)
+        tendencia = beta * (nivel - nivel_ant) + (1 - beta) * tendencia
+        estacional[s_idx] = gamma * (x - nivel) + (1 - gamma) * estacional[s_idx]
+    valor = max(0.0, nivel + tendencia + estacional[len(serie) % periodo])
+    error = mean(errores) if errores else 0
+    return Pronostico(valor, max(0.0, valor - error), valor + error)
+
+
 def desviacion(serie: list[float]) -> float:
     return pstdev(serie) if len(serie) > 1 else 0.0
 

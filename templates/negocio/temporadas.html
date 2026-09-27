@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block titulo %}Temporadas{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><a class="suave" href="{% url 'negocio:configuracion' %}">← Ajustes</a><h1>Temporadas</h1></div></div>
+{% if not config_negocio.usa_temporadas %}<p class="mensaje warning">Las temporadas están desactivadas. Actívalas en <a href="{% url 'negocio:configuracion' %}">Ajustes</a> para que se tengan en cuenta.</p>{% endif %}
+<div class="rejilla-2">
+  <section class="tarjeta formulario-libre">
+    <h2>Nueva temporada</h2>
+    <p class="suave">Épocas en las que vendes más o menos: Navidad, regreso a clases, Día de la Madre, vacaciones… Las recomendaciones de compra se ajustan antes de que empiecen.</p>
+    <form method="post">{% csrf_token %}{{ form.as_p }}<button class="boton boton-auto">Agregar</button></form>
+  </section>
+  <section class="tarjeta">
+    <h2>Temporadas configuradas</h2>
+    <table class="tabla compacta"><tbody>
+    {% for t in temporadas %}<tr><td>{{ t.nombre }}<br><small class="suave">{{ t.inicio_dia }}/{{ t.inicio_mes }} → {{ t.fin_dia }}/{{ t.fin_mes }}{% if t.categoria %} · {{ t.categoria }}{% endif %}</small></td><td class="num">×{{ t.factor }}</td>
+      <td><form method="post">{% csrf_token %}<button class="enlace" name="eliminar" value="{{ t.pk }}">Eliminar</button></form></td></tr>
+    {% empty %}<tr><td class="vacio">Sin temporadas.</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+</div>
+{% endblock %}

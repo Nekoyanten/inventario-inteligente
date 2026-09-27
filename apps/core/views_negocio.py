@@ -61,3 +61,43 @@ def auditoria(request):
         "acciones": del_negocio(request.negocio, RegistroAuditoria).values_list("accion", flat=True)
         .distinct().order_by("accion"),
     })
+
+
+@negocio_requerido
+@requiere_permiso("configurar_negocio")
+def temporadas(request):
+    from django import forms as dj_forms
+
+    from apps.analitica.models import Temporada
+    from apps.catalogo.models import Categoria
+
+    class TemporadaForm(dj_forms.ModelForm):
+        class Meta:
+            model = Temporada
+            fields = ("nombre", "inicio_dia", "inicio_mes", "fin_dia", "fin_mes", "factor", "categoria")
+            labels = {"inicio_dia": "Día de inicio", "inicio_mes": "Mes de inicio", "fin_dia": "Día final",
+                      "fin_mes": "Mes final", "factor": "Factor de demanda (1.5 = +50 %)",
+                      "categoria": "Solo para la categoría (opcional)"}
+
+        def clean(self):
+            d = super().clean()
+            for campo, maximo in (("inicio_mes", 12), ("fin_mes", 12), ("inicio_dia", 31), ("fin_dia", 31)):
+                if d.get(campo) is not None and not 1 <= d[campo] <= maximo:
+                    self.add_error(campo, f"Debe estar entre 1 y {maximo}.")
+            return d
+
+    form = TemporadaForm(request.POST or None)
+    form.fields["categoria"].queryset = del_negocio(request.negocio, Categoria)
+    if request.method == "POST":
+        if request.POST.get("eliminar"):
+            del_negocio(request.negocio, Temporada).filter(pk=request.POST["eliminar"]).delete()
+            return redirect("negocio:temporadas")
+        if form.is_valid():
+            t = form.save(commit=False)
+            t.negocio = request.negocio
+            t.save()
+            messages.success(request, f"Temporada {t.nombre} agregada.")
+            return redirect("negocio:temporadas")
+    return render(request, "negocio/temporadas.html", {
+        "form": form, "temporadas": del_negocio(request.negocio, Temporada).select_related("categoria"),
+    })

@@ -8,12 +8,9 @@ from apps.analitica import algoritmos as alg
 from apps.analitica.services import analizar_producto
 from apps.catalogo.models import Producto
 from apps.compras.models import DetalleOrdenCompra, OrdenCompra
+from apps.core.formato import numero as _n
 
 from .models import RecomendacionCompra
-
-
-def _n(x):
-    return f"{x:,.0f}".replace(",", ".") if abs(x - round(x)) < 1e-9 else f"{x:,.1f}"
 
 
 def recomendar_producto(producto: Producto) -> RecomendacionCompra | None:
@@ -21,7 +18,9 @@ def recomendar_producto(producto: Producto) -> RecomendacionCompra | None:
     config = getattr(producto.negocio, "config", None)
     horizonte = config.horizonte_compra_dias if config else 7
     necesita = a.stock + a.en_transito <= a.punto_reorden or a.stock <= float(producto.stock_minimo)
+    pendientes = RecomendacionCompra.objects.filter(producto=producto, estado=RecomendacionCompra.Estado.PENDIENTE)
     if not necesita:
+        pendientes.delete()  # ya no hace falta comprar: se retira la sugerencia vieja
         return None
 
     multiplo = 1
@@ -39,6 +38,7 @@ def recomendar_producto(producto: Producto) -> RecomendacionCompra | None:
         multiplo=multiplo,
     )
     if cantidad <= 0:
+        pendientes.delete()
         return None
 
     explicacion = (
@@ -49,6 +49,9 @@ def recomendar_producto(producto: Producto) -> RecomendacionCompra | None:
     )
     if a.en_transito:
         explicacion += f" Ya hay {_n(a.en_transito)} unidades en camino."
+    if a.temporada:
+        explicacion += (f" Se consideró la temporada «{a.temporada}»: normalmente vendes ~{_n(a.demanda_base)} por día"
+                        f" y en esta época se espera ~{_n(a.demanda_diaria)}.")
 
     rec, _ = RecomendacionCompra.objects.update_or_create(
         producto=producto,
@@ -79,12 +82,21 @@ def generar_recomendaciones(negocio) -> list[RecomendacionCompra]:
 
 
 @transaction.atomic
-def crear_ordenes_desde_recomendaciones(recomendaciones, usuario) -> list[OrdenCompra]:
-    """Agrupa recomendaciones aceptadas por proveedor y crea una orden en BORRADOR por cada uno."""
+def crear_ordenes_desde_recomendaciones(recomendaciones, usuario, cantidades=None, proveedores=None) -> list[OrdenCompra]:
+    """Agrupa recomendaciones aceptadas por proveedor y crea una orden en BORRADOR por cada uno.
+
+    cantidades: {rec_id: cantidad editada}; proveedores: {rec_id: Proveedor} para las que no tenían.
+    """
+    cantidades, proveedores = cantidades or {}, proveedores or {}
     por_proveedor = defaultdict(list)
     for rec in recomendaciones:
-        if rec.proveedor_id is None:
+        if rec.pk in proveedores:
+            rec.proveedor = proveedores[rec.pk]
+        if rec.pk in cantidades:
+            rec.cantidad_sugerida = cantidades[rec.pk]
+        if rec.proveedor_id is None or rec.cantidad_sugerida <= 0:
             continue
+        rec.save(update_fields=["proveedor", "cantidad_sugerida"])
         por_proveedor[rec.proveedor].append(rec)
     ordenes = []
     for proveedor, recs in por_proveedor.items():
@@ -101,3 +113,12 @@ def crear_ordenes_desde_recomendaciones(recomendaciones, usuario) -> list[OrdenC
             rec.save(update_fields=["estado"])
         ordenes.append(orden)
     return ordenes
+
+
+def descartar(recomendacion: RecomendacionCompra, usuario, motivo: str):
+    from apps.core.auditoria import auditar
+
+    recomendacion.estado = RecomendacionCompra.Estado.DESCARTADA
+    recomendacion.motivo_descarte = motivo[:200]
+    recomendacion.save(update_fields=["estado", "motivo_descarte"])
+    auditar(recomendacion.negocio, usuario, "descartar_recomendacion", recomendacion, motivo=motivo)

@@ -1,0 +1,36 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Qué comprar{% endblock %}
+{% block contenido %}
+<h1>Compras</h1>
+{% include "compras/_pestanas.html" %}
+<div class="encabezado">
+  <p class="suave" style="margin:0;max-width:640px">El sistema calcula cuánto pedir según tus ventas, el tiempo de entrega de cada proveedor, un stock de seguridad y lo que ya viene en camino. <strong>Tú decides:</strong> ajusta cantidades y elige qué pedir.</p>
+  <form method="post" action="{% url 'recomendaciones:generar' %}">{% csrf_token %}<button class="boton boton-auto boton-chico boton-secundario">Recalcular</button></form>
+</div>
+{% if recomendaciones %}
+<form method="post" action="{% url 'recomendaciones:procesar' %}">{% csrf_token %}
+  <section class="tarjeta">
+    <table class="tabla">
+      <thead><tr><th><input type="checkbox" checked onclick="document.querySelectorAll('[name=seleccion]').forEach(c => c.checked = this.checked)" aria-label="Seleccionar todo"></th><th>Producto</th><th>Por qué</th><th>Pedir</th><th>Proveedor</th>{% if ver_costos %}<th class="num">Costo aprox.</th>{% endif %}</tr></thead>
+      <tbody>
+      {% for r in recomendaciones %}
+        <tr><td><input type="checkbox" name="seleccion" value="{{ r.pk }}" checked aria-label="Incluir {{ r.producto.nombre }}"></td>
+          <td><a href="{% url 'catalogo:detalle' r.producto_id %}">{{ r.producto.nombre }}</a><br><small class="suave">Stock {{ r.stock_al_calcular|cantidad }} · {{ r.demanda_diaria|floatformat:1 }}/día{% if r.temporada %} · 🎄 {{ r.temporada }}{% endif %}</small></td>
+          <td data-titulo="Por qué"><small>{{ r.explicacion }}</small></td>
+          <td data-titulo="Pedir"><input type="number" name="cantidad-{{ r.pk }}" value="{{ r.cantidad_sugerida }}" min="0" style="width:6.5rem" aria-label="Cantidad a pedir de {{ r.producto.nombre }}"></td>
+          <td data-titulo="Proveedor">{% if r.proveedor %}{{ r.proveedor }}{% else %}<select name="proveedor-{{ r.pk }}" aria-label="Proveedor"><option value="">Elige…</option>{% for p in proveedores %}<option value="{{ p.pk }}">{{ p }}</option>{% endfor %}</select>{% endif %}</td>
+          {% if ver_costos %}<td class="num" data-titulo="Costo aprox.">{% widthratio r.cantidad_sugerida 1 r.producto.precio_compra as c %}{{ c|moneda }}</td>{% endif %}</tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% if ver_costos %}<p class="encabezado"><span>Inversión aproximada</span><span class="total">{{ total|moneda }}</span></p>{% endif %}
+    <div class="acciones">
+      <button class="boton boton-auto" name="accion" value="ordenar">Crear órdenes de compra</button>
+      <details><summary class="enlace">Descartar seleccionadas</summary><div class="campo-linea" style="margin-top:.4rem"><input name="motivo" placeholder="Motivo (ej. producto descontinuado)"><button class="boton boton-auto boton-secundario" name="accion" value="descartar">Descartar</button></div></details>
+    </div>
+  </section>
+</form>
+{% else %}
+<section class="tarjeta vacio">🟢 No hay compras recomendadas por ahora. Pulsa «Recalcular» después de registrar ventas.</section>
+{% endif %}
+{% endblock %}

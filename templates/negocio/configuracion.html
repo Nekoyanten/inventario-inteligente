@@ -15,6 +15,16 @@
   </section>
   <div class="acciones"><button class="boton boton-auto">Guardar cambios</button></div>
 </form>
+<div class="rejilla">
+<section class="tarjeta">
+  <h2>Más opciones</h2>
+  <ul class="lista-simple">
+    <li><a href="{% url 'negocio:temporadas' %}">🎄 Temporadas de ventas</a></li>
+    <li><a href="{% url 'negocio:auditoria' %}">📜 Bitácora de auditoría</a></li>
+    <li><a href="{% url 'catalogo:catalogos' %}">🏷️ Categorías, marcas y atributos</a></li>
+    {% url 'reportes:importar' as u_imp %}{% if u_imp %}<li><a href="{{ u_imp }}">📥 Importar productos desde Excel</a></li>{% endif %}
+  </ul>
+</section>
 <section class="tarjeta">
   <h2>Restaurar configuración recomendada</h2>
   <p class="suave">Vuelve a crear las categorías y atributos de la plantilla de tu tipo de negocio. No borra nada.</p>
@@ -22,4 +32,5 @@
     <button class="boton boton-auto boton-secundario">Restaurar</button>
   </form>
 </section>
+</div>
 {% endblock %}

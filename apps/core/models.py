@@ -55,6 +55,12 @@ class ConfiguracionNegocio(ModeloBase):
     horizonte_compra_dias = models.PositiveIntegerField(default=7, help_text="Días que debe cubrir un pedido")
     tiempo_entrega_defecto = models.PositiveIntegerField(default=3, help_text="Si el producto no tiene proveedor")
 
+    # Motor inteligente
+    alfa_suavizado = models.DecimalField(
+        max_digits=3, decimal_places=2, default=0.3,
+        help_text="Qué tanto pesan las ventas recientes (0.1 = estable, 0.6 = reacciona rápido)",
+    )
+
     # Notificaciones
     resumen_por_correo = models.BooleanField(
         default=True, help_text="Enviar cada mañana las alertas críticas a los administradores"

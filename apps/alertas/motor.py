@@ -58,6 +58,7 @@ def evaluar_ajuste(movimiento_id: int) -> Alerta | None:
     """Ajustes y bajas inusuales: comparados con el historial de ajustes del producto
     o, sin historia, con el tamaño del stock. Detecta y pide revisión; no acusa."""
     from apps.analitica import algoritmos as alg
+    from apps.core.formato import numero
     from apps.inventario.models import Movimiento
 
     m = Movimiento.objects.select_related("producto", "usuario").get(pk=movimiento_id)
@@ -76,8 +77,8 @@ def evaluar_ajuste(movimiento_id: int) -> Alerta | None:
     Movimiento.objects.filter(pk=m.pk).update(marcado_anomalo=True)  # los movimientos no se editan con save()
     return Alerta.objects.create(
         negocio=m.negocio, producto=m.producto, tipo=Alerta.Tipo.ANOMALIA, severidad=Alerta.Severidad.REVISAR,
-        mensaje=(f"Ajuste inusual en {m.producto.nombre}: {m.get_tipo_display().lower()} de {cantidad:g} u. "
-                 f"por {m.usuario or 'usuario desconocido'} (stock previo {stock_previo:g}).")[:300],
+        mensaje=(f"Ajuste inusual en {m.producto.nombre}: {m.get_tipo_display().lower()} de {numero(cantidad)} u. "
+                 f"por {m.usuario or 'usuario desconocido'} (stock previo {numero(stock_previo)}).")[:300],
         accion_sugerida="Verificar el motivo: " + (m.motivo or "sin motivo")[:150],
         datos={"movimiento": m.pk},
     )

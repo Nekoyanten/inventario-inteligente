@@ -16,7 +16,7 @@ def _datos(negocio, **cambios):
         "c-dias_vencimiento_rojo": c.dias_vencimiento_rojo, "c-dias_vencimiento_amarillo": c.dias_vencimiento_amarillo,
         "c-dias_sin_movimiento": c.dias_sin_movimiento, "c-dias_exceso": c.dias_exceso,
         "c-horizonte_compra_dias": c.horizonte_compra_dias, "c-tiempo_entrega_defecto": c.tiempo_entrega_defecto,
-        "c-usa_vencimientos": "on",
+        "c-usa_vencimientos": "on", "c-alfa_suavizado": "0.3",
     }
     datos.update(cambios)
     return datos

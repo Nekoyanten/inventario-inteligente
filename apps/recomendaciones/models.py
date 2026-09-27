@@ -19,6 +19,8 @@ class RecomendacionCompra(ModeloBase):
     stock_al_calcular = models.DecimalField(max_digits=12, decimal_places=3)
     explicacion = models.TextField()
     estado = models.CharField(max_length=12, choices=Estado.choices, default=Estado.PENDIENTE)
+    motivo_descarte = models.CharField(max_length=200, blank=True)
+    temporada = models.CharField(max_length=80, blank=True, help_text="Temporada considerada en el cálculo")
 
     class Meta:
         ordering = ["-creado"]

@@ -72,6 +72,7 @@ class ConfiguracionForm(forms.ModelForm):
             "dias_exceso": "Días de cobertura que se consideran exceso",
             "horizonte_compra_dias": "Días que debe cubrir cada pedido",
             "tiempo_entrega_defecto": "Tiempo de entrega por defecto (días)",
+            "alfa_suavizado": "Sensibilidad a cambios recientes en las ventas (0.1 a 0.6)",
             "resumen_por_correo": "Enviarme por correo cada mañana las alertas críticas",
         }
 
@@ -80,6 +81,9 @@ class ConfiguracionForm(forms.ModelForm):
         if datos.get("usa_lotes") and not datos.get("usa_vencimientos"):
             # Los lotes sin vencimiento son válidos, pero avisamos la combinación más común
             pass
+        alfa = datos.get("alfa_suavizado")
+        if alfa is not None and not (0.05 <= alfa <= 0.9):
+            self.add_error("alfa_suavizado", "Usa un valor entre 0.05 y 0.9.")
         rojo, amarillo = datos.get("dias_vencimiento_rojo"), datos.get("dias_vencimiento_amarillo")
         if rojo is not None and amarillo is not None and rojo > amarillo:
             self.add_error("dias_vencimiento_amarillo", "Debe ser mayor o igual a los días de alerta roja.")

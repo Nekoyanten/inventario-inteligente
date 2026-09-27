@@ -3,6 +3,7 @@
 from django.core.management.base import BaseCommand
 
 from apps.alertas.motor import evaluar_negocio
+from apps.analitica.services import registrar_y_evaluar_pronosticos
 from apps.core.models import Negocio
 from apps.recomendaciones.services import generar_recomendaciones
 
@@ -14,4 +15,5 @@ class Command(BaseCommand):
         for negocio in Negocio.objects.all():
             n_alertas = evaluar_negocio(negocio)
             n_recs = len(generar_recomendaciones(negocio))
+            registrar_y_evaluar_pronosticos(negocio)
             self.stdout.write(self.style.SUCCESS(f"{negocio}: {n_alertas} alertas, {n_recs} recomendaciones"))
