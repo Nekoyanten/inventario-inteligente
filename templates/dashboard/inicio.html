@@ -1,47 +1,74 @@
-{% extends "base.html" %}
-{% load humanize %}
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Inicio{% endblock %}
 {% block contenido %}
-<h1>¿Cómo está mi negocio?</h1>
-{% if not resumen %}
-  <p class="tarjeta">Tu usuario aún no está asociado a un negocio. Pide al administrador que te asigne uno.</p>
-{% else %}
+<div class="encabezado">
+  <h1>¿Cómo está mi negocio?</h1>
+  <div class="acciones">
+    {% if "registrar_venta" in permisos %}<a class="boton boton-auto boton-chico" href="{% url 'ventas:pos' %}">🧾 Vender</a>{% endif %}
+    {% if "gestionar_compras" in permisos %}{% url 'recomendaciones:lista' as u_rec %}{% if u_rec %}<a class="boton boton-auto boton-chico boton-secundario" href="{{ u_rec }}">🛒 Qué comprar</a>{% endif %}{% endif %}
+  </div>
+</div>
+{% if not resumen.inventario.productos %}
+<section class="tarjeta explicacion">
+  <h2>Empecemos 👋</h2>
+  <ol>
+    <li><a href="{% url 'catalogo:crear' %}">Crea tus productos</a>{% url 'reportes:importar' as u_imp %}{% if u_imp %} o <a href="{{ u_imp }}">impórtalos desde Excel</a>{% endif %}.</li>
+    <li><a href="{% url 'proveedores:crear' %}">Registra tus proveedores</a> y sus tiempos de entrega.</li>
+    <li>Empieza a <a href="{% url 'ventas:pos' %}">vender</a>: el sistema aprende de cada venta.</li>
+  </ol>
+</section>
+{% endif %}
 <div class="rejilla">
   <section class="tarjeta">
+    <h2>Ventas del mes</h2>
+    <p class="kpi">{{ resumen.ventas.mes|moneda }}</p>
+    <p>{% if resumen.ventas.variacion_pct is not None %}<span class="insignia {% if resumen.ventas.variacion_pct >= 0 %}verde{% else %}rojo{% endif %}">{% if resumen.ventas.variacion_pct >= 0 %}▲ +{% else %}▼ {% endif %}{{ resumen.ventas.variacion_pct|floatformat:0 }} %</span> vs. mismo período del mes anterior{% else %}<span class="suave">Sin datos del mes anterior</span>{% endif %}</p>
+    <p class="suave">Hoy: {{ resumen.ventas.hoy|moneda }} en {{ resumen.ventas.numero_hoy }} ventas</p>
+  </section>
+  {% if "ver_reportes_financieros" in permisos %}
+  <section class="tarjeta">
+    <h2>Utilidad estimada del mes</h2>
+    <p class="kpi">{{ resumen.ventas.utilidad_mes|moneda }}</p>
+    <p class="suave">Ticket promedio {{ resumen.ventas.ticket_promedio|moneda }} · {{ resumen.ventas.numero_mes }} ventas</p>
+  </section>
+  {% endif %}
+  <section class="tarjeta">
     <h2>Inventario</h2>
-    <p class="grande">{{ resumen.inventario.productos }} <small>productos</small></p>
-    <ul>
-      <li>🟡 {{ resumen.inventario.stock_bajo }} con stock bajo</li>
-      <li>⚫ {{ resumen.inventario.agotados }} agotados</li>
-      {% if config_negocio.usa_vencimientos %}<li>⚠️ {{ resumen.inventario.por_vencer }} próximos a vencer</li>{% endif %}
-      <li>Valor: ${{ resumen.inventario.valor_total|floatformat:0|intcomma }}</li>
+    <p class="kpi">{{ resumen.inventario.productos }} <small>productos</small></p>
+    <ul class="lista-simple">
+      <li><a href="{% url 'catalogo:lista' %}?estado=BAJO">🟡 {{ resumen.inventario.stock_bajo }} con stock bajo</a></li>
+      <li><a href="{% url 'catalogo:lista' %}?estado=AGOTADO">⚫ {{ resumen.inventario.agotados }} agotados</a></li>
+      {% if config_negocio.usa_vencimientos %}<li><a href="{% url 'inventario:lotes' %}?filtro=riesgo">⚠️ {{ resumen.inventario.por_vencer }} próximos a vencer</a></li>{% endif %}
+      {% if "ver_precios_compra" in permisos %}<li class="suave">Valor: {{ resumen.inventario.valor_total|moneda }}</li>{% endif %}
     </ul>
-  </section>
-  <section class="tarjeta">
-    <h2>Ventas</h2>
-    <p class="grande">${{ resumen.ventas.mes|floatformat:0|intcomma }} <small>este mes</small></p>
-    {% if resumen.ventas.variacion_pct is not None %}
-      <p>{% if resumen.ventas.variacion_pct >= 0 %}▲ +{% else %}▼ {% endif %}{{ resumen.ventas.variacion_pct|floatformat:0 }}% vs mes anterior</p>
-    {% endif %}
-  </section>
-  <section class="tarjeta">
-    <h2>Inventario inmovilizado</h2>
-    <p class="grande">${{ resumen.inmovilizado|floatformat:0|intcomma }}</p>
-    <p>en productos de baja rotación</p>
   </section>
   <section class="tarjeta">
     <h2>Alertas</h2>
-    <ul>
-      <li>🔴 {{ resumen.alertas.actuar }} para actuar</li>
-      <li>🟡 {{ resumen.alertas.revisar }} para revisar</li>
-      <li>⚠️ {{ resumen.alertas.vencimientos }} de vencimiento</li>
+    <ul class="lista-simple">
+      <li><a href="{% url 'alertas:lista' %}">🔴 {{ resumen.alertas.actuar }} para actuar</a></li>
+      <li><a href="{% url 'alertas:lista' %}">🟡 {{ resumen.alertas.revisar }} para revisar</a></li>
+      {% if config_negocio.usa_vencimientos %}<li>⚠️ {{ resumen.alertas.vencimientos }} de vencimiento</li>{% endif %}
     </ul>
+    {% if "ver_precios_compra" in permisos and resumen.inmovilizado %}<p class="suave">Inventario inmovilizado: <strong>{{ resumen.inmovilizado|moneda }}</strong> en productos de baja rotación</p>{% endif %}
   </section>
 </div>
-<section class="tarjeta">
-  <h2>Últimas alertas</h2>
-  {% for a in resumen.alertas.ultimas %}
-    <p class="alerta s{{ a.severidad }}">{{ a.mensaje }} <em>{{ a.accion_sugerida }}</em></p>
-  {% empty %}<p>🟢 Todo en orden.</p>{% endfor %}
-</section>
-{% endif %}
+<div class="rejilla-2">
+  <section class="tarjeta">
+    <h2>Ventas de los últimos 30 días</h2>
+    {% grafico_barras resumen.grafico_ventas None 150 True %}
+  </section>
+  <section class="tarjeta">
+    <h2>Lo que más vende (30 días)</h2>
+    <table class="tabla compacta"><tbody>
+    {% for t in resumen.top %}<tr><td><a href="{% url 'catalogo:detalle' t.producto_id %}">{{ t.producto__nombre }}</a></td><td class="num">{{ t.unidades|cantidad }} u.</td><td class="num">{{ t.ingreso|moneda }}</td></tr>
+    {% empty %}<tr><td class="vacio">Aún no hay ventas.</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+  <section class="tarjeta ancho">
+    <div class="encabezado"><h2>Qué atender primero</h2><a href="{% url 'alertas:lista' %}">Ver todas →</a></div>
+    {% for a in resumen.alertas.ultimas %}
+      <p class="alerta s{{ a.severidad }}">{{ a.mensaje }} {% if a.enlace_accion %}<a href="{{ a.enlace_accion }}">{{ a.accion_sugerida|default:"Ver" }} →</a>{% else %}<em>{{ a.accion_sugerida }}</em>{% endif %}</p>
+    {% empty %}<p>🟢 Todo en orden.</p>{% endfor %}
+  </section>
+</div>
 {% endblock %}

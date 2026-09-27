@@ -70,14 +70,14 @@ def url_con(context, **kwargs):
 
 
 @register.inclusion_tag("parciales/grafico_barras.html")
-def grafico_barras(datos, pronostico=None, alto=160):
+def grafico_barras(datos, pronostico=None, alto=160, compacto=False):
     """Barras SVG accesibles. `datos`: [{'etiqueta','valor'}]; `pronostico`: objeto con valor/minimo/maximo."""
     serie = list(datos)
     if pronostico is not None and getattr(pronostico, "valor", 0):
         serie = serie + [{"etiqueta": "próx.", "valor": pronostico.valor, "pron": True,
                           "min": pronostico.minimo, "max": pronostico.maximo}]
     maximo = max([d.get("max", d["valor"]) for d in serie] + [1])
-    ancho_barra, hueco, alto_util = 38, 14, alto - 30
+    ancho_barra, hueco, alto_util = (14, 4, alto - 30) if compacto else (38, 14, alto - 30)
     barras = []
     for i, d in enumerate(serie):
         h = d["valor"] / maximo * alto_util
@@ -85,7 +85,8 @@ def grafico_barras(datos, pronostico=None, alto=160):
         y = alto - 20 - h
         barra = {"x": x, "y": round(y, 1), "h": round(h, 1), "w": ancho_barra, "etiqueta": d["etiqueta"],
                  "valor": d["valor"], "pron": d.get("pron", False), "cx": x + ancho_barra / 2,
-                 "y_texto": round(y - 4, 1)}
+                 "y_texto": round(y - 4, 1), "etiquetar": not compacto or i % 5 == 0 or i == len(serie) - 1,
+                 "valor_visible": not compacto}
         if d.get("pron"):
             y_max = alto - 20 - d["max"] / maximo * alto_util
             y_min = alto - 20 - d["min"] / maximo * alto_util

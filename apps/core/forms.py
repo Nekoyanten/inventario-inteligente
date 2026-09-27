@@ -72,6 +72,7 @@ class ConfiguracionForm(forms.ModelForm):
             "dias_exceso": "Días de cobertura que se consideran exceso",
             "horizonte_compra_dias": "Días que debe cubrir cada pedido",
             "tiempo_entrega_defecto": "Tiempo de entrega por defecto (días)",
+            "resumen_por_correo": "Enviarme por correo cada mañana las alertas críticas",
         }
 
     def clean(self):

@@ -7,8 +7,8 @@
     {% else %}
       <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" rx="4" class="barra-g"><title>{{ b.etiqueta }}: {{ b.valor|cantidad }}</title></rect>
     {% endif %}
-    <text x="{{ b.cx }}" y="{{ b.y_texto }}" text-anchor="middle">{{ b.valor|cantidad }}</text>
-    <text x="{{ b.cx }}" y="{{ y_etiqueta }}" text-anchor="middle">{{ b.etiqueta }}</text>
+    {% if b.valor_visible or b.pron %}<text x="{{ b.cx }}" y="{{ b.y_texto }}" text-anchor="middle">{{ b.valor|cantidad }}</text>{% endif %}
+    {% if b.etiquetar %}<text x="{{ b.cx }}" y="{{ y_etiqueta }}" text-anchor="middle">{{ b.etiqueta }}</text>{% endif %}
   {% endfor %}
 </svg>
 {% endlocalize %}

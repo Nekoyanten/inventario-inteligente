@@ -136,9 +136,11 @@ def registrar_movimiento(
         acumular_demanda_diaria(producto, dia, cantidad)
 
     if evaluar_alertas:
-        from apps.alertas.motor import evaluar_producto
+        from apps.alertas.motor import evaluar_ajuste, evaluar_producto
 
         transaction.on_commit(lambda: evaluar_producto(producto.pk))
+        for mov in movimientos:
+            transaction.on_commit(lambda pk=mov.pk: evaluar_ajuste(pk))
 
     return movimientos
 

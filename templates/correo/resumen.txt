@@ -1,0 +1,7 @@
+Hola, este es el resumen de hoy de {{ negocio.nombre }}.
+
+{% for a in alertas %}- {{ a.mensaje }}{% if a.accion_sugerida %} → {{ a.accion_sugerida }}{% endif %}
+{% endfor %}
+Revisa todas las alertas en {{ url }}/alertas/
+
+Inventario Inteligente

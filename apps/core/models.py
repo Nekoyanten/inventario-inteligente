@@ -55,6 +55,11 @@ class ConfiguracionNegocio(ModeloBase):
     horizonte_compra_dias = models.PositiveIntegerField(default=7, help_text="Días que debe cubrir un pedido")
     tiempo_entrega_defecto = models.PositiveIntegerField(default=3, help_text="Si el producto no tiene proveedor")
 
+    # Notificaciones
+    resumen_por_correo = models.BooleanField(
+        default=True, help_text="Enviar cada mañana las alertas críticas a los administradores"
+    )
+
     def __str__(self):
         return f"Configuración de {self.negocio}"
 

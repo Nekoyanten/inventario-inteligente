@@ -33,6 +33,40 @@ def serie_ventas_diarias(producto: Producto, dias: int, hasta: date | None = Non
     return [float(datos.get(desde + timedelta(days=i), 0)) for i in range(dias)]
 
 
+def dias_sin_stock(producto: Producto, desde: date, hasta: date) -> set[date]:
+    """Días en que el producto terminó sin stock (no se vendió porque no había, no porque no se pidiera)."""
+    from apps.inventario.models import Movimiento
+
+    tz = timezone.get_current_timezone()
+    previo = (
+        Movimiento.objects.filter(producto=producto, fecha__date__lt=desde).order_by("-fecha", "-id")
+        .values_list("stock_resultante", flat=True).first()
+    )
+    stock = float(previo) if previo is not None else 0.0
+    cierres: dict[date, float] = {}
+    for fecha, saldo in (
+        Movimiento.objects.filter(producto=producto, fecha__date__range=(desde, hasta))
+        .order_by("fecha", "id").values_list("fecha", "stock_resultante")
+    ):
+        cierres[fecha.astimezone(tz).date()] = float(saldo)
+    agotados, dia = set(), desde
+    while dia <= hasta:
+        stock = cierres.get(dia, stock)
+        if stock <= 0:
+            agotados.add(dia)
+        dia += timedelta(days=1)
+    return agotados
+
+
+def serie_efectiva(producto: Producto, dias: int, hoy: date | None = None) -> list[float]:
+    """Ventas diarias excluyendo los días agotados sin ventas (corrige la demanda censurada)."""
+    hoy = hoy or timezone.localdate()
+    serie = serie_ventas_diarias(producto, dias, hoy)
+    desde = hoy - timedelta(days=dias - 1)
+    agotados = dias_sin_stock(producto, desde, hoy)
+    return [x for i, x in enumerate(serie) if x > 0 or (desde + timedelta(days=i)) not in agotados]
+
+
 def tiempo_entrega(producto: Producto) -> float:
     if producto.proveedor_principal_id:
         pp = producto.proveedores.filter(proveedor_id=producto.proveedor_principal_id).first()
@@ -77,7 +111,11 @@ def analizar_producto(producto: Producto, hoy: date | None = None) -> AnalisisPr
     hoy = hoy or timezone.localdate()
     config = getattr(producto.negocio, "config", None)
     dias = PARAMS["DIAS_HISTORIA"]
-    serie = serie_ventas_diarias(producto, dias, hoy)
+    serie_completa = serie_ventas_diarias(producto, dias, hoy)
+    serie = serie_efectiva(producto, dias, hoy)
+    # Sin historia útil (siempre agotado) usamos la serie completa
+    if not serie:
+        serie = serie_completa
     d = alg.suavizado_exponencial(serie, PARAMS["ALFA_SUAVIZADO"])
     sigma = alg.desviacion(serie)
     stock = float(producto.stock_actual)
@@ -88,7 +126,7 @@ def analizar_producto(producto: Producto, hoy: date | None = None) -> AnalisisPr
     ultima = DemandaDiaria.objects.filter(producto=producto, cantidad__gt=0).order_by("-fecha").first()
     dias_ultima = (hoy - ultima.fecha).days if ultima else None
     rotacion = alg.clasificar_rotacion(
-        sum(1 for x in serie if x > 0), dias, dias_ultima, config.dias_sin_movimiento if config else 45
+        sum(1 for x in serie if x > 0), max(len(serie), 1), dias_ultima, config.dias_sin_movimiento if config else 45
     )
 
     estado = producto.estado_basico()
@@ -160,3 +198,24 @@ def ventas_mensuales(producto: Producto, meses: int = 6, hoy: date | None = None
         datos.append({"etiqueta": f"{MESES[cursor.month - 1]}", "valor": totales.get((cursor.year, cursor.month), 0)})
         cursor = (cursor + timedelta(days=32)).replace(day=1)
     return datos
+
+
+
+def clasificacion_abc(negocio, dias: int = 90, hoy: date | None = None) -> dict[int, str]:
+    """Análisis ABC por ingresos: A = 80 % de las ventas, B = siguiente 15 %, C = resto."""
+    from apps.ventas.models import DetalleVenta, Venta
+
+    hoy = hoy or timezone.localdate()
+    filas = (
+        DetalleVenta.objects.filter(venta__negocio=negocio, venta__estado=Venta.Estado.COMPLETADA,
+                                    venta__fecha__date__gte=hoy - timedelta(days=dias))
+        .values("producto_id").annotate(ingreso=Sum(F("cantidad") * F("precio_unitario") - F("descuento")))
+        .order_by("-ingreso")
+    )
+    total = sum(float(f["ingreso"] or 0) for f in filas)
+    resultado, acumulado = {}, 0.0
+    for f in filas:
+        acumulado += float(f["ingreso"] or 0)
+        proporcion = acumulado / total if total else 1
+        resultado[f["producto_id"]] = "A" if proporcion <= 0.80 or not resultado else ("B" if proporcion <= 0.95 else "C")
+    return resultado

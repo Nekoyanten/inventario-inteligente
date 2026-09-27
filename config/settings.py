@@ -107,6 +107,12 @@ LOGOUT_REDIRECT_URL = "login"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Correo (resumen diario de alertas). Sin EMAIL_URL los correos se imprimen en consola.
+EMAIL_CONFIG = env.email_url("EMAIL_URL", default="consolemail://")
+vars().update(EMAIL_CONFIG)
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Inventario Inteligente <no-responder@localhost>")
+URL_SITIO = env("URL_SITIO", default="http://localhost:8000")
+
 # Parámetros por defecto del motor inteligente (se pueden sobreescribir por negocio).
 INVENTARIO_INTELIGENTE = {
     "ALFA_SUAVIZADO": 0.3,

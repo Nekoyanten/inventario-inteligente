@@ -49,3 +49,35 @@ def evaluar_negocio(negocio, hoy: date | None = None) -> int:
     for pid in Producto.objects.filter(negocio=negocio, activo=True).values_list("pk", flat=True):
         total += len(evaluar_producto(pid, hoy))
     return total
+
+
+TIPOS_AJUSTE = {"ENTRADA_AJUSTE", "SALIDA_AJUSTE", "SALIDA_DANADO"}
+
+
+def evaluar_ajuste(movimiento_id: int) -> Alerta | None:
+    """Ajustes y bajas inusuales: comparados con el historial de ajustes del producto
+    o, sin historia, con el tamaño del stock. Detecta y pide revisión; no acusa."""
+    from apps.analitica import algoritmos as alg
+    from apps.inventario.models import Movimiento
+
+    m = Movimiento.objects.select_related("producto", "usuario").get(pk=movimiento_id)
+    if m.tipo not in TIPOS_AJUSTE:
+        return None
+    historia = [float(x) for x in Movimiento.objects.filter(producto=m.producto, tipo__in=TIPOS_AJUSTE)
+                .exclude(pk=m.pk).order_by("-fecha").values_list("cantidad", flat=True)[:30]]
+    stock_previo = float(m.stock_resultante + (m.cantidad if not m.es_entrada else -m.cantidad))
+    cantidad = float(m.cantidad)
+    if len(historia) >= 5:
+        inusual = alg.es_anomalo(cantidad, historia)
+    else:
+        inusual = cantidad >= max(5.0, 0.3 * stock_previo)
+    if not inusual:
+        return None
+    Movimiento.objects.filter(pk=m.pk).update(marcado_anomalo=True)  # los movimientos no se editan con save()
+    return Alerta.objects.create(
+        negocio=m.negocio, producto=m.producto, tipo=Alerta.Tipo.ANOMALIA, severidad=Alerta.Severidad.REVISAR,
+        mensaje=(f"Ajuste inusual en {m.producto.nombre}: {m.get_tipo_display().lower()} de {cantidad:g} u. "
+                 f"por {m.usuario or 'usuario desconocido'} (stock previo {stock_previo:g}).")[:300],
+        accion_sugerida="Verificar el motivo: " + (m.motivo or "sin motivo")[:150],
+        datos={"movimiento": m.pk},
+    )

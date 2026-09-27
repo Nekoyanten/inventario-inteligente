@@ -36,6 +36,8 @@ class Alerta(ModeloBase):
     mensaje = models.CharField(max_length=300)
     accion_sugerida = models.CharField(max_length=200, blank=True)
     datos = models.JSONField(default=dict, blank=True)
+    resuelta_por = models.ForeignKey("usuarios.Usuario", null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    nota = models.CharField(max_length=255, blank=True, help_text="Justificación al resolver o descartar")
 
     class Meta:
         ordering = ["-severidad", "-creado"]
@@ -43,3 +45,28 @@ class Alerta(ModeloBase):
 
     def __str__(self):
         return f"{self.get_severidad_display()} {self.mensaje}"
+
+    @property
+    def enlace_accion(self):
+        """A dónde lleva el botón de acción sugerida."""
+        from django.urls import reverse
+
+        if self.tipo in (self.Tipo.STOCK_BAJO, self.Tipo.STOCK_CRITICO, self.Tipo.RIESGO_AGOTAMIENTO, self.Tipo.AGOTADO):
+            return reverse("recomendaciones:lista") if _existe("recomendaciones:lista") else None
+        if self.tipo in (self.Tipo.VENCIMIENTO, self.Tipo.VENCIDO):
+            return reverse("inventario:lotes")
+        if self.tipo == self.Tipo.ANOMALIA and self.datos.get("movimiento") and self.producto_id:
+            return reverse("inventario:kardex", args=[self.producto_id])
+        if self.producto_id:
+            return reverse("catalogo:detalle", args=[self.producto_id])
+        return None
+
+
+def _existe(nombre):
+    from django.urls import NoReverseMatch, reverse
+
+    try:
+        reverse(nombre)
+        return True
+    except NoReverseMatch:
+        return False
