@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block titulo %}Cerrar cuenta{% endblock %}
+{% block contenido %}
+<section class="tarjeta formulario formulario-libre">
+  <h1>Cerrar mi cuenta</h1>
+  <p>Se borrarán <strong>para siempre</strong> todos los datos de <strong>{{ negocio }}</strong>: productos, ventas, compras,
+    proveedores, movimientos, fotos, usuarios y reportes. No se puede deshacer.</p>
+  <p>Antes, te recomendamos <a href="{% url 'publico:exportar_datos' %}">descargar una copia de todos tus datos</a>.</p>
+  <p class="suave">Esto cumple tu derecho de supresión (Ley 1581 de 2012). Las copias de seguridad del servicio se
+    sobrescriben con el tiempo según nuestra <a href="{% url 'publico:privacidad' %}">política de privacidad</a>.</p>
+  <form method="post">{% csrf_token %}
+    {{ form.as_p }}
+    <button class="boton boton-peligro">Borrar mi negocio y todos sus datos</button>
+  </form>
+  <p><a href="{% url 'negocio:configuracion' %}">← No, volver</a></p>
+</section>
+{% endblock %}

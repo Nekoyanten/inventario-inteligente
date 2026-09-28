@@ -16,13 +16,17 @@ from apps.inventario.services import ErrorInventario
 from apps.usuarios.permisos import requiere_permiso
 
 from .models import Venta
-from .services import anular_venta, registrar_venta
+from .services import anular_venta, cantidades_inusuales, registrar_venta
 
 
 @negocio_requerido
 @requiere_permiso("registrar_venta")
 def pos(request):
-    return render(request, "ventas/pos.html", {"medios": Venta.MedioPago.choices})
+    config = getattr(request.negocio, "config", None)
+    return render(request, "ventas/pos.html", {
+        "medios": Venta.MedioPago.choices,
+        "sin_stock": bool(config and config.permite_venta_sin_stock),
+    })
 
 
 @negocio_requerido
@@ -45,6 +49,10 @@ def registrar(request):
     medio = datos.get("medio_pago", Venta.MedioPago.EFECTIVO)
     if medio not in Venta.MedioPago.values:
         medio = Venta.MedioPago.EFECTIVO
+    if not datos.get("confirmado"):
+        avisos = cantidades_inusuales(lineas)
+        if avisos:  # 428: el cajero confirma y se reenvía con "confirmado": true
+            return JsonResponse({"confirmar": avisos}, status=428)
     try:
         venta = registrar_venta(negocio=request.negocio, vendedor=request.user, lineas=lineas, medio_pago=medio,
                                 cliente=str(datos.get("cliente", ""))[:120])

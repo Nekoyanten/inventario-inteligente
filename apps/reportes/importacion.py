@@ -24,10 +24,25 @@ COLUMNAS = [
     ("marca", "Marca"), ("unidad", "Unidad (und, kg, L…)"), ("precio_compra", "Costo"),
     ("precio_venta", "Precio de venta"), ("stock_minimo", "Stock mínimo"), ("stock_inicial", "Stock inicial"),
     ("codigo_barras", "Código de barras"), ("proveedor", "Proveedor"), ("vencimiento", "Vencimiento (AAAA-MM-DD)"),
+    ("vida_util_dias", "Vida útil en días (perecederos)"),
 ]
 EJEMPLO = ["ARR-1K", "Arroz 1 kg", "Abarrotes", "Diana", "und", 3200, 4500, 10, 50, "7702001001", "Distribuidora A",
-           "2027-03-31"]
+           "2027-03-31", ""]
 MAX_FILAS = 5000
+
+
+def _entero_positivo(valor, errores):
+    if valor in (None, ""):
+        return None
+    try:
+        n = int(float(str(valor).replace(",", ".")))
+    except ValueError:
+        errores.append(f"vida útil inválida ({valor})")
+        return None
+    if n <= 0:
+        errores.append("la vida útil debe ser mayor que cero")
+        return None
+    return n
 
 
 def plantilla(request):
@@ -143,6 +158,7 @@ def validar(negocio, filas: list[dict]) -> tuple[list[dict], list[str]]:
             "codigo_barras": str(fila.get("codigo_barras") or "").strip()[:40],
             "proveedor": str(fila.get("proveedor") or "").strip()[:150],
             "vencimiento": _fecha(fila.get("vencimiento"), e),
+            "vida_util_dias": _entero_positivo(fila.get("vida_util_dias"), e),
         }
         if e:
             errores.append(f"Fila {n}: " + "; ".join(e))
@@ -169,6 +185,8 @@ def importar_filas(negocio, usuario, filas: list[dict]) -> dict:
             "marca": obtener(cache_marca, Marca, f["marca"]), "precio_compra": f["precio_compra"],
             "precio_venta": f["precio_venta"], "stock_minimo": f["stock_minimo"], "codigo_barras": f["codigo_barras"],
         }
+        if f.get("vida_util_dias"):
+            datos["vida_util_dias"] = f["vida_util_dias"]
         if f["unidad"]:
             datos["unidad"] = f["unidad"]
         proveedor = obtener(cache_prov, Proveedor, f["proveedor"])

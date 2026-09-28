@@ -139,6 +139,15 @@ def conteos(request):
     from .models import ConteoFisico
     from .services import crear_conteo
 
+    if request.method == "POST" and request.POST.get("tipo") == "ciclico":
+        from .services import crear_conteo_ciclico
+
+        try:
+            conteo = crear_conteo_ciclico(request.negocio, request.user)
+        except ErrorInventario as e:
+            messages.error(request, str(e))
+            return redirect("inventario:conteos")
+        return redirect("inventario:conteo", pk=conteo.pk)
     if request.method == "POST":
         categoria = None
         if request.POST.get("categoria"):

@@ -25,6 +25,12 @@ class Proveedor(ModeloBase):
     def __str__(self):
         return self.nombre
 
+    def entregas_registradas(self) -> int:
+        from apps.compras.models import OrdenCompra
+
+        return OrdenCompra.objects.filter(proveedor=self, estado=OrdenCompra.Estado.RECIBIDA,
+                                          dias_entrega__isnull=False).count()
+
     def tiempo_entrega_real(self):
         """Promedio de días entre envío y recepción de órdenes recibidas."""
         from apps.compras.models import OrdenCompra

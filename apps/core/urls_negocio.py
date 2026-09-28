@@ -10,4 +10,5 @@ urlpatterns = [
     path("temporadas/", v.temporadas, name="temporadas"),
     path("api/", v.api_token, name="api"),
     path("plan/", v.plan, name="plan"),
+    path("cerrar-cuenta/", v.cerrar_cuenta, name="cerrar_cuenta"),
 ]

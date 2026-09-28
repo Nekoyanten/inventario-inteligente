@@ -11,9 +11,12 @@
   </div>
 </div>
 <div class="rejilla">
-  <section class="tarjeta"><h2>Entrega real promedio</h2><p class="kpi">{% if indicadores.tiempo_promedio is not None %}{{ indicadores.tiempo_promedio }} <small>días</small>{% else %}—{% endif %}</p><p class="suave">Prometido: {{ indicadores.tiempo_prometido }} días</p></section>
+  <section class="tarjeta"><h2>Entrega real promedio</h2><p class="kpi">{% if indicadores.tiempo_promedio is not None %}{{ indicadores.tiempo_promedio }} <small>días</small>{% else %}—{% endif %}</p><p class="suave">Prometido: {{ indicadores.tiempo_prometido }} días</p>
+    {% if not indicadores.entregas %}<p class="suave">⚠️ Aún no hay entregas registradas: el sistema usa lo que prometió el proveedor, sin comprobar.</p>
+    {% elif indicadores.pocos_datos %}<p class="suave">⚠️ Pocos datos ({{ indicadores.entregas }} entrega{{ indicadores.entregas|pluralize }}): tómalo como referencia.</p>{% endif %}</section>
   <section class="tarjeta"><h2>Cumplimiento</h2><p class="kpi">{% if indicadores.cumplimiento_pct is not None %}{{ indicadores.cumplimiento_pct }} %{% else %}—{% endif %}</p><p class="suave">órdenes recibidas a tiempo</p></section>
-  <section class="tarjeta"><h2>Órdenes</h2><p class="kpi">{{ indicadores.ordenes }}</p><p class="suave">{{ indicadores.recibidas }} recibidas · {{ indicadores.parciales }} parciales · {{ indicadores.compras_directas }} facturas directas</p></section>
+  <section class="tarjeta"><h2>Órdenes</h2><p class="kpi">{{ indicadores.ordenes }}</p><p class="suave">{{ indicadores.recibidas }} recibidas · {{ indicadores.parciales }} parciales · {{ indicadores.compras_directas }} facturas directas</p>
+    {% if ciclo %}<p class="suave">Le compras cada ~{{ ciclo|floatformat:0 }} días.</p>{% endif %}</section>
 </div>
 <div class="rejilla-2">
   <section class="tarjeta">
@@ -35,5 +38,22 @@
     </tbody></table>
   </section>
 </div>
+{% if "gestionar_proveedores" in permisos and n_principal and otros %}
+<section class="tarjeta">
+  <details><summary><b>Cambiar de proveedor</b> · pasar sus {{ n_principal }} producto{{ n_principal|pluralize }} a otro en un solo paso</summary>
+    <form method="post" action="{% url 'proveedores:reemplazar' proveedor.pk %}" class="formulario-libre">{% csrf_token %}
+      <p><label for="r-destino">Nuevo proveedor</label>
+        <select id="r-destino" name="destino" required>{% for o in otros %}<option value="{{ o.pk }}">{{ o.nombre }}</option>{% endfor %}</select></p>
+      <p><label for="r-categoria">¿Qué productos?</label>
+        <select id="r-categoria" name="categoria"><option value="">Todos ({{ n_principal }})</option>{% for c in categorias %}<option value="{{ c.pk }}">Solo {{ c.nombre }}</option>{% endfor %}</select></p>
+      <p><label for="r-ordenes">Órdenes ya enviadas a {{ proveedor.nombre }}</label>
+        <select id="r-ordenes" name="ordenes"><option value="esperar">Esperarlas (la mercancía ya viene)</option><option value="cancelar">Cancelarlas</option></select>
+        <span class="helptext">Las órdenes que aún no has enviado pasan al nuevo proveedor.</span></p>
+      <p><label><input type="checkbox" name="desactivar" value="1" checked> Desactivar a {{ proveedor.nombre }} si ya no me surte nada</label></p>
+      <button class="boton boton-auto">Cambiar de proveedor</button>
+    </form>
+  </details>
+</section>
+{% endif %}
 {% if form.errors %}<script>document.querySelector("details").open = true</script>{% endif %}
 {% endblock %}

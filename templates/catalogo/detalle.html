@@ -20,10 +20,12 @@
 {% if producto.es_agrupador %}
 <section class="tarjeta">
   <h2>Variantes</h2>
-  <table class="tabla"><thead><tr><th>Variante</th><th class="num">Stock</th><th class="num">Precio</th><th>Estado</th></tr></thead><tbody>
+  {% if demanda_familia_semana %}<p class="suave">Toda la familia vende ~{{ demanda_familia_semana|cantidad }} por semana. «Qué comprar» reparte el pedido según la curva: cuánto pesa cada variante en las ventas.</p>{% endif %}
+  <table class="tabla"><thead><tr><th>Variante</th><th class="num">Stock</th><th class="num">Precio</th><th class="num">Curva</th><th>Estado</th></tr></thead><tbody>
   {% for v in variantes %}
     <tr><td><a href="{% url 'catalogo:detalle' v.pk %}">{{ v.nombre }}</a><br><small class="suave">{{ v.sku }}</small></td>
       <td class="num" data-titulo="Stock">{{ v.stock_actual|cantidad }}</td><td class="num" data-titulo="Precio">{{ v.precio_venta|moneda }}</td>
+      <td class="num" data-titulo="Curva">{{ v.participacion }} %</td>
       <td data-titulo="Estado">{{ v.estado_basico|insignia }}</td></tr>
   {% endfor %}
   </tbody></table>

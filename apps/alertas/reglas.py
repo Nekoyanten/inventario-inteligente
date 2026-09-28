@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date
 
+from django.utils import timezone
+
 from apps.analitica import algoritmos as alg
 from apps.analitica.models import DemandaDiaria
 from apps.analitica.services import AnalisisProducto
@@ -128,6 +130,10 @@ class ReglaBajaRotacion(Regla):
     def evaluar(self, a, hoy):
         if a.rotacion != "BAJA" or a.stock <= 0:
             return []
+        config = getattr(a.producto.negocio, "config", None)
+        dias_min = config.dias_sin_movimiento if config else 45
+        if a.producto.creado and (hoy - timezone.localdate(a.producto.creado)).days < dias_min:
+            return []  # producto nuevo: todavía no hay cómo saber si rota poco
         valor = a.stock * float(a.producto.precio_compra)
         if a.dias_desde_ultima_venta is None:
             cuando = "no registra ventas"

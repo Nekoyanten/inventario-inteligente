@@ -33,7 +33,9 @@ python manage.py simular_piloto --giro FARMACIA --dias 20                # solo 
   - los viernes y sábados se vende más;
   - un cliente que no encuentra el producto se va sin comprarlo (venta perdida).
 
-## Resultados por negocio
+> **Actualización:** la Fase 8 ya se construyó y se midió con este mismo simulador. Ver [Fase 8: antes vs. después](#fase-8-antes-vs-después). Las secciones siguientes describen el piloto **antes** de la Fase 8.
+
+## Resultados por negocio (antes de la Fase 8)
 
 | Negocio | Giro | Prod. | Tickets | Ventas (M$) | Margen | Demanda perdida | Días agotado (top 20 %) | Ventas bloqueadas / sin registrar | Compras sin registrar | Descuadre al cierre | Vencido (M$) | Error pronóstico (WAPE) | Alertas abiertas |
 |---|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
@@ -217,7 +219,7 @@ python manage.py simular_piloto --giro FARMACIA --dias 20                # solo 
 | **Errores de digitación** | 83 errores ×10: se detectaron 47 (57 %) y se corrigieron 28 (34 %) |
 | **Pronóstico por variante en ropa no sirve** | WAPE de 183 % a 317 % en ropa, frente a 40–75 % en farmacia, restaurante y minimercado |
 
-## Fase 8 recomendada (priorizada)
+## Fase 8 recomendada (priorizada) — ✅ construida
 
 | # | Mejora | Por qué (evidencia) | Esfuerzo |
 |---|---|---|---|
@@ -259,3 +261,140 @@ python manage.py simular_piloto --giro FARMACIA --dias 20                # solo 
 - 60 días no alcanzan para medir estacionalidad ni el pronóstico mensual con varios ciclos: solo se cerró un período de pronóstico.
 - **El comportamiento humano es una aproximación.** En particular, los rasgos se fijaron a mano y no se calibraron con datos reales.
 - **Las opiniones son interpretaciones de las métricas.** Un cliente real puede valorar cosas que aquí no aparecen, como la facilidad de uso, el soporte o el precio.
+
+
+## Fase 8: antes vs. después
+
+Las 13 mejoras (P1 a P13) están construidas. Para medirlas, el simulador tiene la opción `--sin-fase8`: los mismos 18
+negocios, con el **mismo código**, se usan como antes de la Fase 8 (sin vender sin stock, sin horizonte automático,
+sin vida útil, sin confirmación en caja, sin conteo del día, sin «Llegó todo»). Se corrió cada versión con **dos
+semillas** (7 y 11) y se promedió.
+
+```bash
+python manage.py simular_piloto --dias 60 --salida despues.json              # con Fase 8
+python manage.py simular_piloto --dias 60 --sin-fase8 --salida antes.json    # en otra base de datos limpia
+```
+
+**Supuestos de comportamiento agregados (no medidos, razonables):**
+
+- Con «Llegó todo», quien no registraba la mercancía la registra un poco más: se cierra el 40 % de esa brecha.
+- Quien revisa las alertas hace el conteo del día con probabilidad `revisa_alertas × 0,6` en días hábiles.
+- Cuando la caja pide confirmar una cantidad inusual, el cajero corrige el 90 % de las veces.
+- Al cargar el catálogo, el dueño escribe la vida útil de los perecederos (hasta 90 días).
+
+### Resultado de los 18 negocios en 60 días
+
+| | Antes | Después | Cambio |
+|---|--:|--:|--:|
+| **Ganancia descontando lo que se venció** | $439,7 M | **$475,4 M** | **+8 %** |
+| Ventas | $1.749 M | $1.802 M | +3 % |
+| Mercancía vencida | $48,5 M | **$27,4 M** | **−43 %** |
+| Ventas que no quedaron registradas | 2.410 | **506** | **−79 %** |
+| Ventas bloqueadas por el sistema | 5.244 | 1.070 (solo droguerías) | −80 % |
+| Productos descuadrados al final | 624 | **472** | −24 % |
+| Errores ×10 que llegaron al sistema | 76 | **41** (176 corregidos en caja) | −46 % |
+| Demanda perdida por agotados (promedio) | 26,4 % | 25,3 % | −1,1 pts |
+| Días agotado del 20 % más vendido | 19,7 % | 18,2 % | −1,5 pts |
+| Error del pronóstico (WAPE) | 66 % | **59 %** | −7 pts |
+| Alertas abiertas | 6.193 | 6.662 | +8 %, pero la bandeja «Hoy» muestra 10 |
+
+### Por negocio (promedio de las dos semillas)
+
+| Negocio | Ganancia neta de vencidos (M$) | Demanda perdida | Días agotado top 20 % | Ventas sin registrar | Descuadre final | Vencido (M$) | Error pronóstico (WAPE) |
+|---|--:|--:|--:|--:|--:|--:|--:|
+| Tienda Doña Rosita | 16.0 → **17.1** | 11.1 → **12.4** % | 8.3 → **9.2** % | 24 → **0** | 4 → **1** | 2.5 → **1.9** | 50 → **52** % |
+| Minimercado El Vecino | 24.6 → **28.5** | 18.7 → **12.8** % | 17.1 → **10.7** % | 334 → **0** | 6 → **15** | 4.0 → **3.1** | 53 → **45** % |
+| Autoservicio La Esquina | 12.8 → **14.8** | 21.1 → **18.4** % | 20.9 → **18.5** % | 179 → **0** | 106 → **98** | 0.9 → **1.0** | 54 → **52** % |
+| Moda Sur Boutique | 39.4 → **39.5** | 35.9 → **36.8** % | 23.9 → **25.8** % | 7 → **0** | 0 → **14** | 0.0 → **0.0** | 65 → **67** % |
+| Jeans Galeras | 22.3 → **21.5** | 42.5 → **41.0** % | 28.1 → **28.2** % | 16 → **0** | 0 → **0** | 0.0 → **0.0** | 59 → **49** % |
+| Pequeños Pasos Kids | 15.5 → **15.5** | 47.1 → **44.5** % | 38.8 → **38.8** % | 34 → **0** | 46 → **46** | 0.0 → **0.0** | 58 → **46** % |
+| Glamour Cosméticos | 50.6 → **46.2** | 19.9 → **27.3** % | 14.9 → **18.3** % | 22 → **0** | 0 → **0** | 0.0 → **0.0** | 82 → **95** % |
+| Sala de Belleza Luna | 18.5 → **23.6** | 31.4 → **21.9** % | 27.8 → **19.0** % | 54 → **0** | 48 → **26** | 0.0 → **0.0** | 156 → **80** % |
+| Natural Skin Nariño | 40.5 → **43.4** | 25.8 → **18.4** % | 21.8 → **15.4** % | 0 → **0** | 0 → **0** | 0.0 → **0.0** | 82 → **65** % |
+| Droguería San Rafael | 73.2 → **72.4** | 8.0 → **8.9** % | 7.2 → **6.8** % | 76 → **19** | 2 → **0** | 0.0 → **0.0** | 50 → **48** % |
+| Farmacia Salud Total | 29.4 → **28.7** | 18.3 → **17.4** % | 12.9 → **12.8** % | 250 → **230** | 18 → **7** | 0.0 → **0.0** | 60 → **65** % |
+| Droguería Express 24h | 20.8 → **20.7** | 17.8 → **19.4** % | 16.1 → **17.6** % | 394 → **257** | 162 → **120** | 0.0 → **0.0** | 61 → **56** % |
+| Asadero El Cuy Dorado | 7.3 → **13.0** | 23.4 → **28.8** % | 7.3 → **6.7** % | 120 → **0** | 24 → **3** | 11.6 → **5.2** | 41 → **39** % |
+| Sazón Pastuso | 8.9 → **18.4** | 24.5 → **24.8** % | 11.2 → **7.2** % | 94 → **0** | 16 → **4** | 18.8 → **8.9** | 37 → **41** % |
+| Comidas Rápidas La 27 | 3.7 → **9.6** | 30.2 → **32.2** % | 14.4 → **15.5** % | 448 → **0** | 91 → **83** | 10.7 → **7.4** | 46 → **62** % |
+| Ferretería El Tornillo Feliz | 19.8 → **19.8** | 24.6 → **29.5** % | 16.4 → **21.8** % | 30 → **0** | 0 → **0** | 0.0 → **0.0** | 85 → **86** % |
+| Papelería Arcoíris | 21.7 → **24.0** | 36.5 → **26.7** % | 32.0 → **23.4** % | 129 → **0** | 0 → **4** | 0.0 → **0.0** | 70 → **70** % |
+| Miscelánea Todo a Mil | 14.7 → **18.8** | 39.0 → **33.8** % | 35.8 → **31.9** % | 200 → **0** | 100 → **50** | 0.0 → **0.0** | 82 → **48** % |
+
+**Cómo leerla:** la ganancia neta resta el costo de lo que se venció.
+
+**Ojo con el ruido:** con la misma configuración y otra semilla, la demanda perdida de un negocio cambia 4,4 puntos
+(mediana) y hasta 12. Diferencias de ese tamaño en un solo negocio **no son concluyentes**. Ejemplos:
+
+- **Glamour y la ferretería** empeoraron en agotados, pero se explica por el azar del comportamiento. En esas
+  corridas les tocó comprar «a ojo» más veces (9 a 15 de 27 pedidos, frente a 3 a 6).
+- **La ferretería sin Fase 8** tuvo 18 % de demanda perdida con 3 compras a ojo y 31 % con 15.
+
+**Lo que sí es claro:** vencidos, registros, bloqueos, descuadre y errores. Son efectos grandes y en la misma
+dirección en las dos semillas.
+
+### Lo que cambió para cada tipo de negocio
+
+| Giro | Qué mejoró | Qué no |
+|---|---|---|
+| **Restaurantes** | La ganancia neta **se duplicó** ($19,9 M → $40,9 M): lo vencido bajó de $41,1 M a $21,5 M. El descuadre bajó de 131 a 90 productos | Se pierde un poco más de venta (26 % → 29 %): pedir menos perecedero tiene ese costo, pero botar comida costaba mucho más |
+| **Minimercados** | Demanda perdida de 17 % a 14,5 %, vencido −20 %, ganancia neta +13 %. El Vecino dejó de perder 334 ventas sin registrar | La Esquina sigue descuadrada (no cuenta) |
+| **Belleza** | Sala Luna: productos descuadrados de 48 a 26 (conteo del día); agotados de 31 % a 22 %. WAPE de 106 % a 80 % | Glamour: ver «ruido» |
+| **Farmacias** | Descuadre de 181 a 127 productos, ventas sin registrar −30 % (720 → 506) | Siguen bloqueando la venta sin stock (decisión deliberada: cada unidad debe tener lote) |
+| **Ropa** | WAPE de 60 % a 54 % (pronóstico por prenda). La curva de tallas se ve en la ficha | Agotados igual (~41 %). Con 1 a 5 unidades por talla, el problema es de compra inicial, no de reposición (ver abajo) |
+| **Otros** | Miscelánea: descuadre de 100 a 50 productos, agotados de 39 % a 34 %; papelería de 37 % a 27 % | Ferretería: ver «ruido» |
+
+### Cambio de proveedor con la Fase 8 (semilla 7)
+
+| Negocio | Productos en un paso | Andina antes del cambio | Nuevo proveedor | Órdenes que siguieron en camino |
+|---|--:|---|---|--:|
+| Minimercado El Vecino | 259 | 7,7 días (6 entregas) | 2,8 días, 75 % a tiempo | 2 |
+| Jeans Galeras | 84 | 5,0 días con **1 sola entrega**: ahora la ficha avisa «pocos datos» | — (compra cada 14 días) | 0 |
+| Sala de Belleza Luna | 62 | 7,2 días (5 entregas) | sin entregas aún: la recomendación lo dice | 1 |
+| Farmacia Salud Total | 57 | 6,7 días (3 entregas) | 3,8 días, 60 % a tiempo | 1 |
+| Sazón Pastuso | 42 | 6,5 días (8 entregas) | 3,4 días, 40 % a tiempo | 2 |
+| Papelería Arcoíris | 89 | 6,5 días (**2 entregas**: «pocos datos») | 2,0 días, 100 % a tiempo | 0 |
+
+El cambio ahora toma un paso en vez de 42 a 259. Las órdenes ya enviadas se esperan y las no enviadas pasan al nuevo
+proveedor. Además, el sistema ya no presenta lo prometido como si fuera real.
+
+## Lo que la simulación nos enseñó mientras construíamos la Fase 8
+
+Medir antes de entregar cambió tres decisiones:
+
+1. **Horizonte automático.**
+   - **Primera versión:** medía cada cuánto se le compra a *cada proveedor* y usaba eso como horizonte.
+   - **Qué pasó:** en la Tienda Doña Rosita la demanda perdida subió de 11 % a 18 %.
+   - **Por qué:**
+     - Acortaba el horizonte a 3 días.
+     - Creaba una retroalimentación: pedidos grandes → menos pedidos → «ciclo» más largo → pedidos más grandes.
+   - **Versión final:**
+     - Mide la rutina de compras del *negocio*.
+     - Solo **alarga** el horizonte (ropa: de 7 a 14 días).
+     - Pide si lo que hay no alcanza hasta la próxima compra.
+2. **Ropa por familia.**
+   - **Primera versión:** repartía la demanda de la prenda con la curva de tallas.
+   - **Qué pasó:** los días agotado del 20 % más vendido pasaron de 24–37 % a 36–54 %.
+   - **Por qué:** una talla agotada no registra ventas, así que la curva la subestima y se le pide menos (demanda censurada).
+   - **Versión final:**
+     - Cada talla se repone con su propia demanda, corregida por los días agotada.
+     - La familia aporta la curva, en la explicación y para reponer tallas que se venden y quedaron en cero.
+     - El pronóstico sí se hace por prenda.
+3. **Vender sin stock + errores de digitación.**
+   - **Riesgo:** al permitir vender sin stock, un «20 en vez de 2» ya no lo frena el sistema y crea un ajuste falso.
+   - **Mitigación:** la confirmación de cantidades inusuales en caja. En la simulación corrigió 176 de esos errores.
+
+## Qué sigue (propuesta de Fase 9)
+
+1. **Piloto real con 3 a 5 negocios** (ver [PILOTO.md](PILOTO.md)), comparando con estas cifras. Es lo más importante:
+   el simulador no mide facilidad de uso, confianza ni precio.
+2. **Ropa: compra de temporada.** Con 1 a 5 unidades por talla, la reposición no alcanza. Se necesita planear la compra
+   inicial por prenda con la curva de tallas y la temporada.
+3. **Farmacias: venta sin stock con lote pendiente.** Permitirla con un lote «por asignar» que el regente complete, en vez
+   de bloquearla (hoy siguen quedando más de 200 ventas sin registrar en dos de las tres droguerías).
+4. **Alertas.** Aunque la bandeja muestra 10, siguen abiertas cientos de «baja rotación» y «exceso». Falta un resumen
+   semanal por correo y que se cierren solas tras N días sin cambios.
+5. **Simulador con números aleatorios comunes.** Usar un generador distinto para la demanda y otro para las decisiones,
+   para que las comparaciones antes/después sean más precisas con menos corridas.
+6. **Por validar con clientes reales:** factura electrónica DIAN, integración con tienda en línea, temporadas escolares
+   automáticas y modo sin conexión con señal débil.

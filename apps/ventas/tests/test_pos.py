@@ -21,10 +21,20 @@ def test_pos_registra_venta_y_descuenta(client, admin, producto):
     assert producto.stock_actual == 7 and Venta.objects.get(pk=resp.json()["venta"]).total == 36000
 
 
-def test_pos_sin_stock_responde_409(client, admin, producto):
+def test_pos_sin_stock_responde_409_si_el_negocio_no_lo_permite(client, admin, producto):
+    producto.negocio.config.permite_venta_sin_stock = False
+    producto.negocio.config.save()
     client.force_login(admin)
     resp = _vender(client, producto, 1)
     assert resp.status_code == 409 and "Stock insuficiente" in resp.json()["error"]
+
+
+def test_pos_sin_stock_vende_y_deja_ajuste_si_el_negocio_lo_permite(client, admin, producto):
+    client.force_login(admin)
+    resp = _vender(client, producto, 1)
+    assert resp.status_code == 200
+    producto.refresh_from_db()
+    assert producto.stock_actual == 0
 
 
 def test_anular_venta_devuelve_inventario_y_demanda(client, admin, producto):

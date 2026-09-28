@@ -4,8 +4,16 @@
 <h1>Inventario</h1>
 {% include "inventario/_pestanas.html" %}
 <div class="rejilla-2">
+<section class="tarjeta formulario-libre destacado">
+  <h2>Conteo del día · 10 minutos</h2>
+  <p class="suave">El sistema elige 10 productos: los que más vendes, los que hace tiempo no cuentas y los que tienen
+    señales de descuadre. Contando un poco cada día, el inventario se mantiene cuadrado sin cerrar el negocio.</p>
+  <form method="post">{% csrf_token %}<input type="hidden" name="tipo" value="ciclico">
+    <button class="boton boton-auto">Empezar conteo del día</button>
+  </form>
+</section>
 <section class="tarjeta formulario-libre">
-  <h2>Nuevo conteo físico</h2>
+  <h2>Conteo completo o por categoría</h2>
   <p class="suave">Cuenta lo que realmente hay en el local. El sistema compara con su registro y pide un motivo para cada diferencia; el administrador aprueba los ajustes.</p>
   <form method="post">{% csrf_token %}
     <p><label for="categoria">¿Qué vas a contar?</label><select id="categoria" name="categoria"><option value="">Todo el inventario</option>{% for c in categorias %}<option value="{{ c.pk }}">{{ c }}</option>{% endfor %}</select></p>

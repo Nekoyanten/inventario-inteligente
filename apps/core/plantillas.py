@@ -57,7 +57,8 @@ PLANTILLAS = {
     Giro.FARMACIA: {
         "icono": "💊",
         "descripcion": "Medicamentos por lote, con alertas de vencimiento anticipadas.",
-        "config": dict(usa_vencimientos=True, usa_lotes=True, dias_vencimiento_rojo=30, dias_vencimiento_amarillo=90),
+        "config": dict(usa_vencimientos=True, usa_lotes=True, dias_vencimiento_rojo=30, dias_vencimiento_amarillo=90,
+                       permite_venta_sin_stock=False),  # medicamentos: cada unidad debe tener lote
         "categorias": {
             "Medicamentos": ["Principio activo", "Registro INVIMA"],
             "Cuidado personal": [],

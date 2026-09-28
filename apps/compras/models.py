@@ -6,6 +6,10 @@ from django.db import models
 from apps.core.models import ModeloBase
 
 
+def ruta_factura(instancia, nombre):
+    return f"facturas/{instancia.negocio_id}/{nombre}"
+
+
 class OrdenCompra(ModeloBase):
     class Estado(models.TextChoices):
         BORRADOR = "BORRADOR", "Borrador"
@@ -25,6 +29,7 @@ class OrdenCompra(ModeloBase):
     fecha_esperada = models.DateField(null=True, blank=True)
     es_compra_directa = models.BooleanField(default=False, help_text="Factura registrada sin orden previa")
     numero_factura = models.CharField(max_length=40, blank=True)
+    factura_imagen = models.ImageField("Foto de la factura", upload_to=ruta_factura, null=True, blank=True)
     observaciones = models.TextField(blank=True)
 
     class Meta:

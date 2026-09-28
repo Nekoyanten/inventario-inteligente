@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from decimal import Decimal
 
-from django.db import transaction
+from django.db import models, transaction
 from django.utils import timezone
 
 from apps.catalogo.models import Producto
@@ -19,6 +19,8 @@ from .models import TIPOS_CON_MOTIVO_OBLIGATORIO, ConteoFisico, Lote, Movimiento
 class ErrorInventario(Exception):
     pass
 
+
+TIPOS_DEMANDA = {TipoMovimiento.SALIDA_VENTA, TipoMovimiento.SALIDA_CONSUMO_INTERNO}
 
 _evaluacion_automatica = ContextVar("evaluacion_automatica", default=True)
 
@@ -97,6 +99,13 @@ def registrar_movimiento(
     # Reparto por lotes
     tramos: list[tuple[Lote | None, Decimal]] = []
     if usa_lotes and es_entrada:
+        if (lote is None and fecha_vencimiento is None and producto.vida_util_dias
+                and tipo in (TipoMovimiento.ENTRADA_COMPRA, TipoMovimiento.ENTRADA_INICIAL)):
+            # Sin fecha escrita: se calcula con la vida útil (restaurantes y perecederos no tienen que digitarla)
+            from datetime import timedelta
+
+            llegada = timezone.localdate(fecha) if getattr(fecha, "tzinfo", None) else getattr(fecha, "date", lambda: fecha)()
+            fecha_vencimiento = llegada + timedelta(days=producto.vida_util_dias)
         if lote is None:
             lote = Lote.objects.create(producto=producto, fecha_vencimiento=fecha_vencimiento, costo_unitario=costo)
         lote.cantidad += cantidad
@@ -146,7 +155,7 @@ def registrar_movimiento(
         producto.precio_compra = costo  # último costo
         producto.save(update_fields=["precio_compra"])
 
-    if tipo == TipoMovimiento.SALIDA_VENTA:
+    if tipo in TIPOS_DEMANDA:  # lo consumido en servicios o cocina también hay que reponerlo
         from apps.analitica.services import acumular_demanda_diaria
 
         dia = timezone.localdate(fecha) if hasattr(fecha, "tzinfo") and fecha.tzinfo else getattr(fecha, "date", lambda: fecha)()
@@ -202,16 +211,19 @@ def aprobar_conteo(conteo: ConteoFisico, aprobado_por, fecha=None) -> list[Movim
 
 
 @transaction.atomic
-def crear_conteo(negocio, responsable, categoria=None) -> ConteoFisico:
-    """Toma una 'foto' del stock del sistema de los productos a contar."""
+def crear_conteo(negocio, responsable, categoria=None, productos=None, observaciones="") -> ConteoFisico:
+    """Toma una 'foto' del stock del sistema de los productos a contar (todos, una categoría o una lista)."""
     from .models import DetalleConteo
 
-    productos = Producto.objects.filter(negocio=negocio, activo=True, es_agrupador=False)
-    if categoria is not None:
-        productos = productos.filter(categoria=categoria)
+    if productos is not None:
+        productos = Producto.objects.filter(negocio=negocio, pk__in=[p.pk for p in productos])
+    else:
+        productos = Producto.objects.filter(negocio=negocio, activo=True, es_agrupador=False)
+        if categoria is not None:
+            productos = productos.filter(categoria=categoria)
     conteo = ConteoFisico.objects.create(
         negocio=negocio, responsable=responsable,
-        observaciones=f"Categoría: {categoria}" if categoria else "Inventario completo",
+        observaciones=observaciones or (f"Categoría: {categoria}" if categoria else "Inventario completo"),
     )
     DetalleConteo.objects.bulk_create([
         DetalleConteo(conteo=conteo, producto=p, stock_sistema=p.stock_actual, stock_contado=p.stock_actual)
@@ -239,3 +251,49 @@ def retirar_lote_vencido(lote: Lote, usuario, fecha=None) -> list[Movimiento]:
         producto=lote.producto, tipo=TipoMovimiento.SALIDA_VENCIDO, cantidad=lote.cantidad, usuario=usuario,
         lote=lote, motivo=f"Lote {lote.codigo or lote.pk} vencido el {lote.fecha_vencimiento}",
     )
+
+
+# ---------------------------------------------------------------- conteo cíclico (Fase 8b · P4)
+PRODUCTOS_CONTEO_CICLICO = 10
+FRECUENCIA_ABC = {"A": 14, "B": 30, "C": 60}  # cada cuántos días conviene contar cada clase
+
+
+def productos_para_conteo_ciclico(negocio, cuantos: int = PRODUCTOS_CONTEO_CICLICO, hoy=None) -> list[Producto]:
+    """Los productos que más conviene contar hoy.
+
+    Prioridad = días desde el último conteo ÷ frecuencia recomendada por su clase ABC (los que más venden se
+    cuentan más seguido), con un empujón a los que tienen señales de descuadre (ventas sin stock, ajustes raros).
+    Contar 10 productos al día toma 10 minutos y en un mes cubre lo importante."""
+    from apps.alertas.models import Alerta
+    from apps.analitica.services import clasificacion_abc
+
+    from .models import DetalleConteo
+
+    hoy = hoy or timezone.localdate()
+    abc = clasificacion_abc(negocio, hoy=hoy)
+    ultimos = dict(
+        DetalleConteo.objects.filter(conteo__negocio=negocio, conteo__estado=ConteoFisico.Estado.APROBADO)
+        .values("producto_id").annotate(u=models.Max("conteo__actualizado")).values_list("producto_id", "u"))
+    sospechosos = set(Alerta.objects.filter(
+        negocio=negocio, estado__in=[Alerta.Estado.ABIERTA, Alerta.Estado.VISTA],
+        tipo__in=[Alerta.Tipo.VENTA_SIN_STOCK, Alerta.Tipo.ANOMALIA]).values_list("producto_id", flat=True))
+    candidatos = []
+    for p in Producto.objects.filter(negocio=negocio, activo=True, es_agrupador=False).only("pk", "creado", "nombre"):
+        desde = ultimos.get(p.pk) or p.creado
+        dias = max(0, (hoy - timezone.localdate(desde)).days)
+        puntaje = (dias + 1) / FRECUENCIA_ABC.get(abc.get(p.pk, "C"), 60)
+        if p.pk in sospechosos:
+            puntaje += 5
+        if p.pk not in abc and p.pk not in sospechosos and p.pk in ultimos:
+            puntaje /= 2  # no se ha vendido nada: lo más probable es que siga igual
+        candidatos.append((puntaje, p))
+    candidatos.sort(key=lambda x: -x[0])
+    return [p for _, p in candidatos[:cuantos]]
+
+
+def crear_conteo_ciclico(negocio, responsable, cuantos: int = PRODUCTOS_CONTEO_CICLICO, hoy=None) -> ConteoFisico:
+    productos = productos_para_conteo_ciclico(negocio, cuantos, hoy)
+    if not productos:
+        raise ErrorInventario("No hay productos para contar.")
+    return crear_conteo(negocio, responsable, productos=productos,
+                        observaciones=f"Conteo del día ({len(productos)} productos priorizados)")

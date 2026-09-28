@@ -21,6 +21,7 @@ class TipoMovimiento(models.TextChoices):
     SALIDA_VENCIDO = "SALIDA_VENCIDO", "Producto vencido"
     SALIDA_DEVOLUCION_PROVEEDOR = "SALIDA_DEVOLUCION_PROVEEDOR", "Devolución al proveedor"
     SALIDA_AJUSTE = "SALIDA_AJUSTE", "Ajuste negativo"
+    SALIDA_CONSUMO_INTERNO = "SALIDA_CONSUMO_INTERNO", "Consumo interno (uso en servicios o cocina)"
 
     @classmethod
     def es_entrada(cls, tipo: str) -> bool:

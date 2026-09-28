@@ -9,7 +9,7 @@ T = TipoMovimiento
 TIPOS_MANUALES = [
     ("Entradas", [(t.value, t.label) for t in (T.ENTRADA_COMPRA, T.ENTRADA_DEVOLUCION_CLIENTE, T.ENTRADA_AJUSTE)]),
     ("Salidas", [(t.value, t.label) for t in (T.SALIDA_DANADO, T.SALIDA_VENCIDO, T.SALIDA_DEVOLUCION_PROVEEDOR,
-                                               T.SALIDA_AJUSTE)]),
+                                               T.SALIDA_CONSUMO_INTERNO, T.SALIDA_AJUSTE)]),
 ]
 
 

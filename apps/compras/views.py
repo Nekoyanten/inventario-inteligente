@@ -7,9 +7,11 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from apps.core.negocio import del_negocio, negocio_requerido, obtener_del_negocio
+from apps.core.seguridad import url_segura as _url_segura
 from apps.inventario.services import ErrorInventario
 from apps.proveedores.models import Proveedor
 from apps.usuarios.permisos import requiere_permiso
@@ -44,7 +46,8 @@ def _form_lineas(request, plantilla, directa):
             lineas = s._lineas_desde_post(request.POST, request.negocio)
             if directa:
                 orden = s.registrar_compra_directa(negocio=request.negocio, proveedor=proveedor, usuario=request.user,
-                                                   lineas=lineas, numero_factura=request.POST.get("numero_factura", ""))
+                                                   lineas=lineas, numero_factura=request.POST.get("numero_factura", ""),
+                                                   factura_imagen=request.FILES.get("factura_imagen"))
                 messages.success(request, f"Compra registrada: {len(lineas)} productos ingresaron al inventario.")
             else:
                 orden = s.crear_orden(negocio=request.negocio, proveedor=proveedor, usuario=request.user, lineas=lineas,
@@ -102,6 +105,18 @@ def accion(request, pk, accion):
         elif accion == "cancelar":
             s.cancelar_orden(orden, request.user, request.POST.get("motivo", ""))
             messages.success(request, "Orden cancelada.")
+        elif accion == "recibir_todo":
+            s.recibir_todo(orden, request.user, request.POST.get("numero_factura", ""),
+                           factura_imagen=request.FILES.get("factura_imagen"))
+            messages.success(request, "Listo: toda la mercancía quedó en el inventario.")
+        elif accion == "cerrar":
+            s.cerrar_recepcion(orden, request.user)
+            messages.success(request, "Orden cerrada con lo que llegó; lo que faltó ya no se cuenta como «en camino».")
+        elif accion == "foto":
+            if not request.FILES.get("factura_imagen"):
+                raise ErrorInventario("Elige o toma la foto de la factura.")
+            s.guardar_foto_factura(orden, request.FILES["factura_imagen"])
+            messages.success(request, "Foto de la factura guardada.")
         elif accion == "recibir":
             recibido, vencimientos = {}, {}
             for d in orden.detalles.all():
@@ -116,10 +131,12 @@ def accion(request, pk, accion):
             if not recibido:
                 raise ErrorInventario("Indica cuánto llegó de al menos un producto.")
             s.recibir_orden(orden, request.user, recibido, request.POST.get("numero_factura", ""), vencimientos)
+            if request.FILES.get("factura_imagen"):
+                s.guardar_foto_factura(orden, request.FILES["factura_imagen"])
             messages.success(request, "Mercancía ingresada al inventario.")
     except ErrorInventario as e:
         messages.error(request, str(e))
-    return redirect("compras:detalle", pk=pk)
+    return redirect(_url_segura(request, request.POST.get("volver")) or reverse("compras:detalle", args=[pk]))
 
 
 @negocio_requerido

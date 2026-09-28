@@ -126,6 +126,22 @@ def pedido_sugerido(
     return math.ceil(cantidad / multiplo) * multiplo
 
 
+def tope_por_vida_util(*, demanda_diaria: float, vida_util: float, tiempo_entrega: float, stock: float,
+                       en_transito: float = 0) -> int | None:
+    """Máximo que conviene pedir de un perecedero: lo que se alcanza a vender antes de que se dañe.
+
+    Lo que ya hay (y lo que viene en camino) se vende primero (FEFO); cuando llega el pedido, lo que quede de eso
+    se come parte de la vida útil del pedido nuevo. Ejemplo: d=2/día, vida 4 días, sin stock → máximo 8.
+    Devuelve None si el producto no tiene vida útil (no hay tope).
+    """
+    if not vida_util:
+        return None  # no perecedero: sin tope
+    if demanda_diaria <= 0:
+        return 0
+    sobrante_al_llegar = max(0.0, stock + en_transito - demanda_diaria * tiempo_entrega)
+    return max(0, math.floor(demanda_diaria * vida_util - sobrante_al_llegar))
+
+
 # ---------------------------------------------------------------- Rotación y anomalías
 
 

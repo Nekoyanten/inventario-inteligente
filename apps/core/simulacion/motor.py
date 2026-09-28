@@ -23,23 +23,25 @@ from apps.alertas.motor import evaluar_ajuste, evaluar_negocio, evaluar_producto
 from apps.analitica.services import registrar_y_evaluar_pronosticos
 from apps.catalogo.models import Categoria, Producto, UnidadMedida
 from apps.compras.models import OrdenCompra
-from apps.compras.services import enviar_orden, recibir_orden, registrar_compra_directa
+from apps.compras.services import cerrar_recepcion, enviar_orden, recibir_orden, registrar_compra_directa
 from apps.core.models import Negocio
 from apps.inventario.models import ConteoFisico, DetalleConteo, Lote, TipoMovimiento
 from apps.inventario.services import (
     ErrorInventario,
     aprobar_conteo,
     crear_conteo,
+    crear_conteo_ciclico,
     registrar_movimiento,
     retirar_lote_vencido,
     sin_evaluacion_automatica,
 )
 from apps.proveedores.models import ProductoProveedor, Proveedor
+from apps.proveedores.services import reemplazar_proveedor
 from apps.recomendaciones.models import RecomendacionCompra
 from apps.recomendaciones.services import crear_ordenes_desde_recomendaciones, generar_recomendaciones
 from apps.usuarios.models import Rol, Usuario
 from apps.ventas.models import Venta
-from apps.ventas.services import anular_venta, registrar_venta
+from apps.ventas.services import anular_venta, cantidades_inusuales, registrar_venta
 
 from .catalogos import generar_catalogo
 
@@ -60,6 +62,8 @@ class Metricas:
     lineas_vendidas: int = 0
     ventas_perdidas_sin_stock: int = 0          # el cliente pidió y no había en la estantería
     ventas_bloqueadas_sistema: int = 0          # había físico pero el sistema decía que no
+    errores_evitados_pos: int = 0               # el punto de venta pidió confirmar y el cajero corrigió
+    conteos_ciclicos: int = 0
     bloqueos_resueltos_con_ajuste: int = 0
     ventas_no_registradas: int = 0
     errores_digitacion: int = 0
@@ -85,7 +89,11 @@ class Metricas:
 
 
 class SimuladorNegocio:
-    def __init__(self, perfil: dict, inicio: date, dias: int, semilla: int = 7):
+    def __init__(self, perfil: dict, inicio: date, dias: int, semilla: int = 7, fase8: bool = True):
+        """fase8=False reproduce cómo se usaba el sistema antes de la Fase 8 (para comparar con el mismo código):
+        sin venta sin stock, sin horizonte automático, sin vida útil, sin confirmación en caja, sin conteo del día
+        y sin «Llegó todo»."""
+        self.fase8 = fase8
         self.p = perfil
         self.rng = random.Random(f"{semilla}-{perfil['clave']}")
         self.inicio, self.dias = inicio, dias
@@ -106,6 +114,11 @@ class SimuladorNegocio:
             s = self.negocio.suscripcion
             s.prueba_hasta = self.inicio + timedelta(days=self.dias + 14)
             s.save()
+            config = self.negocio.config
+            if not self.fase8:
+                config.permite_venta_sin_stock = False
+                config.horizonte_automatico = False
+                config.save()
             nombre, *apellidos = p["dueno"].split()
             self.dueno = Usuario.objects.create_user(
                 p["clave"], password="PilotoSimulado2026!", first_name=nombre, last_name=" ".join(apellidos),
@@ -160,9 +173,19 @@ class SimuladorNegocio:
                 proveedor_principal=prov, unidad=unidades.get(it["unidad"])))
             self.vida[len(self.productos) - 1] = it["vida"]
         Producto.objects.bulk_create(self.productos, batch_size=500)
+        # los productos "existen" desde antes del piloto (el dueño los cargó al empezar)
+        Producto.objects.filter(negocio=self.negocio).update(creado=self._momento(self.inicio - timedelta(days=1), 6))
         self.productos = list(Producto.objects.filter(negocio=self.negocio, es_agrupador=False).order_by("sku"))
         vidas = list(self.vida.values())
         self.vida = {p.pk: vidas[i] for i, p in enumerate(self.productos)}
+        if self.fase8:  # al cargar el catálogo, el dueño indica cuánto dura cada perecedero
+            por_vida = defaultdict(list)
+            for p in self.productos:
+                if self.vida[p.pk] and self.vida[p.pk] <= 90:
+                    por_vida[self.vida[p.pk]].append(p.pk)
+            for vida, ids in por_vida.items():
+                Producto.objects.filter(pk__in=ids).update(vida_util_dias=vida)
+            self.productos = list(Producto.objects.filter(negocio=self.negocio, es_agrupador=False).order_by("sku"))
         ProductoProveedor.objects.bulk_create([
             ProductoProveedor(proveedor_id=p.proveedor_principal_id, producto=p, precio_compra=p.precio_compra,
                               multiplo_empaque=6 if p.unidad and p.unidad.abreviatura == "und" and self.rng.random() < .3
@@ -239,6 +262,9 @@ class SimuladorNegocio:
                 self._comprar(dia)
             if self.p["conteo"] and n in (29, 58):
                 self._conteo(dia)
+            # Fase 8: conteo del día (10 productos). Supuesto: lo hace quien revisa las alertas, en días hábiles.
+            elif self.fase8 and dia.weekday() < 6 and self.rng.random() < self.p["revisa_alertas"] * 0.6:
+                self._conteo(dia, ciclico=True)
         self._revisar_errores(dia, errores_hoy)
         if n in (14, 45):
             registrar_y_evaluar_pronosticos(self.negocio, hoy=dia)
@@ -265,7 +291,13 @@ class SimuladorNegocio:
                 cant_sistema = cant
                 if self.rng.random() < self.p["error_digitacion"]:
                     cant_sistema = cant * 10
-                    errores.append(pid)
+                    # Fase 8: la caja pide confirmar cantidades fuera de lo normal; casi siempre el cajero corrige
+                    if self.fase8 and cantidades_inusuales([{"producto": prod, "cantidad": cant_sistema}]) \
+                            and self.rng.random() < 0.9:
+                        cant_sistema = cant
+                        self.m.errores_evitados_pos += 1
+                    else:
+                        errores.append(pid)
                 lineas_reales.append((pid, cant))
                 lineas_sistema.append({"producto": prod, "cantidad": Decimal(str(cant_sistema))})
             if not lineas_reales:
@@ -409,7 +441,9 @@ class SimuladorNegocio:
                     if cant > 0:
                         recibido[d.pk] = cant
                         self._entrar_fisico(d.producto_id, float(cant), dia)
-                if self.rng.random() < self.p["disciplina"]:
+                # Fase 8: «Llegó todo» en un toque reduce la pereza de registrar (supuesto: se cierra el 40 % de la brecha)
+                prob = self.p["disciplina"] + ((1 - self.p["disciplina"]) * 0.4 if self.fase8 else 0)
+                if self.rng.random() < prob:
                     self._recibir(orden, recibido, dia)
                 elif self.rng.random() < 0.5:
                     self.pendientes_registro[dia + timedelta(days=self.rng.randint(1, 5))].append((orden.pk, recibido))
@@ -441,10 +475,8 @@ class SimuladorNegocio:
         orden.refresh_from_db()
         prometido = orden.proveedor.tiempo_entrega_dias
         if orden.estado == OrdenCompra.Estado.RECIBIDA_PARCIAL:
-            # el proveedor no completó el pedido: el empresario lo cierra como recibido con lo que llegó
-            OrdenCompra.objects.filter(pk=orden.pk).update(
-                estado=OrdenCompra.Estado.RECIBIDA, fecha_recepcion=self._momento(dia, 10),
-                dias_entrega=(dia - orden.fecha_envio.astimezone(TZ).date()).days)
+            # el proveedor no completó el pedido: el empresario lo cierra con lo que llegó
+            cerrar_recepcion(orden, self.dueno, fecha=self._momento(dia, 10))
             orden.refresh_from_db()
         self.m.entregas.append((orden.proveedor.nombre, prometido, orden.dias_entrega,
                                 orden.estado == OrdenCompra.Estado.RECIBIDA))
@@ -466,28 +498,25 @@ class SimuladorNegocio:
                                          contacto="Nuevo asesor")
         self.perfil_prov[nuevo.pk] = (prometido, real, cumplimiento)
         productos = [p for p in self.productos if p.proveedor_principal_id == malo.pk]
+        entregas_viejo = malo.entregas_registradas()
+        entrega_real_viejo = float(malo.tiempo_entrega_real())
+        abiertas = OrdenCompra.objects.filter(proveedor=malo, estado__in=["ENVIADA", "CONFIRMADA"]).count()
+        r = reemplazar_proveedor(origen=malo, destino=nuevo, usuario=self.dueno, ordenes="esperar", desactivar=True)
         for p in productos:
-            precio = (p.precio_compra * Decimal(str(self.rng.uniform(0.95, 1.06)))).quantize(Decimal("1"))
-            ProductoProveedor.objects.create(proveedor=nuevo, producto=p, precio_compra=precio)
             p.proveedor_principal = nuevo
-        Producto.objects.filter(pk__in=[p.pk for p in productos]).update(proveedor_principal=nuevo)
-        pendientes = RecomendacionCompra.objects.filter(negocio=self.negocio, estado="PENDIENTE",
-                                                        producto__in=productos)
         self.m.cambio_proveedor = {
-            "dia": (dia - self.inicio).days, "de": malo.nombre, "a": nuevo.nombre, "productos": len(productos),
-            "recomendaciones_con_proveedor_viejo": pendientes.filter(proveedor=malo).count(),
-            "ordenes_abiertas_proveedor_viejo": OrdenCompra.objects.filter(
-                proveedor=malo, estado__in=["ENVIADA", "CONFIRMADA"]).count(),
-            "entrega_real_viejo": float(malo.tiempo_entrega_real()),
+            "dia": (dia - self.inicio).days, "de": malo.nombre, "a": nuevo.nombre, "productos": r["productos"],
+            "ordenes_abiertas_proveedor_viejo": abiertas, "entregas_registradas_viejo": entregas_viejo,
+            "entrega_real_viejo": entrega_real_viejo if entregas_viejo else None,
         }
-        malo.activo = False
-        malo.save(update_fields=["activo"])
-        self.m.fricciones.append(f"Cambio de proveedor: {len(productos)} productos reasignados uno por uno "
-                                 "(no existe cambio masivo en la interfaz)")
+        if not self.fase8:
+            self.m.fricciones.append(f"Cambio de proveedor: {len(productos)} productos reasignados uno por uno "
+                                     "(no existía cambio masivo)")
 
     # ------------------------------------------------------------------ conteo físico
-    def _conteo(self, dia):
-        conteo = crear_conteo(self.negocio, self.dueno)
+    def _conteo(self, dia, ciclico=False):
+        conteo = crear_conteo_ciclico(self.negocio, self.dueno, hoy=dia) if ciclico else \
+            crear_conteo(self.negocio, self.dueno)
         diferencia_valor = 0.0
         detalles = list(conteo.detalles.select_related("producto"))
         for d in detalles:
@@ -500,6 +529,10 @@ class SimuladorNegocio:
         ConteoFisico.objects.filter(pk=conteo.pk).update(estado=ConteoFisico.Estado.PENDIENTE_APROBACION)
         conteo.refresh_from_db()
         aprobar_conteo(conteo, self.dueno, fecha=self._momento(dia, 20))
+        ConteoFisico.objects.filter(pk=conteo.pk).update(actualizado=self._momento(dia, 20))
+        if ciclico:
+            self.m.conteos_ciclicos += 1
+            return
         self.m.conteos += 1
         self.m.valor_diferencia_conteos.append(round(diferencia_valor))
 
@@ -534,8 +567,15 @@ class SimuladorNegocio:
         ingreso, costo = float(agg["ingreso"] or 0), float(agg["costo"] or 0)
         mapes = [f["mape"] for f in precision_pronosticos(self.negocio)]
         mapes_top = [f["mape"] for f in precision_pronosticos(self.negocio) if f["producto"].pk in self.top]
-        alertas = dict(Alerta.objects.filter(negocio=self.negocio, estado=Alerta.Estado.ABIERTA)
+        from apps.alertas.selectors import bandeja_hoy
+        from apps.analitica.services import precision_negocio
+        from apps.inventario.models import Movimiento
+
+        alertas = dict(Alerta.objects.filter(negocio=self.negocio, estado__in=[Alerta.Estado.ABIERTA, Alerta.Estado.VISTA])
                        .values_list("tipo").annotate(n=Count("id")))
+        bandeja = bandeja_hoy(self.negocio)
+        precision = precision_negocio(self.negocio)
+        sin_stock = Movimiento.objects.filter(negocio=self.negocio, referencia_tipo="venta_sin_stock")
         cambio = self.p["cambia_proveedor"]
         entregas = defaultdict(list)
         for nombre, prometido, real, completa in m.entregas:
@@ -548,6 +588,7 @@ class SimuladorNegocio:
         intentos = m.lineas_vendidas + m.ventas_perdidas_sin_stock
         return {
             "clave": self.p["clave"], "negocio": self.p["negocio"], "giro": self.p["giro"], "dueno": self.p["dueno"],
+            "fase8": self.fase8,
             "productos": len(self.productos), "dias": self.dias,
             "ventas": {"tickets": m.tickets, "ingreso": round(ingreso), "utilidad": round(ingreso - costo),
                        "margen_pct": round(100 * (ingreso - costo) / ingreso, 1) if ingreso else 0},
@@ -555,6 +596,8 @@ class SimuladorNegocio:
                          "pct_demanda_perdida": round(100 * m.ventas_perdidas_sin_stock / max(1, intentos), 1),
                          "pct_dias_agotado_top20": round(100 * m.dias_agotado_top / max(1, m.dias_top_total), 1)},
             "exactitud": {"ventas_bloqueadas_por_sistema": m.ventas_bloqueadas_sistema,
+                          "ventas_sin_stock_con_ajuste": sin_stock.values("referencia_id").distinct().count(),
+                          "conteos_ciclicos": m.conteos_ciclicos,
                           "resueltas_con_ajuste": m.bloqueos_resueltos_con_ajuste,
                           "ventas_no_registradas": m.ventas_no_registradas,
                           "compras_no_registradas": m.compras_no_registradas,
@@ -563,7 +606,7 @@ class SimuladorNegocio:
                           "conteos": m.conteos, "diferencia_conteos_valor": m.valor_diferencia_conteos,
                           **self.stock_sistema_vs_fisico},
             "errores": {"digitacion": m.errores_digitacion, "detectados": m.errores_detectados,
-                        "anulados": m.errores_anulados},
+                        "anulados": m.errores_anulados, "evitados_en_caja": m.errores_evitados_pos},
             "compras": {"ordenes_por_recomendacion": m.ordenes_por_recomendacion, "ordenes_a_ojo": m.ordenes_a_ojo,
                         "recomendaciones_editadas": m.recomendaciones_editadas, "proveedores": proveedores},
             "vencimientos": {"unidades": round(m.unidades_vencidas, 1), "valor": round(m.valor_vencido),
@@ -571,8 +614,12 @@ class SimuladorNegocio:
             "mermas": {"unidades": round(m.unidades_danadas, 1)},
             "pronostico": {"productos_evaluados": len(mapes),
                            "mape_mediana": round(sorted(mapes)[len(mapes) // 2], 1) if mapes else None,
-                           "mape_mediana_top20": round(sorted(mapes_top)[len(mapes_top) // 2], 1) if mapes_top else None},
+                           "mape_mediana_top20": round(sorted(mapes_top)[len(mapes_top) // 2], 1) if mapes_top else None,
+                           "wape": precision["wape"], "acierto": precision["acierto"]},
             "alertas_abiertas": alertas,
+            "alertas_total": sum(alertas.values()),
+            "bandeja_hoy": {"urgentes_mostradas": len(bandeja["hoy"]), "restantes": bandeja["restantes"],
+                            "resumidas": sum(r["cantidad"] for r in bandeja["resumen"])},
             "recomendaciones_pendientes": RecomendacionCompra.objects.filter(negocio=self.negocio,
                                                                              estado="PENDIENTE").count(),
             "cambio_proveedor": m.cambio_proveedor if cambio is not None else None,

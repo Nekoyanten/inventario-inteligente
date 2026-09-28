@@ -51,13 +51,27 @@ class RegistroPronostico(models.Model):
     hasta = models.DateField()
     pronosticado = models.DecimalField(max_digits=12, decimal_places=3)
     real = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
+    dias_agotado = models.PositiveSmallIntegerField(default=0, help_text="Días del período sin stock (venta censurada)")
 
     class Meta:
         ordering = ["-desde"]
         unique_together = ("producto", "desde")
 
     @property
-    def error_pct(self):
-        if self.real is None or not self.real:
+    def real_ajustado(self):
+        """Lo vendido, corregido por los días sin stock (ese día no se vendió porque no había, no porque no se pidiera).
+
+        None si estuvo agotado más de la mitad del período: no hay con qué comparar."""
+        if self.real is None:
             return None
-        return abs(float(self.pronosticado) - float(self.real)) / float(self.real) * 100
+        dias = (self.hasta - self.desde).days + 1
+        if self.dias_agotado > dias / 2:
+            return None
+        return float(self.real) * dias / max(1, dias - self.dias_agotado)
+
+    @property
+    def error_pct(self):
+        real = self.real_ajustado
+        if not real:
+            return None
+        return abs(float(self.pronosticado) - real) / real * 100

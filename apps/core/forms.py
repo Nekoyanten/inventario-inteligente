@@ -59,7 +59,7 @@ class ConfiguracionForm(forms.ModelForm):
         from .models import ConfiguracionNegocio
 
         model = ConfiguracionNegocio
-        exclude = ("negocio",)
+        exclude = ("negocio", "alertas_silenciadas")
         labels = {
             "usa_vencimientos": "Controlar fechas de vencimiento",
             "usa_lotes": "Manejar lotes (salida FEFO)",
@@ -74,6 +74,8 @@ class ConfiguracionForm(forms.ModelForm):
             "tiempo_entrega_defecto": "Tiempo de entrega por defecto (días)",
             "alfa_suavizado": "Sensibilidad a cambios recientes en las ventas (0.1 a 0.6)",
             "resumen_por_correo": "Enviarme por correo cada mañana las alertas críticas",
+            "horizonte_automatico": "Ajustar cada pedido a cada cuánto le compro a ese proveedor",
+            "permite_venta_sin_stock": "Dejar vender aunque el sistema diga que no hay (queda un ajuste para revisar)",
         }
 
     def clean(self):
@@ -88,3 +90,23 @@ class ConfiguracionForm(forms.ModelForm):
         if rojo is not None and amarillo is not None and rojo > amarillo:
             self.add_error("dias_vencimiento_amarillo", "Debe ser mayor o igual a los días de alerta roja.")
         return datos
+
+
+class CerrarCuentaForm(forms.Form):
+    confirmacion = forms.CharField(label="Escribe el nombre de tu negocio para confirmar", max_length=150)
+    password = forms.CharField(label="Tu contraseña", widget=forms.PasswordInput)
+
+    def __init__(self, *args, negocio, usuario, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.negocio, self.usuario = negocio, usuario
+
+    def clean_confirmacion(self):
+        texto = self.cleaned_data["confirmacion"].strip()
+        if texto.casefold() != self.negocio.nombre.strip().casefold():
+            raise forms.ValidationError("El nombre no coincide.")
+        return texto
+
+    def clean_password(self):
+        if not self.usuario.check_password(self.cleaned_data["password"]):
+            raise forms.ValidationError("Contraseña incorrecta.")
+        return self.cleaned_data["password"]

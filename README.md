@@ -17,17 +17,17 @@ Este dice: *"Tienes 5 unidades, vendes aproximadamente 3 por día y tu proveedor
 |---|---|
 | **Adaptativo** | Plantillas por tipo de negocio; vencimientos, lotes, variantes (talla × color), fracciones y temporadas activables; atributos personalizados por categoría |
 | **Productos** | Semáforo de stock, búsqueda por nombre/código/marca, variantes, importación desde Excel, margen en vivo |
-| **Punto de venta** | Buscador, lector de código de barras (teclado o cámara), cambio, medios de pago, comprobante, anulación con motivo |
-| **Inventario** | Entradas y salidas con motivo obligatorio, kárdex, lotes FEFO, vencimientos, conteo físico con aprobación |
-| **Compras** | «Qué comprar» con explicación, órdenes por proveedor, PDF y WhatsApp, recepción parcial, facturas sin orden |
+| **Punto de venta** | Buscador, lector de código de barras (teclado o cámara), cambio, medios de pago, comprobante, anulación con motivo, venta aunque el sistema diga 0 (con ajuste a revisar), confirmación de cantidades inusuales, cambio de usuario con PIN |
+| **Inventario** | Entradas y salidas con motivo obligatorio, consumo interno, kárdex, lotes FEFO, vencimientos automáticos por vida útil, conteo del día (10 productos priorizados) y conteo completo con aprobación |
+| **Compras** | «Qué comprar» con explicación (tope por vida útil, horizonte = ciclo real de compra, curva de tallas en ropa), órdenes por proveedor, PDF y WhatsApp, «Llegó todo» con foto de la factura, recepción parcial, facturas sin orden, cambio de proveedor en un paso |
 | **Proveedores** | Entrega prometida vs. real, % de cumplimiento, productos y precios pactados |
 | **Inteligencia** | Demanda con suavizado exponencial y corrección de demanda censurada, Holt / Holt-Winters, temporadas, punto de reorden, stock de seguridad, ABC, rotación, anomalías (ventas y ajustes), precisión de pronósticos (MAPE) |
-| **Alertas** | Agotado, crítico, bajo, riesgo de agotamiento, vencimiento, baja rotación, exceso, inusual; bandeja con acciones y resumen diario por correo |
+| **Alertas** | Agotado, crítico, bajo, riesgo de agotamiento, vencimiento, baja rotación, exceso, inusual, venta sin stock; bandeja «Hoy» con las 10 más importantes, resumen semanal, silenciar por categoría y resumen diario por correo |
 | **Panel** | Ventas vs. mes anterior, utilidad, ticket promedio, inventario inmovilizado, gráfico de 30 días, más vendidos |
 | **Reportes** | 14 reportes en pantalla, Excel, PDF y CSV |
 | **Usuarios** | Administrador, vendedor y encargado de inventario; auditoría de todo |
 | **Plataforma** | App instalable (PWA) con modo sin conexión, API REST con token y documentación OpenAPI |
-| **SaaS** | Registro con prueba gratis, planes con límites, página comercial, términos, privacidad (Ley 1581), exportación de datos, comentarios |
+| **SaaS** | Registro con prueba gratis, planes con límites, página comercial, términos, privacidad (Ley 1581), exportación de datos, cierre de cuenta con borrado total, comentarios |
 | **Producción** | Docker, Render blueprint (web, PostgreSQL, Redis, tareas), imágenes en la nube (S3/R2) optimizadas a WebP, Sentry, `/salud/`, WhiteNoise, HTTPS/HSTS, límite de intentos de ingreso, respaldos, `check --deploy` en CI |
 | **Operación** | Panel de la plataforma con salud, lista de chequeo de producción, métricas del piloto por negocio y registro de tareas nocturnas; lista de arranque para cada negocio |
 
@@ -58,12 +58,13 @@ python manage.py analizar_inventario   # alertas, recomendaciones y pronósticos
 python manage.py enviar_resumen        # correo con alertas críticas (cada mañana)
 python manage.py reconstruir_demanda   # recalcula la demanda desde las ventas
 python manage.py probar_correo tu@correo.com   # verifica la configuración de correo
+python manage.py simular_piloto --dias 60 --salida piloto.json   # 18 negocios ficticios (base de datos limpia)
 ```
 
 ### Pruebas
 
 ```bash
-pytest                                  # 164 pruebas, 93 % de cobertura
+pytest                                  # 216 pruebas
 ruff check .
 DATABASE_URL=postgres://... pytest      # también contra PostgreSQL (como en CI)
 ```

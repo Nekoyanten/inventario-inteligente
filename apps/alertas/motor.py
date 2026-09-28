@@ -9,8 +9,11 @@ from apps.catalogo.models import Producto
 
 from .models import Alerta
 from .reglas import REGLAS
+from .silencio import esta_silenciada
 
 ABIERTAS = [Alerta.Estado.ABIERTA, Alerta.Estado.VISTA]
+# Alertas que no dependen del estado actual del producto: solo las cierra una persona
+TIPOS_MANUALES = {Alerta.Tipo.ANOMALIA, Alerta.Tipo.VENTA_SIN_STOCK}
 
 
 def evaluar_producto(producto_id: int, hoy: date | None = None) -> list[Alerta]:
@@ -19,12 +22,14 @@ def evaluar_producto(producto_id: int, hoy: date | None = None) -> list[Alerta]:
     if not producto.activo or producto.es_agrupador:  # el agrupador de variantes no tiene stock propio
         return []
     analisis = analizar_producto(producto, hoy)
-    hallazgos = [h for regla in REGLAS for h in regla.evaluar(analisis, hoy)]
+    config = getattr(producto.negocio, "config", None)
+    hallazgos = [h for regla in REGLAS for h in regla.evaluar(analisis, hoy)
+                 if not esta_silenciada(config, h.tipo, producto.categoria_id)]
     tipos_vigentes = {h.tipo for h in hallazgos}
 
     # Autoresolver alertas cuya condición ya no se cumple
     Alerta.objects.filter(producto=producto, estado__in=ABIERTAS).exclude(
-        tipo__in=tipos_vigentes | {Alerta.Tipo.ANOMALIA}
+        tipo__in=tipos_vigentes | TIPOS_MANUALES
     ).update(estado=Alerta.Estado.RESUELTA)
 
     alertas = []

@@ -15,7 +15,29 @@
   </div>
 </div>
 
-<form method="post" action="{% url 'compras:accion' orden.pk 'recibir' %}" class="tarjeta formulario-libre">{% csrf_token %}
+{% if puede_recibir %}
+<section class="tarjeta destacado">
+  <form method="post" action="{% url 'compras:accion' orden.pk 'recibir_todo' %}" enctype="multipart/form-data" class="formulario-libre">{% csrf_token %}
+    <h2>¿Ya llegó el pedido?</h2>
+    <p class="suave">Si llegó completo, un toque y listo.{% if ver_vencimiento %} Las fechas de vencimiento se calculan con la vida útil de cada producto.{% endif %}</p>
+    <div class="rejilla-2">
+      <p><label for="factura-todo">N.° de factura (opcional)</label><input id="factura-todo" name="numero_factura" value="{{ orden.numero_factura }}" maxlength="40"></p>
+      <p><label for="foto-todo">📷 Foto de la factura (opcional)</label><input id="foto-todo" type="file" name="factura_imagen" accept="image/*" capture="environment"></p>
+    </div>
+    <button class="boton boton-auto">✅ Llegó todo</button>
+  </form>
+  {% if orden.estado == 'PARCIAL' %}
+  <form method="post" action="{% url 'compras:accion' orden.pk 'cerrar' %}" style="margin-top:.6rem">{% csrf_token %}
+    <button class="boton boton-auto boton-secundario">El resto no va a llegar: cerrar con lo recibido</button>
+  </form>{% endif %}
+</section>
+{% endif %}
+{% if orden.factura_imagen %}<section class="tarjeta"><h2>Factura</h2><a href="{{ orden.factura_imagen.url }}" target="_blank" rel="noopener"><img src="{{ orden.factura_imagen.url }}" alt="Foto de la factura" style="max-width:100%;max-height:420px"></a></section>
+{% elif orden.estado == 'RECIBIDA' %}<details class="tarjeta"><summary>📷 Agregar foto de la factura</summary>
+  <form method="post" action="{% url 'compras:accion' orden.pk 'foto' %}" enctype="multipart/form-data" class="formulario-libre">{% csrf_token %}
+    <input type="file" name="factura_imagen" accept="image/*" capture="environment" required> <button class="boton boton-auto boton-chico">Guardar</button></form></details>{% endif %}
+<form method="post" action="{% url 'compras:accion' orden.pk 'recibir' %}" enctype="multipart/form-data" class="tarjeta formulario-libre">{% csrf_token %}
+  {% if puede_recibir %}<h2>¿Llegó incompleto o diferente?</h2><p class="suave">Ajusta lo que llegó de cada producto.</p>{% endif %}
   <table class="tabla">
     <thead><tr><th>Producto</th><th class="num">Pedido</th><th class="num">Recibido</th><th class="num">Costo</th><th class="num">Subtotal</th>{% if puede_recibir %}<th>Llegó ahora</th>{% if ver_vencimiento %}<th>Vence</th>{% endif %}{% endif %}</tr></thead>
     <tbody>
@@ -33,7 +55,8 @@
   <p class="encabezado"><span>Total</span><span class="total">{{ orden.total|moneda }}</span></p>
   {% if puede_recibir %}
     <p><label for="numero_factura">N.° de factura del proveedor</label><input id="numero_factura" name="numero_factura" value="{{ orden.numero_factura }}" maxlength="40"></p>
-    <button class="boton boton-auto">Registrar llegada de mercancía</button>
+    <p><label for="foto-parcial">📷 Foto de la factura (opcional)</label><input id="foto-parcial" type="file" name="factura_imagen" accept="image/*" capture="environment"></p>
+    <button class="boton boton-auto boton-secundario">Registrar lo que llegó</button>
   {% endif %}
 </form>
 {% if orden.observaciones %}<section class="tarjeta"><h2>Observaciones</h2><p>{{ orden.observaciones|linebreaksbr }}</p></section>{% endif %}

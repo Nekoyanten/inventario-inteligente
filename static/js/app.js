@@ -84,21 +84,22 @@ const Inventario = (() => {
   }
 
   /* Punto de venta */
-  function pos({ urlRegistrar, urlTicket }) {
+  function pos({ urlRegistrar, urlTicket, sinStock = false }) {
     const carrito = new Map();
     const q = $("#pos-buscar"), res = $("#pos-resultados"), cont = $("#pos-carrito"), totalEl = $("#pos-total"), btn = $("#pos-cobrar"), err = $("#pos-error");
 
     const pintarResultados = (items) => {
-      res.innerHTML = items.map((p, i) => `<button type="button" class="producto-btn" data-i="${i}" ${p.stock <= 0 ? "disabled" : ""}>
+      res.innerHTML = items.map((p, i) => `<button type="button" class="producto-btn" data-i="${i}" ${p.stock <= 0 && !sinStock ? "disabled" : ""}>
         ${p.imagen ? `<img src="${esc(p.imagen)}" alt="" loading="lazy" class="miniatura-pos">` : ""}<b>${esc(p.nombre)}</b>${pesos(p.precio_venta)}<br><small class="suave">${p.stock <= 0 ? "Agotado" : "Stock " + cant(p.stock)}</small></button>`).join("");
       res.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => agregar(items[b.dataset.i])));
     };
     const agregar = (p) => {
       const linea = carrito.get(p.id) || { ...p, cantidad: 0 };
-      if (linea.cantidad + 1 > p.stock) { avisar(`Solo hay ${cant(p.stock)} de ${p.nombre}.`); return; }
+      if (linea.cantidad + 1 > p.stock && !sinStock) { avisar(`Solo hay ${cant(p.stock)} de ${p.nombre}.`); return; }
       linea.cantidad += 1;
       carrito.set(p.id, linea);
       pintarCarrito();
+      if (linea.cantidad > p.stock) avisar(`El sistema tiene ${cant(p.stock)} de ${p.nombre}. Se venderá igual y quedará un ajuste para revisar.`);
       q.value = ""; res.innerHTML = ""; q.focus();
     };
     const avisar = (m) => { err.textContent = m; err.hidden = !m; };
@@ -113,7 +114,7 @@ const Inventario = (() => {
       cont.querySelectorAll("input").forEach((inp) => inp.addEventListener("change", () => {
         const l = carrito.get(Number(inp.dataset.id));
         const v = parseFloat(inp.value) || 0;
-        if (v > l.stock) { inp.value = l.cantidad; avisar(`Solo hay ${cant(l.stock)} de ${l.nombre}.`); return; }
+        if (v > l.stock && !sinStock) { inp.value = l.cantidad; avisar(`Solo hay ${cant(l.stock)} de ${l.nombre}.`); return; }
         if (v <= 0) carrito.delete(l.id); else l.cantidad = v;
         pintarCarrito();
       }));
@@ -137,15 +138,27 @@ const Inventario = (() => {
     }, 200));
     $("#pos-recibido")?.addEventListener("input", pintarCarrito);
 
-    btn.addEventListener("click", async () => {
-      btn.disabled = true;
+    const enviar = async (confirmado) => {
       const cuerpo = {
         lineas: [...carrito.values()].map((l) => ({ producto: l.id, cantidad: l.cantidad })),
         medio_pago: $("#pos-medio").value,
         cliente: $("#pos-cliente").value,
+        confirmado,
       };
       const r = await fetch(urlRegistrar, { method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrf() }, body: JSON.stringify(cuerpo) });
-      const datos = await r.json().catch(() => ({}));
+      return [r, await r.json().catch(() => ({}))];
+    };
+    btn.addEventListener("click", async () => {
+      btn.disabled = true;
+      let [r, datos] = await enviar(false);
+      if (r.status === 428 && datos.confirmar) {
+        // Cantidad fuera de lo normal: ¿error de digitación?
+        const lista = datos.confirmar.map((a) => `• ${a.nombre}: ${cant(a.cantidad)} (lo normal es hasta ~${cant(a.habitual)})`).join("\n");
+        if (!window.confirm(`Revisa estas cantidades, son más altas de lo normal:\n${lista}\n\n¿Están bien?`)) {
+          avisar("Corrige la cantidad y vuelve a cobrar."); btn.disabled = false; return;
+        }
+        [r, datos] = await enviar(true);
+      }
       if (r.ok) { window.location = urlTicket.replace("0", datos.venta); return; }
       avisar(datos.error || "No se pudo registrar la venta.");
       btn.disabled = false;

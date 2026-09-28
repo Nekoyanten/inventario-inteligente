@@ -25,6 +25,7 @@
     <li><a href="{% url 'negocio:api' %}">🔌 Conectar otros sistemas (API)</a></li>
     <li><a href="{% url 'publico:exportar_datos' %}">💾 Descargar todos mis datos</a></li>
     <li><a href="{% url 'password_change' %}">🔑 Cambiar mi contraseña</a></li>
+    <li><a href="{% url 'negocio:cerrar_cuenta' %}">🗑️ Cerrar mi cuenta y borrar mis datos</a></li>
     <li><a href="{% url 'catalogo:catalogos' %}">🏷️ Categorías, marcas y atributos</a></li>
     {% url 'reportes:importar' as u_imp %}{% if u_imp %}<li><a href="{{ u_imp }}">📥 Importar productos desde Excel</a></li>{% endif %}
   </ul>

@@ -4,12 +4,13 @@
 <div class="encabezado">
   <h1>Alertas</h1>
   <div class="acciones">
-    <a class="boton boton-auto boton-chico {% if estado != 'abiertas' %}boton-secundario{% endif %}" href="?estado=abiertas">Pendientes</a>
+    <a class="boton boton-auto boton-chico boton-secundario" href="?vista=hoy">Hoy</a>
+    <a class="boton boton-auto boton-chico {% if estado != 'abiertas' %}boton-secundario{% endif %}" href="?estado=abiertas&vista=todas">Todas</a>
     <a class="boton boton-auto boton-chico {% if estado == 'abiertas' %}boton-secundario{% endif %}" href="?estado=cerradas">Resueltas</a>
     {% if "configurar_negocio" in permisos %}<form method="post" action="{% url 'alertas:analizar' %}">{% csrf_token %}<button class="boton boton-auto boton-chico boton-secundario">Analizar ahora</button></form>{% endif %}
   </div>
 </div>
-<form method="get" class="filtros tarjeta"><input type="hidden" name="estado" value="{{ estado }}">
+<form method="get" class="filtros tarjeta"><input type="hidden" name="estado" value="{{ estado }}"><input type="hidden" name="vista" value="todas">
   <select name="tipo" onchange="this.form.submit()"><option value="">Todos los tipos</option>{% for v, t in tipos %}<option value="{{ v }}" {% if request.GET.tipo == v %}selected{% endif %}>{{ t }}</option>{% endfor %}</select>
 </form>
 {% if not total %}<section class="tarjeta vacio">🟢 {% if estado == 'abiertas' %}Todo en orden: no hay alertas pendientes.{% else %}Aún no hay alertas resueltas.{% endif %}</section>{% endif %}
@@ -17,22 +18,7 @@
 <section class="tarjeta">
   <h2>{{ titulo }} ({{ alertas|length }})</h2>
   {% for a in alertas %}
-    <div class="alerta s{{ a.severidad }}">
-      <div class="encabezado" style="margin:0">
-        <div>{{ a.mensaje }}<em>{{ a.get_tipo_display }} · {{ a.creado|date:"d/m H:i" }}{% if a.accion_sugerida %} · {{ a.accion_sugerida }}{% endif %}{% if a.nota %} · Nota: {{ a.nota }}{% endif %}</em></div>
-        {% if estado == 'abiertas' %}
-        <div class="acciones">
-          {% if a.enlace_accion %}<a class="boton boton-auto boton-chico" href="{{ a.enlace_accion }}">Ver</a>{% endif %}
-          <details><summary class="enlace">Cerrar</summary>
-            <form method="post" action="{% url 'alertas:cambiar_estado' a.pk %}" class="formulario-libre">{% csrf_token %}
-              <input name="nota" placeholder="{% if a.tipo == 'ANOMALIA' %}Explicación (venta especial, error…){% else %}Nota opcional{% endif %}" maxlength="255">
-              <div class="acciones" style="margin-top:.4rem"><button class="boton boton-auto boton-chico" name="estado" value="RESUELTA">Resuelta</button><button class="boton boton-auto boton-chico boton-secundario" name="estado" value="DESCARTADA">Descartar</button></div>
-            </form>
-          </details>
-        </div>
-        {% endif %}
-      </div>
-    </div>
+    {% include "alertas/_alerta.html" %}
   {% endfor %}
 </section>
 {% endif %}{% endfor %}

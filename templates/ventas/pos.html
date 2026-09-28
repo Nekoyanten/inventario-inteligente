@@ -23,4 +23,4 @@
 </div>
 {% endblock %}
 {% block scripts %}<script src="{% static 'js/app.js' %}"></script>
-<script>Inventario.pos({ urlRegistrar: "{% url 'ventas:registrar' %}", urlTicket: "{% url 'ventas:detalle' 0 %}" });</script>{% endblock %}
+<script>Inventario.pos({ urlRegistrar: "{% url 'ventas:registrar' %}", urlTicket: "{% url 'ventas:detalle' 0 %}", sinStock: {{ sin_stock|yesno:"true,false" }} });</script>{% endblock %}

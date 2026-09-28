@@ -13,7 +13,7 @@
   </section>
   <section class="tarjeta formulario-libre">
     <h2>Precios, stock y proveedor</h2>
-    {% for campo in form %}{% if campo.name in "precio_compra precio_venta stock_minimo stock_maximo stock_inicial vencimiento_inicial proveedor_principal activo" %}<p>{{ campo.label_tag }}{{ campo }}{{ campo.errors }}{% if campo.help_text %}<span class="helptext">{{ campo.help_text }}</span>{% endif %}</p>{% endif %}{% endfor %}
+    {% for campo in form %}{% if campo.name in "precio_compra precio_venta stock_minimo stock_maximo vida_util_dias stock_inicial vencimiento_inicial proveedor_principal activo" %}<p>{{ campo.label_tag }}{{ campo }}{{ campo.errors }}{% if campo.help_text %}<span class="helptext">{{ campo.help_text }}</span>{% endif %}</p>{% endif %}{% endfor %}
     <p id="margen" class="suave"></p>
   </section>
   <div class="acciones">

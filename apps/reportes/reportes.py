@@ -266,13 +266,23 @@ def rotacion_abc(negocio, f):
 
 
 def precision(negocio, f):
-    from apps.analitica.services import precision_pronosticos
+    """Precisión del pronóstico por producto (o por familia en ropa) y, al final, el acierto de todo el negocio.
 
-    filas = [[r["producto"].sku, r["producto"].nombre, r["periodos"], r["mape"],
-              "Buena" if r["mape"] <= 20 else ("Aceptable" if r["mape"] <= 40 else "Baja")]
+    El total usa WAPE (error ponderado por lo que se vende): un producto que vende 1 unidad al mes no lo distorsiona."""
+    from apps.analitica.services import precision_negocio, precision_pronosticos
+
+    def calificar(error):
+        return "Buena" if error <= 20 else ("Aceptable" if error <= 40 else "Baja")
+
+    filas = [[r["producto"].sku, r["producto"].nombre, r["periodos"], r["mape"], calificar(r["mape"])]
              for r in precision_pronosticos(negocio)]
-    return Tabla(["SKU", "Producto", "Períodos evaluados", "Error promedio", "Precisión"], filas,
-                 ["texto", "texto", "numero", "porcentaje", "texto"])
+    total = precision_negocio(negocio)
+    totales = None
+    if total["wape"] is not None:
+        totales = ["", f"Todo el negocio: acierta ~{total['acierto']} %", total["periodos"], total["wape"],
+                   calificar(total["wape"])]
+    return Tabla(["SKU", "Producto", "Períodos evaluados", "Error", "Precisión"], filas,
+                 ["texto", "texto", "numero", "porcentaje", "texto"], totales)
 
 
 REPORTES = {
@@ -302,4 +312,3 @@ REPORTES = {
     "precision-pronosticos": ("Precisión de pronósticos", "Qué tan acertado ha sido el sistema.", precision,
                               "ver_reportes", "Inteligencia"),
 }
-

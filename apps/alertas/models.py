@@ -14,6 +14,7 @@ class Alerta(ModeloBase):
         BAJA_ROTACION = "BAJA_ROTACION", "Baja rotación"
         EXCESO = "EXCESO", "Exceso de inventario"
         ANOMALIA = "ANOMALIA", "Movimiento inusual"
+        VENTA_SIN_STOCK = "VENTA_SIN_STOCK", "Venta sin stock registrado"
 
     class Severidad(models.IntegerChoices):
         INFO = 1, "🔵 Información"
@@ -55,7 +56,7 @@ class Alerta(ModeloBase):
             return reverse("recomendaciones:lista") if _existe("recomendaciones:lista") else None
         if self.tipo in (self.Tipo.VENCIMIENTO, self.Tipo.VENCIDO):
             return reverse("inventario:lotes")
-        if self.tipo == self.Tipo.ANOMALIA and self.datos.get("movimiento") and self.producto_id:
+        if self.tipo in (self.Tipo.ANOMALIA, self.Tipo.VENTA_SIN_STOCK) and self.datos.get("movimiento") and self.producto_id:
             return reverse("inventario:kardex", args=[self.producto_id])
         if self.producto_id:
             return reverse("catalogo:detalle", args=[self.producto_id])

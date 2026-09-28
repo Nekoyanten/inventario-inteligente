@@ -15,7 +15,9 @@
     {% for o in pagina %}
       <tr><td><a href="{% url 'compras:detalle' o.pk %}">#{{ o.pk }}</a>{% if o.es_compra_directa %} <small class="suave">factura</small>{% endif %}</td>
         <td data-titulo="Proveedor">{{ o.proveedor }}</td><td data-titulo="Fecha">{{ o.creado|date:"d/m/Y" }}</td>
-        <td data-titulo="Estado">{{ o.get_estado_display }}</td><td class="num" data-titulo="Total">{{ o.total|moneda }}</td></tr>
+        <td data-titulo="Estado">{{ o.get_estado_display }}{% if o.estado == 'ENVIADA' or o.estado == 'CONFIRMADA' %}
+          <form method="post" action="{% url 'compras:accion' o.pk 'recibir_todo' %}" style="display:inline">{% csrf_token %}
+            <input type="hidden" name="volver" value="{{ request.get_full_path }}"><button class="enlace" title="Registrar que llegó todo">✅ Llegó todo</button></form>{% endif %}</td><td class="num" data-titulo="Total">{{ o.total|moneda }}</td></tr>
     {% empty %}<tr><td colspan="5" class="vacio">No hay órdenes todavía.</td></tr>{% endfor %}
     </tbody>
   </table>

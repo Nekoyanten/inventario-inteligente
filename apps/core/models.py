@@ -54,6 +54,17 @@ class ConfiguracionNegocio(ModeloBase):
     dias_exceso = models.PositiveIntegerField(default=90, help_text="Cobertura que se considera exceso")
     horizonte_compra_dias = models.PositiveIntegerField(default=7, help_text="Días que debe cubrir un pedido")
     tiempo_entrega_defecto = models.PositiveIntegerField(default=3, help_text="Si el producto no tiene proveedor")
+    horizonte_automatico = models.BooleanField(
+        default=True, help_text="Ajustar el horizonte al ciclo real de compra de cada proveedor (si compras cada 14 días, "
+                                "el pedido cubre 14 días)")
+
+    # Punto de venta
+    permite_venta_sin_stock = models.BooleanField(
+        default=True, help_text="Si el sistema dice 0 pero el producto está en la estantería, se vende igual y queda un "
+                                "ajuste para revisar")
+
+    # Alertas silenciadas: [{"tipo": "BAJA_ROTACION", "categoria": 3 | null}]
+    alertas_silenciadas = models.JSONField(default=list, blank=True)
 
     # Motor inteligente
     alfa_suavizado = models.DecimalField(

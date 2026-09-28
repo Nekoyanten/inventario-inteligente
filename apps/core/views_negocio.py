@@ -130,3 +130,21 @@ def plan(request):
     planes = [{"clave": k, **v} for k, v in settings.PLANES.items()]
     return render(request, "negocio/plan.html", {"s": s, "uso": uso, "planes": planes,
                                                  "contacto": settings.CONTACTO_VENTAS})
+
+
+@negocio_requerido
+@requiere_permiso("configurar_negocio")
+def cerrar_cuenta(request):
+    """Borra el negocio y todos sus datos. Solo el administrador, con su contraseña y el nombre del negocio."""
+    from django.contrib.auth import logout
+
+    from .cierre import eliminar_negocio
+    from .forms import CerrarCuentaForm
+
+    form = CerrarCuentaForm(request.POST or None, negocio=request.negocio, usuario=request.user)
+    if request.method == "POST" and form.is_valid():
+        eliminar_negocio(request.negocio)
+        logout(request)
+        messages.success(request, "Tu cuenta y todos los datos de tu negocio fueron eliminados. Gracias por usarnos.")
+        return redirect("/")
+    return render(request, "negocio/cerrar_cuenta.html", {"form": form})

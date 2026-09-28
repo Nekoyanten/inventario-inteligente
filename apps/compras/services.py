@@ -8,6 +8,14 @@ from apps.inventario.services import ErrorInventario, registrar_movimiento
 from .models import OrdenCompra
 
 
+def _bloquear(orden: OrdenCompra):
+    """Bloquea la fila de la orden hasta el fin de la transacción y recarga su estado actual.
+
+    Evita que dos solicitudes simultáneas (doble clic, dos pestañas) reciban la misma mercancía dos veces."""
+    list(OrdenCompra.objects.select_for_update().filter(pk=orden.pk).values_list("pk", flat=True))
+    orden.refresh_from_db()
+
+
 def enviar_orden(orden: OrdenCompra, usuario, fecha=None):
     if orden.estado != OrdenCompra.Estado.BORRADOR:
         raise ErrorInventario("Solo se envían órdenes en borrador.")
@@ -25,6 +33,7 @@ def recibir_orden(orden: OrdenCompra, usuario, recibido: dict, numero_factura=""
 
     recibido: {detalle_id: cantidad}; vencimientos: {detalle_id: date} (si el negocio usa vencimientos)
     """
+    _bloquear(orden)
     if orden.estado not in (
         OrdenCompra.Estado.ENVIADA,
         OrdenCompra.Estado.CONFIRMADA,
@@ -64,6 +73,55 @@ def recibir_orden(orden: OrdenCompra, usuario, recibido: dict, numero_factura=""
     orden.save()
     auditar(orden.negocio, usuario, "recibir_orden", orden, completa=completa)
     return orden
+
+
+@transaction.atomic
+def recibir_todo(orden: OrdenCompra, usuario, numero_factura="", fecha=None, factura_imagen=None):
+    """«Llegó todo» en un toque: recibe lo pendiente de cada línea. Los vencimientos se calculan con la vida útil."""
+    _bloquear(orden)  # un doble toque no debe ingresar la mercancía dos veces
+    pendientes = {d.pk: d.pendiente for d in orden.detalles.all() if d.pendiente > 0}
+    if not pendientes:
+        raise ErrorInventario("Esta orden no tiene nada pendiente por recibir.")
+    recibir_orden(orden, usuario, pendientes, numero_factura=numero_factura, fecha=fecha)
+    if factura_imagen:
+        guardar_foto_factura(orden, factura_imagen)
+    return orden
+
+
+@transaction.atomic
+def cerrar_recepcion(orden: OrdenCompra, usuario, fecha=None):
+    """El proveedor no enviará lo que falta: se cierra la orden con lo que llegó (deja de contarse en camino)."""
+    _bloquear(orden)
+    if orden.estado != OrdenCompra.Estado.RECIBIDA_PARCIAL:
+        raise ErrorInventario("Solo se cierran órdenes recibidas parcialmente.")
+    ahora = fecha or timezone.now()
+    orden.estado = OrdenCompra.Estado.RECIBIDA
+    orden.fecha_recepcion = ahora
+    if orden.fecha_envio:
+        orden.dias_entrega = max(0, (ahora - orden.fecha_envio).days)
+    faltantes = ", ".join(f"{d.pendiente:g} {d.producto.nombre}" for d in orden.detalles.select_related("producto")
+                          if d.pendiente > 0)
+    orden.observaciones = (orden.observaciones + f"\nCerrada sin recibir: {faltantes}").strip()
+    orden.save()
+    auditar(orden.negocio, usuario, "cerrar_recepcion", orden, faltantes=faltantes)
+    return orden
+
+
+def guardar_foto_factura(orden: OrdenCompra, archivo):
+    """Guarda la foto de la factura (optimizada: legible pero liviana)."""
+    from django.conf import settings
+
+    from apps.core.imagenes import optimizar_imagen
+
+    if archivo.size > settings.TAMANO_MAX_ARCHIVO_MB * 1024 * 1024:
+        raise ErrorInventario(f"La foto supera {settings.TAMANO_MAX_ARCHIVO_MB} MB.")
+    try:
+        contenido = optimizar_imagen(archivo, lado_max=1800, calidad=75)
+    except Exception as e:  # formato no soportado o archivo dañado
+        raise ErrorInventario("No pudimos leer la foto de la factura. Prueba con JPG o PNG.") from e
+    if orden.factura_imagen:
+        orden.factura_imagen.delete(save=False)
+    orden.factura_imagen.save(contenido.name, contenido, save=True)
 
 
 def _fecha(texto):
@@ -140,7 +198,8 @@ def cancelar_orden(orden: OrdenCompra, usuario, motivo=""):
 
 
 @transaction.atomic
-def registrar_compra_directa(*, negocio, proveedor, usuario, lineas, numero_factura="") -> OrdenCompra:
+def registrar_compra_directa(*, negocio, proveedor, usuario, lineas, numero_factura="", factura_imagen=None,
+                             fecha=None) -> OrdenCompra:
     """Factura del proveedor sin orden previa (p. ej. facturas a mano): entra directo al inventario."""
     orden = crear_orden(negocio=negocio, proveedor=proveedor, usuario=usuario, lineas=lineas)
     orden.es_compra_directa = True
@@ -149,10 +208,12 @@ def registrar_compra_directa(*, negocio, proveedor, usuario, lineas, numero_fact
     detalles = list(orden.detalles.all())
     recibir_orden(
         orden, usuario, {d.pk: d.cantidad_pedida for d in detalles}, numero_factura=numero_factura,
-        vencimientos={d.pk: linea["vencimiento"] for d, linea in zip(detalles, lineas, strict=True)},
+        vencimientos={d.pk: linea.get("vencimiento") for d, linea in zip(detalles, lineas, strict=True)}, fecha=fecha,
     )
     orden.dias_entrega = None  # no aplica a desempeño del proveedor
     orden.save(update_fields=["dias_entrega"])
+    if factura_imagen:
+        guardar_foto_factura(orden, factura_imagen)
     return orden
 
 

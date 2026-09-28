@@ -1,0 +1,65 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Alertas de hoy{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <h1>Hoy</h1>
+  <div class="acciones">
+    <a class="boton boton-auto boton-chico" href="?vista=hoy">Hoy</a>
+    <a class="boton boton-auto boton-chico boton-secundario" href="?estado=abiertas&vista=todas">Todas ({{ total }})</a>
+    <a class="boton boton-auto boton-chico boton-secundario" href="?estado=cerradas">Resueltas</a>
+    {% if "configurar_negocio" in permisos %}<form method="post" action="{% url 'alertas:analizar' %}">{% csrf_token %}<button class="boton boton-auto boton-chico boton-secundario">Analizar ahora</button></form>{% endif %}
+  </div>
+</div>
+
+{% if not hoy and not resumen %}<section class="tarjeta vacio">🟢 Todo en orden: no hay nada urgente hoy.</section>{% endif %}
+
+{% if hoy %}
+<section class="tarjeta">
+  <h2>Lo importante hoy ({{ hoy|length }})</h2>
+  <p class="suave">Ordenadas por urgencia y por lo que más vendes.</p>
+  {% for a in hoy %}{% include "alertas/_alerta.html" %}{% endfor %}
+  {% if restantes %}<p><a href="?estado=abiertas&vista=todas">Ver {{ restantes }} alerta{{ restantes|pluralize }} más</a></p>{% endif %}
+</section>
+{% endif %}
+
+{% if resumen %}
+<section class="tarjeta">
+  <h2>Resumen para revisar con calma</h2>
+  <p class="suave">Estas no son urgentes: revísalas una vez por semana.</p>
+  <table class="tabla">
+    <tbody>
+    {% for r in resumen %}
+      <tr>
+        <td data-titulo="Tipo"><b>{{ r.etiqueta }}</b></td>
+        <td data-titulo="Productos">{{ r.cantidad }} producto{{ r.cantidad|pluralize }}</td>
+        <td data-titulo="Dinero quieto">{% if r.valor %}{{ r.valor|moneda }} inmovilizados{% else %}—{% endif %}</td>
+        <td><a href="?estado=abiertas&vista=todas&tipo={{ r.tipo }}">Ver</a>
+          {% if "configurar_negocio" in permisos %}
+          <form method="post" action="{% url 'alertas:silenciar' %}" style="display:inline">{% csrf_token %}
+            <input type="hidden" name="tipo" value="{{ r.tipo }}"><button class="enlace" type="submit">Dejar de mostrar</button>
+          </form>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
+{% if silenciadas %}
+<section class="tarjeta">
+  <h2>Alertas silenciadas</h2>
+  <ul>
+  {% for s in silenciadas %}
+    <li>{{ s.etiqueta }} · {{ s.categoria_nombre }}
+      {% if "configurar_negocio" in permisos %}
+      <form method="post" action="{% url 'alertas:reactivar' %}" style="display:inline">{% csrf_token %}
+        <input type="hidden" name="tipo" value="{{ s.tipo }}"><input type="hidden" name="categoria" value="{{ s.categoria|default_if_none:'' }}">
+        <button class="enlace" type="submit">Reactivar</button>
+      </form>{% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+</section>
+{% endif %}
+{% endblock %}

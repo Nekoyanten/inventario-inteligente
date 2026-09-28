@@ -88,6 +88,9 @@ class Producto(ModeloBase):
     stock_actual = models.DecimalField(max_digits=12, decimal_places=3, default=0, editable=False)
     stock_minimo = models.DecimalField(max_digits=12, decimal_places=3, default=0)
     stock_maximo = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
+    vida_util_dias = models.PositiveIntegerField(
+        "Vida útil (días)", null=True, blank=True,
+        help_text="Cuántos días dura el producto desde que llega. Limita el pedido sugerido y fecha los lotes solo")
 
     atributos = models.JSONField(default=dict, blank=True, help_text="Valores de atributos personalizados")
     # Variantes: 'Camisa básica' (padre, agrupador sin stock) → 'Camisa básica · M · Azul' (hijo con stock propio)

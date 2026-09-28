@@ -16,6 +16,17 @@ class Usuario(AbstractUser):
     )
     rol = models.CharField(max_length=12, choices=Rol.choices, default=Rol.VENDEDOR)
     telefono = models.CharField(max_length=30, blank=True)
+    pin = models.CharField(max_length=128, blank=True, help_text="PIN cifrado para cambiar de usuario en un equipo compartido")
+
+    def fijar_pin(self, pin: str | None):
+        from django.contrib.auth.hashers import make_password
+
+        self.pin = make_password(pin) if pin else ""
+
+    def verificar_pin(self, pin: str) -> bool:
+        from django.contrib.auth.hashers import check_password
+
+        return bool(self.pin and pin and check_password(pin, self.pin))
 
     @property
     def es_admin(self):

@@ -43,3 +43,14 @@ def test_simulacion_ropa_crea_variantes_sin_alertas_en_agrupadores():
     sim.cerrar()
     assert Producto.objects.filter(negocio=sim.negocio, es_agrupador=True).exists()
     assert not Alerta.objects.filter(negocio=sim.negocio, producto__es_agrupador=True).exists()
+
+
+@pytest.mark.django_db
+def test_simulacion_antes_de_la_fase8_bloquea_ventas_sin_stock():
+    perfil = _perfil("mini-la-esquina", productos=30, tickets=12)
+    sim = SimuladorNegocio(perfil, timezone.localdate() - timedelta(days=4), 4, semilla=3, fase8=False).crear()
+    for n in range(4):
+        sim.simular_dia(n)
+    r = sim.cerrar().resumen()
+    assert r["fase8"] is False and r["exactitud"]["ventas_sin_stock_con_ajuste"] == 0
+    assert not sim.negocio.config.permite_venta_sin_stock

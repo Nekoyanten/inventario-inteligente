@@ -1,6 +1,11 @@
 """Gestión de usuarios del negocio (solo administradores)."""
 
+from django.conf import settings
 from django.contrib import messages
+from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
+from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, ListView, UpdateView
 
@@ -9,7 +14,7 @@ from apps.core.limites import LimiteDelPlan, verificar_usuarios
 from apps.core.negocio import NegocioRequeridoMixin
 
 from .forms import UsuarioCrearForm, UsuarioEditarForm
-from .models import Usuario
+from .models import Rol, Usuario
 
 
 class UsuarioListaView(NegocioRequeridoMixin, ListView):
@@ -57,3 +62,47 @@ class UsuarioEditarView(NegocioRequeridoMixin, UpdateView):
                 cambios=form.changed_data)
         messages.success(self.request, "Cambios guardados.")
         return respuesta
+
+
+# ---------------------------------------------------------------- cambio rápido de usuario (equipo compartido)
+INTENTOS_PIN_MAX = 5
+
+
+def _clave_pin(usuario_id):
+    return f"pin-intentos:{usuario_id}"
+
+
+def candidatos_pin(negocio):
+    """Usuarios a los que se puede cambiar con PIN: activos, del mismo negocio, con PIN y que no sean administradores."""
+    return (Usuario.objects.filter(negocio=negocio, is_active=True).exclude(pin="")
+            .exclude(rol=Rol.ADMIN).exclude(is_superuser=True).order_by("first_name", "username"))
+
+
+@login_required
+def cambiar_usuario(request):
+    negocio = getattr(request, "negocio", None) or request.user.negocio
+    if negocio is None:
+        return redirect("dashboard:inicio")
+    usuarios = candidatos_pin(negocio)
+    error = ""
+    if request.method == "POST":
+        destino = usuarios.filter(pk=request.POST.get("usuario") or 0).first()
+        if destino is None:
+            error = "Elige una persona de la lista."
+        else:
+            clave = _clave_pin(destino.pk)
+            intentos = cache.get(clave, 0)
+            if intentos >= INTENTOS_PIN_MAX:
+                error = (f"Demasiados intentos con el PIN de {destino.get_full_name() or destino.username}. "
+                         f"Espera {settings.BLOQUEO_LOGIN_MINUTOS} minutos o entra con la contraseña.")
+            elif destino.verificar_pin(request.POST.get("pin", "")):
+                cache.delete(clave)
+                anterior = request.user
+                login(request, destino, backend="django.contrib.auth.backends.ModelBackend")
+                auditar(negocio, destino, "cambio_usuario_pin", destino, desde=anterior.username)
+                messages.success(request, f"Hola, {destino.first_name or destino.username}. Ahora las ventas quedan a tu nombre.")
+                return redirect("ventas:pos" if destino.puede("registrar_venta") else "dashboard:inicio")
+            else:
+                cache.set(clave, intentos + 1, settings.BLOQUEO_LOGIN_MINUTOS * 60)
+                error = "PIN incorrecto."
+    return render(request, "usuarios/cambiar.html", {"usuarios": usuarios, "error": error})

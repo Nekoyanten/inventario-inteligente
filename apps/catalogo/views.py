@@ -113,7 +113,14 @@ def detalle(request, pk):
                                    "proveedor_principal", "padre"), pk=pk)
     contexto = {"producto": producto, "ver_costos": request.user.puede("ver_precios_compra")}
     if producto.es_agrupador:
-        contexto["variantes"] = producto.variantes.order_by("nombre")
+        from apps.analitica.services import curva_variantes, demanda_familia
+
+        curva = curva_variantes(producto)
+        variantes = list(producto.variantes.order_by("nombre"))
+        for v in variantes:
+            v.participacion = round(curva.get(v.pk, 0) * 100)
+        contexto["variantes"] = variantes
+        contexto["demanda_familia_semana"] = demanda_familia(producto)[0] * 7
     else:
         from apps.analitica.services import analizar_producto, pronostico_mensual, ventas_mensuales
 

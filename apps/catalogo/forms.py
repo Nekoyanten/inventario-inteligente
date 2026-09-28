@@ -21,7 +21,8 @@ class ProductoForm(forms.ModelForm):
         model = Producto
         fields = (
             "nombre", "sku", "codigo_barras", "categoria", "marca", "unidad", "proveedor_principal",
-            "precio_compra", "precio_venta", "stock_minimo", "stock_maximo", "descripcion", "imagen", "activo",
+            "precio_compra", "precio_venta", "stock_minimo", "stock_maximo", "vida_util_dias", "descripcion", "imagen",
+            "activo",
         )
         labels = {
             "sku": "Código / SKU", "codigo_barras": "Código de barras", "proveedor_principal": "Proveedor principal",

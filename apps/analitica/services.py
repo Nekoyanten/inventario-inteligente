@@ -263,21 +263,55 @@ def registrar_y_evaluar_pronosticos(negocio, hoy: date | None = None) -> dict:
 
     hoy = hoy or timezone.localdate()
     cerrados = creados = 0
-    for reg in RegistroPronostico.objects.filter(producto__negocio=negocio, real__isnull=True, hasta__lt=hoy):
-        reg.real = DemandaDiaria.objects.filter(producto=reg.producto, fecha__range=(reg.desde, reg.hasta)).aggregate(
-            t=Sum("cantidad"))["t"] or 0
-        reg.save(update_fields=["real"])
+    for reg in RegistroPronostico.objects.filter(producto__negocio=negocio, real__isnull=True,
+                                                 hasta__lt=hoy).select_related("producto"):
+        if reg.producto.es_agrupador:  # familia de variantes: lo real es la suma de sus variantes
+            reg.real = DemandaDiaria.objects.filter(producto__padre=reg.producto,
+                                                    fecha__range=(reg.desde, reg.hasta)).aggregate(
+                t=Sum("cantidad"))["t"] or 0
+            reg.dias_agotado = _dias_agotada_familia(reg.producto, reg.desde, reg.hasta)
+        else:
+            reg.real = DemandaDiaria.objects.filter(producto=reg.producto, fecha__range=(reg.desde, reg.hasta)).aggregate(
+                t=Sum("cantidad"))["t"] or 0
+            reg.dias_agotado = len(dias_sin_stock(reg.producto, reg.desde, reg.hasta))
+        reg.save(update_fields=["real", "dias_agotado"])
         cerrados += 1
-    for producto in Producto.objects.filter(negocio=negocio, activo=True, es_agrupador=False):
+    config = getattr(negocio, "config", None)
+    por_familia = bool(config and config.usa_variantes)
+    for producto in Producto.objects.filter(negocio=negocio, activo=True):
+        if producto.es_agrupador and not por_familia:
+            continue
+        if producto.padre_id and por_familia:
+            continue  # en ropa y similares se pronostica la familia, no cada talla
         if RegistroPronostico.objects.filter(producto=producto, hasta__gte=hoy).exists():
             continue
-        if not DemandaDiaria.objects.filter(producto=producto).exists():
-            continue
-        p = pronostico_mensual(producto, hoy=hoy)
+        if producto.es_agrupador:
+            if not DemandaDiaria.objects.filter(producto__padre=producto).exists():
+                continue
+            d, _ = demanda_familia(producto, hoy)
+            valor = d * 30
+        else:
+            if not DemandaDiaria.objects.filter(producto=producto).exists():
+                continue
+            valor = pronostico_mensual(producto, hoy=hoy).valor
         RegistroPronostico.objects.create(producto=producto, desde=hoy, hasta=hoy + timedelta(days=29),
-                                          pronosticado=round(p.valor, 3))
+                                          pronosticado=round(valor, 3))
         creados += 1
     return {"creados": creados, "cerrados": cerrados}
+
+
+def _dias_agotada_familia(padre: Producto, desde: date, hasta: date) -> int:
+    """Días en que TODAS las variantes estaban agotadas (la familia no se podía vender)."""
+    variantes = list(padre.variantes.all())
+    if not variantes:
+        return 0
+    comunes = None
+    for v in variantes:
+        dias = dias_sin_stock(v, desde, hasta)
+        comunes = dias if comunes is None else comunes & dias
+        if not comunes:
+            return 0
+    return len(comunes)
 
 
 def precision_pronosticos(negocio) -> list[dict]:
@@ -290,3 +324,121 @@ def precision_pronosticos(negocio) -> list[dict]:
             por_producto.setdefault(reg.producto_id, [reg.producto, []])[1].append(reg.error_pct)
     filas = [{"producto": p, "periodos": len(e), "mape": sum(e) / len(e)} for p, e in por_producto.values()]
     return sorted(filas, key=lambda f: f["mape"])
+
+
+# ---------------------------------------------------------------- ciclo real de compra (Fase 8b · P11)
+MIN_ORDENES_CICLO = 3
+
+
+def ciclo_compra(proveedor=None, hoy: date | None = None, dias: int = 120, negocio=None) -> float | None:
+    """Cada cuántos días se compra (mediana entre días de compra de los últimos `dias`): a un proveedor o, con
+    `negocio`, a cualquiera (la rutina de compras del negocio).
+
+    None si hay menos de MIN_ORDENES_CICLO compras en días distintos (no hay cómo saberlo todavía)."""
+    from statistics import median
+
+    from django.db.models.functions import Coalesce
+
+    from apps.compras.models import OrdenCompra
+
+    hoy = hoy or timezone.localdate()
+    tz = timezone.get_current_timezone()
+    fechas = sorted({
+        f.astimezone(tz).date() for f in OrdenCompra.objects.filter(
+            **({"negocio": negocio} if negocio is not None else {"proveedor": proveedor}))
+        .exclude(estado__in=[OrdenCompra.Estado.CANCELADA, OrdenCompra.Estado.BORRADOR])
+        .annotate(f=Coalesce("fecha_envio", "creado")).values_list("f", flat=True)
+        if f and hoy - timedelta(days=dias) <= f.astimezone(tz).date() <= hoy
+    })
+    if len(fechas) < MIN_ORDENES_CICLO:
+        return None
+    brechas = [(b - a).days for a, b in zip(fechas, fechas[1:], strict=False)]
+    return float(min(60, max(1, median(brechas))))
+
+
+def horizonte_compra(producto: Producto, hoy: date | None = None, ciclos: dict | None = None) -> tuple[float, str]:
+    """Días que debe cubrir un pedido y de dónde sale ese número (para explicarlo).
+
+    Es el mayor entre el horizonte configurado y la rutina real de compras del negocio (cada cuánto hace pedidos).
+    Se mide la rutina del NEGOCIO y no la de cada proveedor: la frecuencia con que se le pide a un proveedor depende
+    de lo que el propio sistema recomendó (pedidos grandes → menos pedidos → «ciclo» más largo → pedidos más
+    grandes…); en el piloto simulado esa retroalimentación aumentó los agotados."""
+    config = getattr(producto.negocio, "config", None)
+    base = float(config.horizonte_compra_dias if config else 7)
+    if not (config and config.horizonte_automatico):
+        return base, "configuracion"
+    if ciclos is not None and "negocio" in ciclos:
+        ciclo = ciclos["negocio"]
+    else:
+        ciclo = ciclo_compra(negocio=producto.negocio, hoy=hoy)
+        if ciclos is not None:
+            ciclos["negocio"] = ciclo
+    # Solo se alarga: si compras cada 14 días el pedido debe cubrir 14; si compras más seguido que el horizonte
+    # configurado, se conserva el horizonte (en el piloto simulado, acortarlo aumentó los agotados).
+    return (ciclo, "ciclo") if ciclo and ciclo > base else (base, "configuracion")
+
+
+# ---------------------------------------------------------------- familias de variantes (Fase 8b · P8)
+def serie_familia(padre: Producto, dias: int, hasta: date | None = None) -> list[float]:
+    """Ventas diarias de toda la familia (suma de sus variantes): mucho más estable que talla por talla."""
+    hasta = hasta or timezone.localdate()
+    desde = hasta - timedelta(days=dias - 1)
+    totales: dict[date, float] = {}
+    for fecha, cant in DemandaDiaria.objects.filter(producto__padre=padre, fecha__range=(desde, hasta)).values_list(
+            "fecha", "cantidad"):
+        totales[fecha] = totales.get(fecha, 0.0) + float(cant)
+    return [totales.get(desde + timedelta(days=i), 0.0) for i in range(dias)]
+
+
+def curva_variantes(padre: Producto, dias: int = 90, hoy: date | None = None) -> dict[int, float]:
+    """Participación de cada variante en las ventas de la familia (la «curva de tallas»).
+
+    Se suaviza con UNA venta ficticia repartida entre todas (1/n a cada una): una talla sin ventas recientes no queda
+    en cero para siempre, pero la curva sigue a los datos aunque haya pocas ventas."""
+    hoy = hoy or timezone.localdate()
+    variantes = list(padre.variantes.filter(activo=True).values_list("pk", flat=True))
+    if not variantes:
+        return {}
+    ventas = dict(DemandaDiaria.objects.filter(producto_id__in=variantes, fecha__gt=hoy - timedelta(days=dias))
+                  .values("producto_id").annotate(t=Sum("cantidad")).values_list("producto_id", "t"))
+    previo = 1.0 / len(variantes)
+    pesos = {pk: float(ventas.get(pk) or 0) + previo for pk in variantes}
+    total = sum(pesos.values())
+    return {pk: w / total for pk, w in pesos.items()}
+
+
+def demanda_familia(padre: Producto, hoy: date | None = None) -> tuple[float, float]:
+    """(demanda diaria suavizada, desviación) de la familia completa."""
+    hoy = hoy or timezone.localdate()
+    config = getattr(padre.negocio, "config", None)
+    serie = serie_familia(padre, PARAMS["DIAS_HISTORIA"], hoy)
+    # Se descartan los días previos a la primera venta de la familia (productos nuevos)
+    while serie and serie[0] == 0:
+        serie = serie[1:]
+    alfa = float(config.alfa_suavizado) if config else PARAMS["ALFA_SUAVIZADO"]
+    return alg.suavizado_exponencial(serie, alfa), alg.desviacion(serie)
+
+
+# ---------------------------------------------------------------- precisión en lenguaje simple (Fase 8b · P12)
+def precision_negocio(negocio) -> dict:
+    """WAPE del negocio (error ponderado por volumen) y «acierto» = 100 − WAPE.
+
+    A diferencia del MAPE, no se dispara con productos que venden 1 o 2 unidades al mes. Los períodos con muchos
+    días agotado se corrigen (lo vendido subestima la demanda) y, si estuvo agotado más de la mitad, se excluyen."""
+    from .models import RegistroPronostico
+
+    error = real_total = 0.0
+    usados = excluidos = 0
+    for reg in RegistroPronostico.objects.filter(producto__negocio=negocio, real__isnull=False):
+        real = reg.real_ajustado
+        if real is None:
+            excluidos += 1
+            continue
+        error += abs(float(reg.pronosticado) - real)
+        real_total += real
+        usados += 1
+    if not real_total:
+        return {"wape": None, "acierto": None, "periodos": usados, "excluidos": excluidos}
+    wape = error / real_total * 100
+    return {"wape": round(wape, 1), "acierto": round(max(0.0, 100 - wape)), "periodos": usados,
+            "excluidos": excluidos}

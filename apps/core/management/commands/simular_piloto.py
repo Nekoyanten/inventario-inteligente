@@ -28,6 +28,8 @@ class Command(BaseCommand):
         parser.add_argument("--giro", help="Solo un tipo de negocio (MINIMERCADO, ROPA, …)")
         parser.add_argument("--clientes", nargs="*", help="Claves de perfil específicas")
         parser.add_argument("--salida", help="Archivo JSON con las métricas")
+        parser.add_argument("--sin-fase8", action="store_true",
+                            help="Simula el uso anterior a la Fase 8 (para comparar antes y después)")
 
     def handle(self, *args, **o):
         perfiles = [p for p in PERFILES if (not o["giro"] or p["giro"] == o["giro"].upper())
@@ -40,7 +42,7 @@ class Command(BaseCommand):
             if Negocio.objects.filter(nombre=perfil["negocio"]).exists():
                 raise CommandError(f"Ya existe «{perfil['negocio']}». Corre el piloto en una base de datos limpia.")
             t0 = time.monotonic()
-            sim = SimuladorNegocio(perfil, inicio, o["dias"], o["semilla"]).crear()
+            sim = SimuladorNegocio(perfil, inicio, o["dias"], o["semilla"], fase8=not o["sin_fase8"]).crear()
             for n in range(o["dias"]):
                 sim.simular_dia(n)
             sim.cerrar()

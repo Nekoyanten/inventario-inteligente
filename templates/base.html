@@ -21,6 +21,7 @@
       <div class="barra-derecha">
         {% if user.is_superuser %}<a href="{% url 'plataforma:panel' %}">Plataforma</a>{% endif %}
         <span class="suave oculto-movil">{{ user.get_full_name|default:user.username }} · {{ user.get_rol_display }}</span>
+        {% if user.negocio_id %}<a href="{% url 'usuarios:cambiar' %}" title="Cambiar de usuario en este equipo">Cambiar</a>{% endif %}
         <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="enlace">Salir</button></form>
       </div>
     {% else %}

@@ -1,0 +1,23 @@
+    <div class="alerta s{{ a.severidad }}">
+      <div class="encabezado" style="margin:0">
+        <div>{{ a.mensaje }}<em>{{ a.get_tipo_display }} · {{ a.creado|date:"d/m H:i" }}{% if a.accion_sugerida %} · {{ a.accion_sugerida }}{% endif %}{% if a.nota %} · Nota: {{ a.nota }}{% endif %}</em></div>
+        {% if abierta %}
+        <div class="acciones">
+          {% if a.enlace_accion %}<a class="boton boton-auto boton-chico" href="{{ a.enlace_accion }}">Ver</a>{% endif %}
+          <details><summary class="enlace">Cerrar</summary>
+            <form method="post" action="{% url 'alertas:cambiar_estado' a.pk %}" class="formulario-libre">{% csrf_token %}
+              <input name="nota" placeholder="{% if a.tipo == 'ANOMALIA' %}Explicación (venta especial, error…){% else %}Nota opcional{% endif %}" maxlength="255">
+              <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+              <div class="acciones" style="margin-top:.4rem"><button class="boton boton-auto boton-chico" name="estado" value="RESUELTA">Resuelta</button><button class="boton boton-auto boton-chico boton-secundario" name="estado" value="DESCARTADA">Descartar</button></div>
+            </form>
+            {% if a.tipo in silenciables and "configurar_negocio" in permisos and a.producto.categoria_id %}
+            <form method="post" action="{% url 'alertas:silenciar' %}" class="formulario-libre">{% csrf_token %}
+              <input type="hidden" name="tipo" value="{{ a.tipo }}"><input type="hidden" name="categoria" value="{{ a.producto.categoria_id }}">
+              <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+              <button class="enlace" type="submit">No mostrar «{{ a.get_tipo_display|lower }}» en {{ a.producto.categoria }}</button>
+            </form>{% endif %}
+          </details>
+        </div>
+        {% endif %}
+      </div>
+    </div>
