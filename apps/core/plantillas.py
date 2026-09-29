@@ -16,6 +16,29 @@ NOCTURNO_CATEGORIAS = {
     "Insumos de barra": [],
 }
 GIROS_NOCTURNOS = {"BAR", "DISCOTECA", "BAR_DISCOTECA"}
+# Negocios que no pueden venderle a menores de edad: al registrar un cliente se verifica su cédula.
+GIROS_SOLO_ADULTOS = GIROS_NOCTURNOS | {"VAPE"}
+LEY_MENORES = {"VAPE": "Ley 2354 de 2024: prohibida la venta de vapeadores a menores de 18 años.",
+               "_": "Ley 124 de 1994: prohibida la venta de bebidas alcohólicas a menores de edad."}
+AVISO_OFERTAS = {
+    "VAPE": ("Ley 2354 de 2024: la publicidad de vapeadores está prohibida en medios masivos y redes sociales y no puede "
+             "dirigirse a menores. Las ofertas solo se envían a clientes mayores de edad verificados que las autorizaron, "
+             "por mensaje personal. Ante dudas, consulta con un abogado."),
+}
+
+
+def solo_adultos(negocio) -> bool:
+    return getattr(negocio, "giro", "") in GIROS_SOLO_ADULTOS
+
+
+def exige_verificar_edad(negocio) -> bool:
+    """Vapeadores: siempre (lo exige la ley). Bares y discotecas: según su configuración nocturna."""
+    if negocio.giro == "VAPE":
+        return True
+    if negocio.giro in GIROS_NOCTURNOS:
+        conf = getattr(negocio, "nocturno", None)
+        return bool(conf is None or conf.exigir_mayoria_edad)
+    return False
 
 PLANTILLAS = {
     Giro.MINIMERCADO: {
@@ -39,7 +62,8 @@ PLANTILLAS = {
     Giro.ROPA: {
         "icono": "👕",
         "descripcion": "Prendas y calzado por talla y color, con temporadas.",
-        "config": dict(usa_variantes=True, usa_temporadas=True, dias_sin_movimiento=60),
+        "config": dict(usa_variantes=True, usa_temporadas=True, dias_sin_movimiento=60, nivel_vip_monto=1500000,
+                       nivel_frecuente_compras=3),
         "categorias": {
             "Camisas": ["Talla", "Color"],
             "Pantalones": ["Talla", "Color"],
@@ -94,20 +118,33 @@ PLANTILLAS = {
     Giro.BAR: {
         "icono": "🍺",
         "descripcion": "Cuentas por mesa, botellas y tragos, happy hour, reservas y clientes frecuentes.",
-        "config": dict(permite_fracciones=True, horizonte_compra_dias=7, dias_sin_movimiento=30),
+        "config": dict(permite_fracciones=True, horizonte_compra_dias=7, dias_sin_movimiento=30, nivel_vip_monto=800000),
         "categorias": NOCTURNO_CATEGORIAS,
     },
     Giro.DISCOTECA: {
         "icono": "🪩",
         "descripcion": "Cover y aforo, mesas VIP con consumo mínimo, listas y grupos, botellas y tragos.",
-        "config": dict(permite_fracciones=True, horizonte_compra_dias=7, dias_sin_movimiento=30),
+        "config": dict(permite_fracciones=True, horizonte_compra_dias=7, dias_sin_movimiento=30, nivel_vip_monto=1500000),
         "categorias": NOCTURNO_CATEGORIAS,
     },
     Giro.BAR_DISCOTECA: {
         "icono": "🍸",
         "descripcion": "Bar temprano y discoteca en la noche: cuentas, cover, happy hour, VIP y grupos.",
-        "config": dict(permite_fracciones=True, horizonte_compra_dias=7, dias_sin_movimiento=30),
+        "config": dict(permite_fracciones=True, horizonte_compra_dias=7, dias_sin_movimiento=30, nivel_vip_monto=1200000),
         "categorias": NOCTURNO_CATEGORIAS,
+    },
+    Giro.VAPE: {
+        "icono": "💨",
+        "descripcion": "Pods, cartuchos, líquidos y desechables. Solo clientes mayores de edad (Ley 2354 de 2024).",
+        "config": dict(usa_vencimientos=True, usa_variantes=True, dias_vencimiento_rojo=30, dias_vencimiento_amarillo=90,
+                       dias_sin_movimiento=60, horizonte_compra_dias=14),
+        "categorias": {
+            "Dispositivos (pods)": ["Color"],
+            "Cartuchos y resistencias": ["Resistencia (Ω)"],
+            "Líquidos y sales de nicotina": ["Nicotina (mg)", "Sabor"],
+            "Desechables": ["Sabor"],
+            "Accesorios": [],
+        },
     },
     Giro.GENERICO: {
         "icono": "📦",

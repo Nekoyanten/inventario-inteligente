@@ -5,6 +5,7 @@ from django.utils import timezone
 
 from apps.catalogo.models import Categoria, Producto
 from apps.core.negocio import del_negocio
+from apps.core.plantillas import GIROS_NOCTURNOS, LEY_MENORES, exige_verificar_edad, solo_adultos
 
 from .models import Cliente, Oferta
 from .services import normalizar_telefono
@@ -27,24 +28,27 @@ class ClienteForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.negocio = negocio
         self.fields["acepta_datos"].required = True
-        self.nocturno = negocio.giro in ("BAR", "DISCOTECA", "BAR_DISCOTECA")
+        self.nocturno = negocio.giro in GIROS_NOCTURNOS
+        self.adultos = solo_adultos(negocio)
         if self.nocturno:
             self.fields["referido_por"].queryset = Cliente.objects.filter(negocio=negocio, activo=True).exclude(
                 pk=self.instance.pk)
             self.fields["referido_por"].label = "¿Quién lo trajo? (gana puntos con su primera compra)"
-            conf = getattr(negocio, "nocturno", None)
-            self.fields["mayor_edad_verificado"].required = bool(conf is None or conf.exigir_mayoria_edad)
         else:
             del self.fields["referido_por"]
+        if self.adultos:
+            self.fields["mayor_edad_verificado"].required = exige_verificar_edad(negocio)
+        else:
             del self.fields["mayor_edad_verificado"]
 
     def clean_fecha_nacimiento(self):
         fecha = self.cleaned_data.get("fecha_nacimiento")
-        if fecha and self.nocturno:
+        if fecha and self.adultos:
             hoy = timezone.localdate()
             edad = hoy.year - fecha.year - ((hoy.month, hoy.day) < (fecha.month, fecha.day))
             if edad < 18:
-                raise forms.ValidationError("Es menor de edad: no se puede registrar ni venderle alcohol (Ley 124 de 1994).")
+                ley = LEY_MENORES.get(self.negocio.giro, LEY_MENORES["_"])
+                raise forms.ValidationError(f"Es menor de edad: no se puede registrar ni venderle ({ley})")
         return fecha
 
     def clean_telefono(self):

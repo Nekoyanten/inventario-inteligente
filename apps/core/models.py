@@ -23,6 +23,7 @@ class Giro(models.TextChoices):
     BAR = "BAR", "Bar / gastrobar"
     DISCOTECA = "DISCOTECA", "Discoteca"
     BAR_DISCOTECA = "BAR_DISCOTECA", "Bar-discoteca"
+    VAPE = "VAPE", "Vapeadores y accesorios"
     GENERICO = "GENERICO", "Otro (genérico)"
 
 

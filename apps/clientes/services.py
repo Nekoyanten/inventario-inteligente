@@ -265,6 +265,8 @@ def destinatarios(oferta: Oferta, hoy=None):
 
     hoy = hoy or timezone.localdate()
     qs = Cliente.objects.filter(negocio=oferta.negocio, activo=True, acepta_ofertas=True).exclude(telefono="")
+    if oferta.negocio.giro == "VAPE":  # Ley 2354: nunca a quien no se le verificó la mayoría de edad
+        qs = qs.filter(mayor_edad_verificado=True)
     s = oferta.segmento
     if s == Segmento.VIP:
         qs = qs.filter(nivel=Nivel.VIP)
@@ -315,6 +317,8 @@ def registrar_envio(oferta: Oferta, cliente: Cliente, usuario) -> str:
         raise ErrorClientes(f"{cliente.nombre} no autorizó recibir ofertas.")
     if not cliente.telefono:
         raise ErrorClientes(f"{cliente.nombre} no tiene celular registrado.")
+    if oferta.negocio.giro == "VAPE" and not cliente.mayor_edad_verificado:
+        raise ErrorClientes(f"A {cliente.nombre} no se le ha verificado la mayoría de edad (Ley 2354 de 2024).")
     EnvioOferta.objects.get_or_create(oferta=oferta, cliente=cliente, defaults={"usuario": usuario})
     return url_whatsapp(cliente.telefono, mensaje_oferta(oferta, cliente))
 

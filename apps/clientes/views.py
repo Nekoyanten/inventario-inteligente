@@ -10,6 +10,7 @@ from django.views.decorators.http import require_POST
 
 from apps.core.auditoria import auditar
 from apps.core.negocio import del_negocio, negocio_requerido, obtener_del_negocio
+from apps.core.plantillas import AVISO_OFERTAS
 from apps.usuarios.permisos import requiere_permiso
 
 from . import analisis
@@ -162,7 +163,8 @@ def ofertas(request):
     hoy = timezone.localdate()
     qs = del_negocio(request.negocio, Oferta).select_related("producto", "categoria")
     filas = [(o, analisis.efectividad(o)) for o in qs[:50]]
-    return render(request, "clientes/ofertas.html", {"filas": filas, "hoy": hoy, "sugerencias": sugerir(request.negocio)})
+    return render(request, "clientes/ofertas.html", {"filas": filas, "hoy": hoy, "sugerencias": sugerir(request.negocio),
+                                                     "aviso_legal": AVISO_OFERTAS.get(request.negocio.giro)})
 
 
 @negocio_requerido

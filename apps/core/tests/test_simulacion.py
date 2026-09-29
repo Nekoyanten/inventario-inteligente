@@ -1,5 +1,6 @@
 """El simulador del piloto recorre los servicios reales; esta prueba corta asegura que no se rompa."""
 
+import io
 from datetime import timedelta
 
 import pytest
@@ -67,3 +68,28 @@ def test_simulacion_nocturna_corta():
     r = ejecutar(perfil, dias=8, semilla=4)
     assert r["noches"] >= 3 and r["ventas"] > 0 and r["clientes_registrados"] > 0
     assert not Cuenta.objects.filter(estado="ABIERTA").exists()  # todas las cuentas se cobraron o anularon
+
+
+@pytest.mark.django_db
+def test_demo_de_negocios_crea_la_tienda_de_vapeadores_en_plan_gratis(client):
+    from django.core.management import call_command
+
+    from apps.clientes.models import Cliente, Encuesta
+    from apps.core.models import Negocio
+    from apps.core.simulacion.demo_negocios import CLAVE_DEMO
+
+    call_command("cargar_demo_negocios", dias=8, solo=["vape.nube"], stdout=io.StringIO())
+    n = Negocio.objects.get(nombre="Nube Vape Shop")
+    assert n.giro == "VAPE" and n.suscripcion.plan_efectivo == "GRATIS"
+    assert Producto.objects.filter(negocio=n, es_agrupador=False).count() <= n.suscripcion.limites["productos"]
+    assert n.proveedores.filter(nombre__startswith="Vaporesso").exists()
+    assert Producto.objects.filter(negocio=n, marca__nombre="Vaporesso").exists()
+    clientes = Cliente.objects.filter(negocio=n)
+    assert clientes.exists() and not clientes.filter(mayor_edad_verificado=False).exists()  # Ley 2354
+    assert not clientes.filter(nombre__startswith="Cliente ").exists() and Encuesta.objects.filter(negocio=n).exists()
+    assert Venta.objects.filter(negocio=n, cliente_ref__isnull=False).exists()
+    assert client.login(username="vape.nube", password=CLAVE_DEMO)
+    for url in ("/", "/clientes/", "/clientes/ofertas/", "/negocio/plan/"):
+        assert client.get(url, follow=True).status_code == 200
+    call_command("cargar_demo_negocios", borrar=True, stdout=io.StringIO())
+    assert not Negocio.objects.filter(nombre="Nube Vape Shop").exists()

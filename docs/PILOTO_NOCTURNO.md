@@ -233,6 +233,8 @@ Ahora entran gratis el VIP y un acompañante (configurable), y el cumpleañero s
 
 ## 9. Limitaciones
 
+- *Nota posterior (Fase 11):* los umbrales VIP de los giros nocturnos subieron (bar $800.000, bar-discoteca $1.200.000, discoteca $1.500.000 en 90 días). Este piloto se midió con el umbral anterior de $500.000, así que en él había más VIP y más cover regalado.
+
 - **Los supuestos de conducta de la sección 3 determinan el efecto de la fidelización.** Con otros supuestos, otro resultado. Lo que **no** depende de supuestos es cuánto cuesta cada beneficio y que el sistema lo registre bien.
 - 60 noches es poco para ver el efecto completo de niveles y botellas guardadas.
 - Precios y costos de licor aproximados para Nariño en 2026; no son una cotización.

@@ -13,6 +13,7 @@ from django.views.decorators.http import require_POST
 
 from apps.catalogo.models import Producto
 from apps.core.negocio import del_negocio, negocio_requerido, obtener_del_negocio
+from apps.core.plantillas import solo_adultos
 from apps.inventario.services import ErrorInventario
 from apps.usuarios.permisos import requiere_permiso
 
@@ -30,6 +31,7 @@ def pos(request):
         "fidelizacion": bool(config and config.fidelizacion_activa),
         "puede_clientes": request.user.puede("registrar_cliente"),
         "nocturno": request.negocio.giro in ("BAR", "DISCOTECA", "BAR_DISCOTECA"),
+        "solo_adultos": solo_adultos(request.negocio),
     })
 
 

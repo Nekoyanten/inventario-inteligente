@@ -322,3 +322,38 @@ def test_categoria_de_otro_negocio_no_se_ofrece(negocio):
                        "categoria": otra.pk, "activa": "on"}, negocio=negocio)
     assert not form.is_valid() and "categoria" in form.errors
     assert Producto.objects.count() == 0
+
+
+def test_vapeadores_solo_adultos_y_ofertas_a_verificados(db):
+    """Ley 2354 de 2024: en una tienda de vapeadores se verifica la edad y las ofertas no van a no verificados."""
+    from datetime import date
+
+    from apps.clientes.forms import ClienteForm
+    from apps.clientes.services import destinatarios
+    from apps.core.models import Negocio
+
+    n = Negocio.objects.create(nombre="Nube Vape", giro="VAPE")
+    assert n.categorias.filter(nombre="Líquidos y sales de nicotina").exists()
+    datos = {"nombre": "Ana", "telefono": "3001234567", "acepta_datos": True, "activo": True}
+    form = ClienteForm(datos, negocio=n)
+    assert not form.is_valid() and "mayor_edad_verificado" in form.errors
+    menor = ClienteForm({**datos, "mayor_edad_verificado": True, "fecha_nacimiento": date.today().replace(
+        year=date.today().year - 16)}, negocio=n)
+    assert not menor.is_valid() and "2354" in str(menor.errors["fecha_nacimiento"])
+    ok = ClienteForm({**datos, "mayor_edad_verificado": True, "acepta_ofertas": True}, negocio=n).save()
+    sin = Cliente.objects.create(negocio=n, nombre="Beto", telefono="3007654321", acepta_datos=True, acepta_ofertas=True)
+    hoy = date.today()
+    oferta = Oferta.objects.create(negocio=n, titulo="Cartuchos", descuento_pct=5, desde=hoy, hasta=hoy)
+    assert list(destinatarios(oferta)) == [ok]
+    with pytest.raises(ErrorClientes):
+        registrar_envio(oferta, sin, None)
+
+
+def test_oferta_de_cumpleanos_con_el_mes_en_espanol(negocio):
+    """Hallazgo de la demo: con «%B» el título salía «Cumpleaños de September» en un servidor en inglés."""
+    from datetime import date
+
+    Cliente.objects.create(negocio=negocio, nombre="Ana", telefono="3001112233", acepta_datos=True,
+                           fecha_nacimiento=date(1990, 9, 10))
+    s = next(x for x in sugerir(negocio, hoy=date(2026, 9, 1)) if x["clave"].startswith("cumple"))
+    assert s["titulo"] == "Cumpleaños de septiembre"

@@ -28,6 +28,7 @@ Este dice: *"Tienes 5 unidades, vendes aproximadamente 3 por día y tu proveedor
 | **Clientes** | Registro con autorización (Ley 1581), puntos canjeables y niveles Nuevo/Frecuente/VIP, ofertas por segmento aplicadas en caja (nunca bajo el costo), envío por WhatsApp con un toque y medición de retorno, encuesta de satisfacción en el comprobante, análisis RFM (campeones, en riesgo, dormidos) y ofertas sugeridas por el sistema |
 | **Insumos y recetas** | Productos, insumos y preparados; receta con merma y costo automático; la venta de un preparado descuenta sus insumos; producción propia; disponibilidad según insumos |
 | **Bares y discotecas** | Cuentas por mesa con cobro parcial y propina voluntaria (≤ 10 %), cover y aforo, reservas VIP y de grupo con anticipo, consumo mínimo y lista de invitados, happy hour / 2×1 por franja, tragos desde la botella, rendimiento de botellas y pour cost real, botellas guardadas, bonos por visitas y referidos, recordatorios por WhatsApp, análisis de la noche |
+| **Vapeadores** | Giro propio: pods, cartuchos, líquidos con vencimiento y nicotina (mg); clientes solo mayores de edad verificados y ofertas únicamente a ellos (Ley 2354 de 2024) |
 | **Usuarios** | Administrador, vendedor y encargado de inventario; auditoría de todo |
 | **Plataforma** | App instalable (PWA) con modo sin conexión, API REST con token y documentación OpenAPI |
 | **SaaS** | Registro con prueba gratis, planes con límites, página comercial, términos, privacidad (Ley 1581), exportación de datos, cierre de cuenta con borrado total, comentarios |
@@ -63,12 +64,13 @@ python manage.py reconstruir_demanda   # recalcula la demanda desde las ventas
 python manage.py probar_correo tu@correo.com   # verifica la configuración de correo
 python manage.py simular_piloto --dias 60 --salida piloto.json   # 18 negocios ficticios (base de datos limpia)
 python manage.py simular_nocturno --dias 60 --salida noche.json  # 9 bares y discotecas ficticios
+python manage.py cargar_demo_negocios       # 5 negocios de demostración (clave Demo2026!), ver docs/DEMO_NEGOCIOS.md
 ```
 
 ### Pruebas
 
 ```bash
-pytest                                  # 284 pruebas
+pytest                                  # 287 pruebas
 ruff check .
 DATABASE_URL=postgres://... pytest      # también contra PostgreSQL (como en CI)
 ```

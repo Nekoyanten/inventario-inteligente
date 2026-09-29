@@ -13,6 +13,9 @@ from apps.core.formato import numero as _n
 from .models import Oferta, Segmento
 from .services import descuento_maximo_pct
 
+MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre",
+         "diciembre"]  # sin depender del idioma del servidor ("%B" daba "September")
+
 
 def _pct(deseado, producto=None) -> Decimal:
     deseado = Decimal(str(deseado))
@@ -49,7 +52,7 @@ def sugerir(negocio, hoy=None) -> list[dict]:
                         "de descuento. Además tienes {puntos} puntos para usar.")
 
     if r["cumpleanos"]:
-        agregar(f"cumple-{hoy:%Y-%m}", titulo=f"Cumpleaños de {hoy:%B}", descuento_pct=Decimal("15"),
+        agregar(f"cumple-{hoy:%Y-%m}", titulo=f"Cumpleaños de {MESES[hoy.month - 1]}", descuento_pct=Decimal("15"),
                 segmento=Segmento.CUMPLEANOS, dias=30,
                 razon=f"{len(r['cumpleanos'])} clientes cumplen años este mes. Un detalle en su día fideliza.",
                 mensaje="¡Feliz cumpleaños, {nombre}! En {negocio} te regalamos {descuento}% en tu compra de este mes.")

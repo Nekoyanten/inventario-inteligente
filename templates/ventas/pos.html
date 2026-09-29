@@ -28,7 +28,7 @@
             <p><label for="nc-telefono">Celular / WhatsApp</label><input id="nc-telefono" inputmode="tel" maxlength="20"></p>
             <p><label><input type="checkbox" id="nc-datos"> Autoriza el tratamiento de sus datos para acumular puntos (Ley 1581)</label></p>
             <p><label><input type="checkbox" id="nc-ofertas"> Quiere recibir ofertas por WhatsApp</label></p>
-            {% if nocturno %}<p><label><input type="checkbox" id="nc-mayor"> Verifiqué su cédula: es mayor de edad</label></p>{% endif %}
+            {% if solo_adultos %}<p><label><input type="checkbox" id="nc-mayor"> Verifiqué su cédula: es mayor de edad</label></p>{% endif %}
             <button type="button" id="nc-guardar" class="boton boton-auto boton-chico">Registrar y usar</button>
           </div>
         </details>

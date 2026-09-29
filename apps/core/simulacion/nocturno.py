@@ -34,6 +34,8 @@ from apps.nocturno.models import BotellaGuardada, Invitado, Mesa, PrecioEspecial
 from apps.proveedores.models import Proveedor
 from apps.usuarios.models import Rol, Usuario
 
+from .tienda import cumpleanos
+
 TZ = timezone.get_current_timezone()
 
 # nombre, ml, costo botella, precio botella, precio trago (30–45 ml)
@@ -105,6 +107,7 @@ class SimuladorNocturno:
         self.rng_personas = random.Random(f"{semilla}-{perfil['clave']}-personas")
         self.rng_ops = random.Random(f"{semilla}-{perfil['clave']}-operacion")
         self.g = self.rng_ops
+        self.rng_cumple = random.Random(f"{semilla}-{perfil['clave']}-cumple")  # aparte: no altera los demás
         self.m = Metricas()
         self.fisico: dict[int, float] = {}
         self.boost_hasta: dict[int, date] = {}      # persona → fecha hasta la que tiene el empujón del mensaje
@@ -128,13 +131,17 @@ class SimuladorNocturno:
             cfg.fidelizacion_activa = self.fid
             cfg.save()
             nombre, *ap = p["dueno"].split()
-            self.dueno = Usuario.objects.create_user(p["clave"], password="PilotoSimulado2026!", first_name=nombre,
+            clave = p.get("clave_acceso", "PilotoSimulado2026!")
+            self.dueno = Usuario.objects.create_user(p.get("usuario", p["clave"]), password=clave, first_name=nombre,
                                                      last_name=" ".join(ap), negocio=self.negocio, rol=Rol.ADMIN)
-            self.meseros = [self.dueno] + [Usuario.objects.create_user(f"{p['clave']}-mesero{i}", password="x" * 12,
-                                                                       negocio=self.negocio, rol=Rol.VENDEDOR)
-                                           for i in range(1, 4)]
-            self.proveedor = Proveedor.objects.create(negocio=self.negocio, nombre="Distribuidora de Licores del Sur",
-                                                      tiempo_entrega_dias=2)
+            self.meseros = [self.dueno] + [Usuario.objects.create_user(
+                f"{p.get('usuario', p['clave'])}-mesero{i}", password=clave if "clave_acceso" in p else "x" * 12,
+                negocio=self.negocio, rol=Rol.VENDEDOR) for i in range(1, p.get("meseros", 3) + 1)]
+            # proveedores: uno para todo, o uno por categoría ({"Cervezas": ("Bavaria", 2), "_": (...)})
+            provs = p.get("proveedores") or {"_": ("Distribuidora de Licores del Sur", 2)}
+            self.proveedores = {cat: Proveedor.objects.create(negocio=self.negocio, nombre=nom, tiempo_entrega_dias=dias)
+                                for cat, (nom, dias) in provs.items()}
+            self.proveedor = self.proveedores["_"]
             self._catalogo()
             self._mesas()
             if p["happy_hour"]:
@@ -160,36 +167,43 @@ class SimuladorNocturno:
         uds = {u.abreviatura: u for u in UnidadMedida.objects.all()}
         self.botellas, self.tragos, self.cervezas, self.otros, self.cocteles = [], [], [], [], []
         self.ml, self.receta_fis = {}, {}
-        for i, (nombre, ml, costo, precio, precio_trago) in enumerate(BOTELLAS):
+        cat_p = self.p.get("catalogo", {})
+        prov = self._proveedor_de
+        for i, (nombre, ml, costo, precio, precio_trago) in enumerate(cat_p.get("botellas", BOTELLAS)):
             b = Producto.objects.create(negocio=self.negocio, sku=f"B{i:02d}", nombre=f"{nombre} {ml} ml",
                                         categoria=cats["Botellas"], unidad=bot, precio_compra=costo, precio_venta=precio,
-                                        proveedor_principal=self.proveedor, stock_minimo=2)
+                                        proveedor_principal=prov("Botellas", nombre), stock_minimo=2)
             self.botellas.append(b)
             self.ml[b.pk] = ml
             ml_trago = 30 if "Aguardiente" in nombre else 45
             t = noc.crear_trago(b, ml_botella=ml, ml_trago=ml_trago, precio=precio_trago)
             self.tragos.append(t)
             self.receta_fis[t.pk] = [(b.pk, ml_trago / ml, True)]
-        for i, (nombre, costo, precio) in enumerate(CERVEZAS):
+        for i, (nombre, costo, precio) in enumerate(cat_p.get("cervezas", CERVEZAS)):
             self.cervezas.append(Producto.objects.create(
                 negocio=self.negocio, sku=f"C{i:02d}", nombre=nombre, categoria=cats["Cervezas"], unidad=und,
-                precio_compra=costo, precio_venta=precio, proveedor_principal=self.proveedor, stock_minimo=24))
-        for i, (nombre, costo, precio) in enumerate(OTROS):
+                precio_compra=costo, precio_venta=precio, proveedor_principal=prov("Cervezas", nombre), stock_minimo=24))
+        for i, (nombre, costo, precio) in enumerate(cat_p.get("otros", OTROS)):
             bebida = nombre in ("Agua", "Gaseosa", "Soda", "Red Bull", "Jugo natural")
             cat = cats["Bebidas sin alcohol"] if bebida else cats["Comida y pasabocas"]
             self.otros.append(Producto.objects.create(
                 negocio=self.negocio, sku=f"O{i:02d}", nombre=nombre, categoria=cat, unidad=und, precio_compra=costo,
-                precio_venta=precio, proveedor_principal=self.proveedor, stock_minimo=10))
+                precio_venta=precio, proveedor_principal=prov("Otros", nombre), stock_minimo=10))
         insumos = {}
         for i, (nombre, u, costo) in enumerate(INSUMOS):
             insumos[nombre] = Producto.objects.create(
                 negocio=self.negocio, sku=f"I{i:02d}", nombre=nombre, tipo=TipoProducto.INSUMO,
                 categoria=cats["Insumos de barra"], unidad=uds[u], precio_compra=costo,
-                proveedor_principal=self.proveedor, stock_minimo=2)
-        for i, (nombre, base, ml, items, precio) in enumerate(COCTELES):
+                proveedor_principal=prov("Insumos", nombre), stock_minimo=2)
+        for i, (nombre, base, ml, items, precio) in enumerate(cat_p.get("cocteles", COCTELES)):
+            if isinstance(base, str):  # la botella base por nombre ("Ron", "Tanqueray"…)
+                b = next((x for x in self.botellas if base.lower() in x.nombre.lower()), None)
+                if b is None:
+                    continue
+            else:
+                b = self.botellas[base]
             c = Producto.objects.create(negocio=self.negocio, sku=f"K{i:02d}", nombre=nombre, tipo=TipoProducto.PREPARADO,
                                         categoria=cats["Tragos y cócteles"], precio_venta=precio)
-            b = self.botellas[base]
             guardar_item_receta(c, b, Decimal(ml) / Decimal(self.ml[b.pk]))
             fis = [(b.pk, ml / self.ml[b.pk], True)]
             for ins, cant in items:
@@ -208,6 +222,13 @@ class SimuladorNocturno:
             self.fisico[prod.pk] = float(cant)
         self.por_pk = {x.pk: x for x in self.botellas + self.tragos + self.cervezas + self.otros + self.cocteles
                        + self.insumos}
+
+    def _proveedor_de(self, categoria, nombre=""):
+        """El proveedor de un producto: por marca (si la clave aparece en el nombre), por categoría o el general."""
+        for clave, prov in self.proveedores.items():
+            if clave.startswith("marca:") and clave[6:].lower() in nombre.lower():
+                return prov
+        return self.proveedores.get(categoria, self.proveedor)
 
     def _mesas(self):
         n = max(6, int(self.p["aforo"] / 12) if self.p["aforo"] else 12)
@@ -307,6 +328,7 @@ class SimuladorNocturno:
         c = Cliente.objects.create(
             negocio=self.negocio, nombre=f"Cliente {persona}", telefono=f"3{sum(map(ord, self.p['clave'])) % 10}{persona:08d}",
             acepta_datos=True, acepta_ofertas=self.rng.random() < 0.6, mayor_edad_verificado=True,
+            fecha_nacimiento=cumpleanos(self.rng_cumple, noche, "BAR") if self.p.get("cumpleanos") else None,
             fecha_autorizacion=timezone.now(), referido_por=ref)
         self.cliente_de[persona] = c
         self.m.registrados_nuevos += 1
@@ -515,6 +537,7 @@ class SimuladorNocturno:
 
     def _mensajes(self, lunes):
         """El dueño envía los recordatorios (botellas por vencer, a una visita del bono) y una oferta de regreso."""
+        from apps.clientes.models import EnvioOferta
         from apps.clientes.services import destinatarios, registrar_envio
         from apps.clientes.sugerencias import crear_desde_sugerencia, sugerir
         from apps.nocturno.fidelizacion import recordatorios
@@ -526,10 +549,13 @@ class SimuladorNocturno:
                 self.boost_hasta[persona] = lunes + timedelta(days=7)
                 self.m.recordatorios += 1
         for s in sugerir(self.negocio, hoy=lunes):
-            if s["clave"].startswith("regreso"):
+            if s["clave"].startswith(tuple(self.p.get("ofertas_que_usa", ["regreso"]))):
                 oferta = crear_desde_sugerencia(self.negocio, s["clave"], self.dueno, hoy=lunes)
+                if oferta is None:
+                    continue
                 for c in destinatarios(oferta, hoy=lunes)[:60]:
                     registrar_envio(oferta, c, self.dueno)
+                    EnvioOferta.objects.filter(oferta=oferta, cliente=c).update(fecha=self._momento(lunes, 11))
                     persona = inverso.get(c.pk)
                     if persona is not None:
                         self.boost_hasta[persona] = lunes + timedelta(days=10)
