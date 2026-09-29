@@ -10,6 +10,8 @@ def inicio(request):
         planes = [{"clave": k, **v} for k, v in settings.PLANES.items()]
         return render(request, "publico/inicio.html", {"planes": planes, "dias_prueba": settings.DIAS_PRUEBA})
     if request.negocio is None:
+        if request.user.is_superuser:  # el administrador de la plataforma empieza en su panel
+            return redirect("plataforma:panel")
         return render(request, "dashboard/sin_negocio.html")
     if request.user.puede("ver_reportes"):
         from apps.core.arranque import progreso_arranque

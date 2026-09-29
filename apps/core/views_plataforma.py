@@ -2,17 +2,22 @@
 
 from datetime import timedelta
 
+from django.conf import settings
+from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import user_passes_test
 from django.db.models import Avg, Count, Max, Q
 from django.db.models.functions import TruncDate
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
 from apps.reportes.exportadores import a_csv
 
 from .arranque import progreso_arranque
-from .models import Comentario, EjecucionTarea, Negocio
+from .auditoria import auditar
+from .middleware import SESION_SOPORTE
+from .models import Comentario, EjecucionTarea, Negocio, Suscripcion
 from .salud import configuracion, revisar
 
 solo_superusuario = user_passes_test(lambda u: u.is_active and u.is_superuser)
@@ -64,5 +69,54 @@ def panel(request):
         "tareas": EjecucionTarea.objects.all()[:10],
         "comentarios": Comentario.objects.filter(atendido=False).select_related("negocio", "usuario")[:20],
         "activos": sum(1 for f in filas if f["dias_activos"] >= 15),
-        "admin_url": __import__("django.conf", fromlist=["settings"]).settings.ADMIN_URL,
+        "admin_url": settings.ADMIN_URL,
+        "planes": [(k, v["nombre"]) for k, v in settings.PLANES.items()],
     })
+
+
+@require_POST
+@staff_member_required
+@solo_superusuario
+def entrar(request, pk):
+    """Entrar a un negocio como administrador de la plataforma (soporte): ve y hace todo lo que su administrador."""
+    negocio = get_object_or_404(Negocio, pk=pk)
+    request.session[SESION_SOPORTE] = negocio.pk
+    auditar(negocio, request.user, "soporte_entrar", negocio)
+    messages.info(request, f"Estás dentro de «{negocio.nombre}» como administrador de la plataforma.")
+    return redirect("dashboard:inicio")
+
+
+@require_POST
+@staff_member_required
+@solo_superusuario
+def salir(request):
+    pk = request.session.pop(SESION_SOPORTE, None)
+    negocio = Negocio.objects.filter(pk=pk).first() if pk else None
+    if negocio:
+        auditar(negocio, request.user, "soporte_salir", negocio)
+    return redirect("plataforma:panel")
+
+
+@require_POST
+@staff_member_required
+@solo_superusuario
+def cambiar_plan(request, pk):
+    """Asigna el plan de un negocio: Gratis, o uno de pago por N días (sin prueba gratis)."""
+    negocio = get_object_or_404(Negocio, pk=pk)
+    plan = request.POST.get("plan", "")
+    if plan not in settings.PLANES:
+        messages.error(request, "Plan no válido.")
+        return redirect("plataforma:panel")
+    try:
+        dias = max(1, min(3660, int(request.POST.get("dias") or 30)))
+    except ValueError:
+        dias = 30
+    s = Suscripcion.objects.get_or_create(negocio=negocio)[0]
+    anterior = s.plan_efectivo
+    s.plan, s.prueba_hasta = plan, None
+    s.pagado_hasta = None if plan == "GRATIS" else timezone.localdate() + timedelta(days=dias)
+    s.save()
+    auditar(negocio, request.user, "cambiar_plan", s, anterior=anterior, nuevo=plan, dias=dias)
+    detalle = "" if plan == "GRATIS" else f" hasta el {s.pagado_hasta:%d/%m/%Y}"
+    messages.success(request, f"{negocio.nombre}: plan {settings.PLANES[plan]['nombre']}{detalle}.")
+    return redirect("plataforma:panel")

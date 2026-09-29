@@ -20,7 +20,7 @@
     {% if user.is_authenticated %}
       <div class="barra-derecha">
         {% if user.is_superuser %}<a href="{% url 'plataforma:panel' %}">Plataforma</a>{% endif %}
-        <span class="suave oculto-movil">{{ user.get_full_name|default:user.username }} · {{ user.get_rol_display }}</span>
+        <span class="suave oculto-movil">{{ user.get_full_name|default:user.username }} · {% if user.is_superuser %}Administrador de la plataforma{% else %}{{ user.get_rol_display }}{% endif %}</span>
         {% if user.negocio_id %}<a href="{% url 'usuarios:cambiar' %}" title="Cambiar de usuario en este equipo">Cambiar</a>{% endif %}
         <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="enlace">Salir</button></form>
       </div>
@@ -38,6 +38,7 @@
   {% endif %}
 
   <main class="contenedor">
+    {% if request.soporte %}<form method="post" action="{% url 'plataforma:salir' %}" class="mensaje info">{% csrf_token %}🛡️ Estás dentro de <strong>{{ negocio }}</strong> como administrador de la plataforma; todo lo que hagas queda en su bitácora. <button class="enlace">Volver a la plataforma</button></form>{% endif %}
     {% if request.suscripcion and user.is_authenticated %}{% with s=request.suscripcion %}
       {% if s.en_prueba and s.dias_restantes <= 3 %}<p class="mensaje warning">Tu prueba gratis termina en {{ s.dias_restantes }} día{{ s.dias_restantes|pluralize }}. <a href="{% url 'negocio:plan' %}">Elige un plan</a> para seguir con todas las funciones.</p>
       {% elif not s.en_prueba and not s.al_dia and s.plan != 'GRATIS' %}<p class="mensaje warning">Tu plan venció: aplican los límites del plan Gratis. <a href="{% url 'negocio:plan' %}">Renovar</a></p>{% endif %}

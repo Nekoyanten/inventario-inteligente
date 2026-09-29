@@ -93,3 +93,24 @@ def test_demo_de_negocios_crea_la_tienda_de_vapeadores_en_plan_gratis(client):
         assert client.get(url, follow=True).status_code == 200
     call_command("cargar_demo_negocios", borrar=True, stdout=io.StringIO())
     assert not Negocio.objects.filter(nombre="Nube Vape Shop").exists()
+
+
+@pytest.mark.django_db
+def test_demo_se_retoma_si_se_corto_y_no_duplica_lo_completo():
+    from django.core.management import call_command
+
+    from apps.core.models import Negocio
+
+    nulo = open("/dev/null", "w")
+    call_command("cargar_demo_negocios", dias=3, solo=["vape.nube"], stdout=nulo)
+    completo = Negocio.objects.get(nombre="Nube Vape Shop")
+    # otra corrida (p. ej. el servidor se reinició): lo completo no se toca
+    call_command("cargar_demo_negocios", dias=3, solo=["vape.nube"], stdout=nulo)
+    assert Negocio.objects.get(nombre="Nube Vape Shop").pk == completo.pk
+    # una carga cortada a medias (sin la marca de completa) se borra y se vuelve a crear
+    s = completo.suscripcion
+    s.notas = ""
+    s.save()
+    call_command("cargar_demo_negocios", dias=3, solo=["vape.nube"], stdout=nulo)
+    nuevo = Negocio.objects.get(nombre="Nube Vape Shop")
+    assert nuevo.pk != completo.pk and "Negocio de demostración" in nuevo.suscripcion.notas

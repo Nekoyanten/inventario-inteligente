@@ -112,6 +112,8 @@ textarea { min-height:80px; }
 .mensaje { padding:.7rem 1rem; border-radius:10px; background:#1f9d5520; border:1px solid #1f9d5540; }
 .mensaje.error { background:#d6454518; border-color:#d6454540; }
 .mensaje.warning { background:#f6c34325; border-color:#f6c34350; }
+.mensaje.info { background:#3b82f620; border-color:#3b82f650; }
+.en-linea { display:flex; flex-wrap:wrap; gap:.3rem; align-items:center; margin-top:.3rem; }
 .alerta { border-left:4px solid var(--azul); padding:.5rem .8rem; margin:.5rem 0; background:#2f74c00a; border-radius:0 8px 8px 0; }
 .alerta.s2 { border-color:var(--amarillo); background:#f6c34312; } .alerta.s3 { border-color:var(--rojo); background:#d645450d; }
 .alerta em { display:block; color:var(--suave); font-size:.85rem; font-style:normal; }

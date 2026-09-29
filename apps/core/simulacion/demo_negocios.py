@@ -15,6 +15,8 @@ from django.utils import timezone
 from .perfiles_nocturnos import PERFILES_NOCTURNOS
 
 CLAVE_DEMO = "Demo2026!"
+# La pone aplicar_plan al final (y así quedaron las demos ya cargadas): si falta, la carga se cortó a medias.
+MARCA_COMPLETO = "Negocio de demostración (datos simulados)."
 
 # ---------------------------------------------------------------------------------------------------------- nocturnos
 _BASE = {p["clave"]: p for p in PERFILES_NOCTURNOS}
@@ -275,7 +277,7 @@ def aplicar_plan(negocio, plan: str, hoy: date | None = None):
     s = negocio.suscripcion
     s.plan, s.prueba_hasta = plan, None
     s.pagado_hasta = None if plan == "GRATIS" else hoy + timedelta(days=30)
-    s.notas = "Negocio de demostración (datos simulados)."
+    s.notas = MARCA_COMPLETO
     s.save()
 
 

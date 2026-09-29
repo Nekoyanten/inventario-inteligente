@@ -28,6 +28,14 @@ El plan gratis de Render no tiene consola, así que el arranque (`scripts/inicia
 
 Deja vacío el campo *Docker Command*: se usa el `CMD` del Dockerfile. La base de datos gratis vence a los 30 días.
 
+### Administrador de la plataforma
+
+El superusuario (`DJANGO_SUPERUSER_USERNAME`) es el **administrador de la plataforma**: al entrar llega a `/plataforma/`, donde ve todos los negocios y puede:
+
+- **Entrar** a cualquier negocio para dar soporte: ve y hace todo lo que su administrador. Aparece un aviso mientras está dentro y la entrada y la salida quedan en la bitácora del negocio.
+- **Cambiar el plan** de un negocio (Gratis, o Emprendedor o Negocio por N días). También queda en la bitácora.
+- Ir al **admin de Django** (`/ADMIN_URL`) para usuarios, contraseñas y datos.
+
 ## Opción B: VPS propio (Ubuntu + Docker)
 
 ```bash
