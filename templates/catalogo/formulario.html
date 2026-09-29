@@ -6,7 +6,7 @@
   {{ form.non_field_errors }}
   <section class="tarjeta formulario-libre">
     <h2>Identificación</h2>
-    {% for campo in form %}{% if campo.name in "nombre sku codigo_barras categoria marca unidad descripcion imagen" %}<p>{{ campo.label_tag }}{{ campo }}{{ campo.errors }}{% if campo.help_text %}<span class="helptext">{{ campo.help_text }}</span>{% endif %}</p>{% endif %}{% endfor %}
+    {% for campo in form %}{% if campo.name in "tipo nombre sku codigo_barras categoria marca unidad descripcion imagen" %}<p>{{ campo.label_tag }}{{ campo }}{{ campo.errors }}{% if campo.help_text %}<span class="helptext">{{ campo.help_text }}</span>{% endif %}</p>{% endif %}{% endfor %}
     <div id="atributos">
       {% for atributo, nombre in form.atributos %}{% with campo=form|get_campo:nombre %}<p>{{ campo.label_tag }}{{ campo }}{{ campo.errors }}</p>{% endwith %}{% endfor %}
     </div>

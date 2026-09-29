@@ -54,3 +54,16 @@ def test_simulacion_antes_de_la_fase8_bloquea_ventas_sin_stock():
     r = sim.cerrar().resumen()
     assert r["fase8"] is False and r["exactitud"]["ventas_sin_stock_con_ajuste"] == 0
     assert not sim.negocio.config.permite_venta_sin_stock
+
+
+@pytest.mark.django_db
+def test_simulacion_nocturna_corta():
+    from apps.core.simulacion.nocturno import ejecutar
+    from apps.core.simulacion.perfiles_nocturnos import PERFILES_NOCTURNOS
+    from apps.nocturno.models import Cuenta
+
+    perfil = dict(next(p for p in PERFILES_NOCTURNOS if p["clave"] == "disco-son-loma"), pool=150)
+    perfil["dias"] = {d: 6 for d in perfil["dias"]}
+    r = ejecutar(perfil, dias=8, semilla=4)
+    assert r["noches"] >= 3 and r["ventas"] > 0 and r["clientes_registrados"] > 0
+    assert not Cuenta.objects.filter(estado="ABIERTA").exists()  # todas las cuentas se cobraron o anularon

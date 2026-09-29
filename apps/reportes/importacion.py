@@ -25,10 +25,24 @@ COLUMNAS = [
     ("precio_venta", "Precio de venta"), ("stock_minimo", "Stock mínimo"), ("stock_inicial", "Stock inicial"),
     ("codigo_barras", "Código de barras"), ("proveedor", "Proveedor"), ("vencimiento", "Vencimiento (AAAA-MM-DD)"),
     ("vida_util_dias", "Vida útil en días (perecederos)"),
+    ("tipo", "Tipo: producto, insumo o preparado (vacío = producto)"),
 ]
 EJEMPLO = ["ARR-1K", "Arroz 1 kg", "Abarrotes", "Diana", "und", 3200, 4500, 10, 50, "7702001001", "Distribuidora A",
-           "2027-03-31", ""]
+           "2027-03-31", "", "producto"]
 MAX_FILAS = 5000
+
+
+TIPOS_TEXTO = {"producto": "PRODUCTO", "insumo": "INSUMO", "preparado": "PREPARADO", "servicio": "PREPARADO"}
+
+
+def _tipo(valor, errores):
+    texto = str(valor or "").strip().lower()
+    if not texto:
+        return None
+    if texto not in TIPOS_TEXTO:
+        errores.append(f"tipo desconocido ({valor}): usa producto, insumo o preparado")
+        return None
+    return TIPOS_TEXTO[texto]
 
 
 def _entero_positivo(valor, errores):
@@ -159,6 +173,7 @@ def validar(negocio, filas: list[dict]) -> tuple[list[dict], list[str]]:
             "proveedor": str(fila.get("proveedor") or "").strip()[:150],
             "vencimiento": _fecha(fila.get("vencimiento"), e),
             "vida_util_dias": _entero_positivo(fila.get("vida_util_dias"), e),
+            "tipo": _tipo(fila.get("tipo"), e),
         }
         if e:
             errores.append(f"Fila {n}: " + "; ".join(e))
@@ -187,6 +202,8 @@ def importar_filas(negocio, usuario, filas: list[dict]) -> dict:
         }
         if f.get("vida_util_dias"):
             datos["vida_util_dias"] = f["vida_util_dias"]
+        if f.get("tipo"):
+            datos["tipo"] = f["tipo"]
         if f["unidad"]:
             datos["unidad"] = f["unidad"]
         proveedor = obtener(cache_prov, Proveedor, f["proveedor"])
@@ -195,7 +212,7 @@ def importar_filas(negocio, usuario, filas: list[dict]) -> dict:
         producto, creado = Producto.objects.update_or_create(negocio=negocio, sku=f["sku"], defaults=datos)
         if creado:
             creados += 1
-            if f["stock_inicial"] > 0:
+            if f["stock_inicial"] > 0 and producto.tipo != "PREPARADO":
                 registrar_movimiento(producto=producto, tipo=TipoMovimiento.ENTRADA_INICIAL, cantidad=f["stock_inicial"],
                                      usuario=usuario, motivo="Importación desde archivo",
                                      fecha_vencimiento=f["vencimiento"], evaluar_alertas=False)

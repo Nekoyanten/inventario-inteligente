@@ -41,7 +41,8 @@ class Filtros:
 
 
 def _productos(negocio, f: Filtros):
-    qs = del_negocio(negocio, Producto).filter(activo=True, es_agrupador=False).select_related("categoria")
+    qs = del_negocio(negocio, Producto).filter(activo=True, es_agrupador=False).exclude(tipo="PREPARADO").select_related(
+        "categoria")
     if f.categoria:
         qs = qs.filter(categoria_id=f.categoria)
     return qs

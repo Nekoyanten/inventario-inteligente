@@ -140,7 +140,7 @@ def _lineas_desde_post(post, negocio):
     from apps.catalogo.models import Producto
     from apps.core.negocio import del_negocio
 
-    productos = del_negocio(negocio, Producto).filter(activo=True, es_agrupador=False)
+    productos = del_negocio(negocio, Producto).filter(activo=True, es_agrupador=False).exclude(tipo="PREPARADO")
     lineas = []
     for pid, cant, costo, venc in zip(post.getlist("lineas-producto"), post.getlist("lineas-cantidad"),
                                       post.getlist("lineas-costo"), post.getlist("lineas-vencimiento") or

@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Happy hour y noches{% endblock %}
+{% block contenido %}
+<h1>Happy hour y noches especiales</h1>
+{% include "nocturno/_pestanas.html" %}
+<div class="rejilla-2">
+<section class="tarjeta"><h2>Precios especiales</h2>
+  <p class="suave">Se aplican solos en la caja y en las cuentas según la hora de cada pedido. Si un pedido tiene happy hour, no suma otra oferta.</p>
+  <table class="tabla compacta"><tbody>{% for p in reglas %}<tr class="{% if not p.activa %}inactivo{% endif %}"><td><a href="{% url 'nocturno:precio' p.pk %}">{{ p.nombre }}</a><br><small class="suave">{{ p.get_tipo_display }}{% if p.tipo != 'DOS_POR_UNO' %} {{ p.valor|floatformat:0 }}{% endif %}{% if p.producto %} · {{ p.producto }}{% elif p.categoria %} · {{ p.categoria }}{% else %} · todo{% endif %}</small></td><td>{{ p.hora_inicio|time:"H:i" }}–{{ p.hora_fin|time:"H:i" }}</td></tr>{% empty %}<tr><td class="vacio">Aún no hay precios especiales.</td></tr>{% endfor %}</tbody></table></section>
+<section class="tarjeta formulario-libre"><h2>{% if obj %}Editar{% else %}Nuevo{% endif %}</h2>
+  <form method="post">{% csrf_token %}{{ form.non_field_errors }}{{ form.as_p }}<button class="boton boton-auto">Guardar</button></form></section>
+</div>
+{% endblock %}

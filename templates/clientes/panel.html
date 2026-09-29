@@ -1,0 +1,72 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Clientes{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <h1>Clientes</h1>
+  <div class="acciones"><a class="boton boton-auto boton-chico" href="{% url 'clientes:crear' %}">+ Nuevo cliente</a></div>
+</div>
+{% include "clientes/_pestanas.html" %}
+
+{% if not r.clientes %}
+<section class="tarjeta vacio">
+  <h2>Empieza a conocer a tus clientes</h2>
+  <p>En la caja, pulsa <b>«Cliente»</b> y regístralo con su nombre y celular (con su autorización). Desde ese momento acumula puntos, recibe ofertas y aquí verás quién vuelve, quién se está yendo y qué opinan.</p>
+</section>
+{% else %}
+<div class="rejilla">
+  <section class="tarjeta"><h2>Clientes activos</h2><p class="kpi">{{ r.activos }}</p><p class="suave">compraron en los últimos 90 días · {{ r.clientes }} registrados</p></section>
+  <section class="tarjeta"><h2>Vuelven a comprar</h2><p class="kpi">{% if r.recurrentes_pct is not None %}{{ r.recurrentes_pct }} %{% else %}—{% endif %}</p><p class="suave">de los activos compró 2 o más veces{% if r.vuelven_cada %} · vuelven cada ~{{ r.vuelven_cada }} días{% endif %}</p></section>
+  <section class="tarjeta"><h2>Ventas con cliente</h2><p class="kpi">{% if r.ventas_identificadas_pct is not None %}{{ r.ventas_identificadas_pct }} %{% else %}—{% endif %}</p><p class="suave">{% if r.ticket_con_cliente %}ticket {{ r.ticket_con_cliente|moneda }} con cliente vs {{ r.ticket_sin_cliente|moneda }} sin{% else %}identifica al cliente en la caja{% endif %}</p></section>
+  <section class="tarjeta"><h2>Satisfacción</h2><p class="kpi">{% if r.satisfaccion.promedio %}{{ r.satisfaccion.promedio }} <small>/ 5</small>{% else %}—{% endif %}</p><p class="suave">{{ r.satisfaccion.respuestas }} respuestas en 90 días{% if r.satisfaccion.bajas %} · {{ r.satisfaccion.bajas }} con 3 o menos{% endif %}</p></section>
+</div>
+
+<section class="tarjeta">
+  <h2>Tus clientes por grupo</h2>
+  <table class="tabla">
+    <thead><tr><th>Grupo</th><th class="num">Clientes</th><th class="num">Compras (6 meses)</th><th></th></tr></thead>
+    <tbody>{% for s in r.segmentos %}<tr>
+      <td><b>{{ s.nombre }}</b><br><small class="suave">{{ s.ayuda }}</small></td>
+      <td class="num" data-titulo="Clientes">{{ s.cantidad }}</td><td class="num" data-titulo="Compras">{{ s.monto|moneda }}</td>
+      <td>{% if s.cantidad %}<a href="{% url 'clientes:lista' %}?segmento={{ s.clave }}">Ver</a>{% endif %}</td></tr>{% endfor %}</tbody>
+  </table>
+</section>
+{% endif %}
+
+{% if sugerencias %}
+<section class="tarjeta destacado">
+  <h2>💡 Ofertas que te sugerimos</h2>
+  <p class="suave">Salen de tus datos. Tú decides: crea la oferta, revísala y envíala por WhatsApp.</p>
+  {% for s in sugerencias %}
+  <div class="alerta s2">
+    <div class="encabezado" style="margin:0">
+      <div><b>{{ s.titulo }}</b> · {{ s.descuento_pct|floatformat:0 }} % · {{ s.dias }} días<em>{{ s.razon }}</em></div>
+      <form method="post" action="{% url 'clientes:crear_sugerida' %}">{% csrf_token %}<input type="hidden" name="clave" value="{{ s.clave }}"><button class="boton boton-auto boton-chico">Crear oferta</button></form>
+    </div>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if r.clientes %}
+<div class="rejilla-2">
+  <section class="tarjeta">
+    <h2>⚠️ Se están yendo</h2>
+    {% if r.en_riesgo %}<table class="tabla compacta"><tbody>{% for f in r.en_riesgo %}<tr><td><a href="{% url 'clientes:detalle' f.cliente.pk %}">{{ f.cliente.nombre }}</a><br><small class="suave">venía cada ~{{ f.intervalo|floatformat:0 }} días · no vuelve hace {{ f.recencia }}</small></td><td class="num">{{ f.monto|moneda }}</td></tr>{% endfor %}</tbody></table>
+    {% else %}<p class="vacio">Nadie por ahora. 🎉</p>{% endif %}
+  </section>
+  <section class="tarjeta">
+    <h2>🏆 Tus mejores clientes (6 meses)</h2>
+    <table class="tabla compacta"><tbody>{% for f in r.top %}{% if f.monto %}<tr><td><a href="{% url 'clientes:detalle' f.cliente.pk %}">{{ f.cliente.nombre }}</a> <small class="suave">{{ f.cliente.get_nivel_display }}</small></td><td class="num">{{ f.monto|moneda }}</td></tr>{% endif %}{% endfor %}</tbody></table>
+  </section>
+  {% if r.cumpleanos %}<section class="tarjeta">
+    <h2>🎂 Cumplen años este mes</h2>
+    <ul class="lista-simple">{% for c in r.cumpleanos %}<li><a href="{% url 'clientes:detalle' c.pk %}">{{ c.nombre }}</a> · {{ c.fecha_nacimiento|date:"d \d\e F" }}</li>{% endfor %}</ul>
+  </section>{% endif %}
+  <section class="tarjeta">
+    <h2>💬 Lo que dicen</h2>
+    {% for e in r.satisfaccion.comentarios %}<p>{% for i in "12345" %}{% if forloop.counter <= e.calificacion %}★{% else %}☆{% endif %}{% endfor %} «{{ e.comentario }}» <small class="suave">{{ e.cliente|default:"cliente" }} · {{ e.respondida|date:"d/m" }}</small></p>
+    {% empty %}<p class="vacio">Aún no hay comentarios. La encuesta aparece en cada comprobante.</p>{% endfor %}
+  </section>
+</div>
+{% endif %}
+{% endblock %}

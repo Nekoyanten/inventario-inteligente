@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Botellas guardadas{% endblock %}
+{% block contenido %}
+<h1>Botellas guardadas</h1>
+{% include "nocturno/_pestanas.html" %}
+<section class="tarjeta">
+  <p class="suave">Se guardan desde la cuenta del cliente. Cuando están por vencer, en «La noche» aparece el recordatorio por WhatsApp.</p>
+  <table class="tabla"><thead><tr><th>Cliente</th><th>Botella</th><th class="num">Queda</th><th>Ubicación</th><th>Vence</th><th>Estado</th></tr></thead><tbody>
+  {% for b in botellas %}<tr><td>{{ b.cliente }}</td><td>{{ b.producto }}</td><td class="num">{{ b.restante_pct }} %</td><td>{{ b.ubicacion|default:"—" }}</td><td>{{ b.vence|date:"d/m/Y" }}</td>
+    <td>{% if b.estado == 'GUARDADA' %}<form method="post" action="{% url 'nocturno:retirar_botella' b.pk %}">{% csrf_token %}<button class="boton boton-auto boton-chico">Entregar</button></form>{% else %}{{ b.get_estado_display }}{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="6" class="vacio">No hay botellas guardadas.</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endblock %}

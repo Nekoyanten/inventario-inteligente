@@ -24,8 +24,10 @@ PERMISOS_POR_ROL = {
         "gestionar_proveedores",
         "ver_reportes",
         "ver_reportes_financieros",
+        "registrar_cliente",
+        "gestionar_clientes",
     },
-    Rol.VENDEDOR: {"consultar_productos", "registrar_venta"},
+    Rol.VENDEDOR: {"consultar_productos", "registrar_venta", "registrar_cliente"},
     Rol.INVENTARIO: {
         "gestionar_productos",
         "consultar_productos",

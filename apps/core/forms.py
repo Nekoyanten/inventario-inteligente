@@ -54,12 +54,16 @@ class NegocioForm(forms.ModelForm):
         labels = {"nit": "NIT / documento", "telefono": "Teléfono / WhatsApp", "direccion": "Dirección"}
 
 
+CAMPOS_FIDELIZACION = ("fidelizacion_activa", "pesos_por_punto", "valor_punto", "puntos_minimos_canje",
+                       "nivel_frecuente_compras", "nivel_vip_monto", "encuesta_satisfaccion")
+
+
 class ConfiguracionForm(forms.ModelForm):
     class Meta:
         from .models import ConfiguracionNegocio
 
         model = ConfiguracionNegocio
-        exclude = ("negocio", "alertas_silenciadas")
+        exclude = ("negocio", "alertas_silenciadas") + CAMPOS_FIDELIZACION
         labels = {
             "usa_vencimientos": "Controlar fechas de vencimiento",
             "usa_lotes": "Manejar lotes (salida FEFO)",

@@ -33,30 +33,86 @@
 {% else %}
 <div class="rejilla">
   {% if producto.imagen %}<section class="tarjeta" style="padding:.5rem"><img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" style="width:100%;max-height:220px;object-fit:contain;border-radius:8px"></section>{% endif %}
+  {% if producto.es_preparado %}
   <section class="tarjeta">
-    <h2>Stock</h2>
+    <h2>Se puede preparar</h2>
+    <p class="kpi">{% if alcanza is None %}—{% else %}{{ alcanza|cantidad }} <small>con los insumos de hoy</small>{% endif %}</p>
+    <p class="suave">Preparado: no tiene stock propio; al venderlo se descuentan sus insumos.</p>
+  </section>
+  {% else %}
+  <section class="tarjeta">
+    <h2>Stock{% if producto.es_insumo %} del insumo{% endif %}</h2>
     <p class="kpi">{{ producto.stock_actual|cantidad }} <small>{{ producto.unidad.abreviatura|default:"und" }}</small></p>
     <p>{{ analisis.estado|insignia }} · mínimo {{ producto.stock_minimo|cantidad }}</p>
   </section>
+  {% endif %}
   <section class="tarjeta">
     <h2>Ritmo de ventas</h2>
     <p class="kpi">{{ analisis.demanda_diaria|floatformat:1 }} <small>por día</small></p>
-    <p>{% if analisis.stock <= 0 %}Agotado: no se está vendiendo por falta de stock{% elif analisis.cobertura_dias is not None and analisis.demanda_diaria >= 0.05 %}Alcanza para ~{{ analisis.cobertura_dias|floatformat:0 }} días{% else %}Sin ventas recientes{% endif %}</p>
+    <p>{% if analisis.stock <= 0 and not producto.es_preparado %}Agotado: no se está vendiendo por falta de stock{% elif analisis.cobertura_dias is not None and analisis.demanda_diaria >= 0.05 %}Alcanza para ~{{ analisis.cobertura_dias|floatformat:0 }} días{% else %}Sin ventas recientes{% endif %}</p>
   </section>
   <section class="tarjeta">
     <h2>Precios</h2>
     <p class="kpi">{{ producto.precio_venta|moneda }}</p>
     {% if ver_costos %}<p>Costo {{ producto.precio_compra|moneda }} · margen {{ producto.margen|floatformat:0 }} %</p>{% endif %}
   </section>
-  <section class="tarjeta">
+  {% if not producto.es_preparado %}<section class="tarjeta">
     <h2>Rotación y reposición</h2>
     <p>{{ analisis.rotacion|insignia }} rotación</p>
     <p class="suave">Proveedor: {{ producto.proveedor_principal|default:"sin asignar" }} · entrega ~{{ analisis.tiempo_entrega|floatformat:0 }} días<br>
     Punto de reorden: {{ analisis.punto_reorden|floatformat:0 }} · seguridad: {{ analisis.stock_seguridad|floatformat:0 }}</p>
-  </section>
+  </section>{% endif %}
 </div>
 
 {% for a in alertas %}<p class="alerta s{{ a.severidad }}">{{ a.mensaje }} <em>{{ a.accion_sugerida }}</em></p>{% endfor %}
+
+{% if not producto.es_insumo %}
+<section class="tarjeta">
+  <div class="encabezado"><h2>Receta {% if producto.es_preparado %}(se descuenta al vender){% else %}(para producción propia){% endif %}</h2>
+    {% if costo_receta is not None and ver_costos %}<span>Costo por unidad: <b>{{ costo_receta|moneda }}</b>{% if margen_receta is not None %} · margen {{ margen_receta|floatformat:0 }} %{% endif %}</span>{% endif %}</div>
+  {% if receta %}
+  <table class="tabla compacta"><thead><tr><th>Insumo</th><th class="num">Cantidad</th><th class="num">Merma</th><th class="num">Hay</th>{% if ver_costos %}<th class="num">Costo</th>{% endif %}<th></th></tr></thead><tbody>
+  {% for i in receta %}<tr><td><a href="{% url 'catalogo:detalle' i.insumo_id %}">{{ i.insumo.nombre }}</a></td>
+    <td class="num" data-titulo="Cantidad">{{ i.cantidad|cantidad }} {{ i.insumo.unidad.abreviatura|default:"und" }}</td>
+    <td class="num" data-titulo="Merma">{{ i.merma_pct|floatformat:0 }} %</td>
+    <td class="num" data-titulo="Hay">{{ i.insumo.stock_actual|cantidad }}</td>
+    {% if ver_costos %}<td class="num" data-titulo="Costo">{{ i.costo|moneda }}</td>{% endif %}
+    <td>{% if "gestionar_productos" in permisos %}<form method="post" action="{% url 'catalogo:receta_quitar' producto.pk i.pk %}">{% csrf_token %}<button class="enlace" aria-label="Quitar {{ i.insumo.nombre }}">✕</button></form>{% endif %}</td></tr>
+  {% endfor %}</tbody></table>
+  {% else %}<p class="suave">{% if producto.es_preparado %}Agrega los insumos que lleva una unidad (por ejemplo, un almuerzo lleva 150 g de arroz y 200 g de pollo). Así, cada venta los descuenta sola y sabes cuánto te cuesta.{% else %}¿Lo elaboras tú (pan, jabones, postres)? Agrega sus insumos y registra cada producción.{% endif %}</p>{% endif %}
+  {% if "gestionar_productos" in permisos %}
+  <details {% if not receta %}open{% endif %}><summary>Agregar insumo</summary>
+    <form method="post" action="{% url 'catalogo:receta_agregar' producto.pk %}" class="formulario-libre rejilla-2">{% csrf_token %}
+      <p><label for="receta-buscar">Insumo</label><input id="receta-buscar" type="search" data-para="stock" placeholder="Busca el insumo…" autocomplete="off"><input type="hidden" name="insumo" id="receta-insumo" required><span id="receta-elegido" class="suave"></span></p>
+      <p><label for="receta-cantidad">Cantidad por unidad</label><input id="receta-cantidad" name="cantidad" type="number" step="0.001" min="0.001" required></p>
+      <p><label for="receta-merma">Merma % (opcional)</label><input id="receta-merma" name="merma_pct" type="number" step="0.1" min="0" max="90" value="0"></p>
+      <p><button class="boton boton-auto">Agregar a la receta</button></p>
+    </form>
+  </details>
+  {% endif %}
+  {% if receta and not producto.es_preparado and "registrar_movimiento" in permisos %}
+  <form method="post" action="{% url 'catalogo:producir' producto.pk %}" class="formulario-libre" style="margin-top:1rem">{% csrf_token %}
+    <label for="producir-cantidad"><b>Registrar producción</b> (descuenta los insumos y entra el producto)</label>
+    <div class="campo-linea"><input id="producir-cantidad" name="cantidad" type="number" step="any" min="0.001" required placeholder="¿Cuántas unidades hiciste?"><button class="boton boton-auto">Registrar</button></div>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+{% if nocturno and not producto.es_preparado and "gestionar_productos" in permisos %}
+<details class="tarjeta"><summary><b>🥃 Vender por tragos</b> · crea el trago y descuenta la botella en fracciones</summary>
+  <form method="post" action="{% url 'nocturno:crear_trago' producto.pk %}" class="formulario-libre rejilla-2">{% csrf_token %}
+    <p><label for="t-ml-b">Mililitros de la botella</label><input id="t-ml-b" name="ml_botella" type="number" min="50" value="750" required></p>
+    <p><label for="t-ml-t">Mililitros por trago</label><input id="t-ml-t" name="ml_trago" type="number" min="5" value="30" required></p>
+    <p><label for="t-precio">Precio del trago</label><input id="t-precio" name="precio" type="number" min="0" step="100" required></p>
+    <p><button class="boton boton-auto">Crear trago</button></p>
+  </form>
+</details>
+{% endif %}
+{% if usado_en %}
+<section class="tarjeta"><h2>Se usa en</h2>
+  <ul class="lista-simple">{% for i in usado_en %}<li><a href="{% url 'catalogo:detalle' i.producto_id %}">{{ i.producto.nombre }}</a> · {{ i.cantidad|cantidad }} {{ producto.unidad.abreviatura|default:"und" }} por unidad</li>{% endfor %}</ul>
+</section>
+{% endif %}
 
 <div class="rejilla-2">
   <section class="tarjeta">
@@ -92,3 +148,5 @@
 </div>
 {% endif %}
 {% endblock %}
+{% block scripts %}{% load static %}<script src="{% static 'js/app.js' %}"></script>
+<script>const b = document.getElementById("receta-buscar"); if (b) Inventario.buscadorProducto(b, (p) => { document.getElementById("receta-insumo").value = p.id; document.getElementById("receta-elegido").textContent = "✔ " + p.nombre + " (" + p.unidad + ")"; b.value = p.nombre; });</script>{% endblock %}

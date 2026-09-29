@@ -20,6 +20,11 @@ RUTAS_NEGOCIO = {
     "DetalleVenta": "venta__negocio",
     "DetalleOrdenCompra": "orden__negocio",
     "DemandaDiaria": "producto__negocio",
+    "RecetaItem": "producto__negocio",
+    "MovimientoPuntos": "cliente__negocio",
+    "EnvioOferta": "oferta__negocio",
+    "ItemCuenta": "cuenta__negocio",
+    "Invitado": "reserva__negocio",
 }
 
 

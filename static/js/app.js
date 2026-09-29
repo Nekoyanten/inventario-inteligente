@@ -11,9 +11,12 @@ const Inventario = (() => {
     return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
   }
 
-  async function buscarProductos(q) {
-    const r = await fetch(`/productos/buscar.json?q=${encodeURIComponent(q)}`, { headers: { Accept: "application/json" } });
-    return r.ok ? (await r.json()).resultados : [];
+  /* para: "venta" (sin insumos; los preparados traen cuántos se pueden hacer) o "stock" (sin preparados) */
+  async function buscarProductos(q, para = "stock") {
+    const r = await fetch(`/productos/buscar.json?q=${encodeURIComponent(q)}&para=${para}`, { headers: { Accept: "application/json" } });
+    const items = r.ok ? (await r.json()).resultados : [];
+    items.forEach((p) => { if (p.stock === null) { p.stock = Infinity; p.sinLimite = true; } });
+    return items;
   }
 
   /* Autocompletado: <input data-buscador-producto data-destino="#id_producto"> */
@@ -31,8 +34,22 @@ const Inventario = (() => {
     };
     input.addEventListener("input", debounce(async () => {
       if (input.value.trim().length < 2) { lista.innerHTML = ""; return; }
-      pintar(await buscarProductos(input.value));
+      pintar(await buscarProductos(input.value, input.dataset.para || "stock"));
     }));
+  }
+
+  /* Autocompletado de clientes registrados */
+  function buscadorCliente(selInput, selLista, alElegir) {
+    const input = $(selInput), lista = $(selLista);
+    if (!input || !lista) return;
+    input.addEventListener("input", debounce(async () => {
+      const q = input.value.trim();
+      if (q.length < 2) { lista.innerHTML = ""; return; }
+      const r = await fetch(`/clientes/buscar.json?q=${encodeURIComponent(q)}`, { headers: { Accept: "application/json" } });
+      const items = r.ok ? (await r.json()).resultados : [];
+      lista.innerHTML = items.map((c, i) => `<button type="button" class="producto-btn" data-i="${i}"><b>${esc(c.nombre)}</b><small class="suave">${esc(c.telefono || "")} · ${esc(c.nivel)} · ${c.puntos} pts</small></button>`).join("") || '<small class="suave">Sin resultados</small>';
+      lista.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => { alElegir(items[b.dataset.i]); lista.innerHTML = ""; input.value = items[b.dataset.i].nombre; }));
+    }, 250));
   }
 
   /* Formulario de producto: atributos por categoría + margen en vivo */
@@ -84,13 +101,14 @@ const Inventario = (() => {
   }
 
   /* Punto de venta */
-  function pos({ urlRegistrar, urlTicket, sinStock = false }) {
+  function pos({ urlRegistrar, urlTicket, sinStock = false, urlCotizar = null }) {
+    let cliente = null, totalFinal = null;
     const carrito = new Map();
     const q = $("#pos-buscar"), res = $("#pos-resultados"), cont = $("#pos-carrito"), totalEl = $("#pos-total"), btn = $("#pos-cobrar"), err = $("#pos-error");
 
     const pintarResultados = (items) => {
       res.innerHTML = items.map((p, i) => `<button type="button" class="producto-btn" data-i="${i}" ${p.stock <= 0 && !sinStock ? "disabled" : ""}>
-        ${p.imagen ? `<img src="${esc(p.imagen)}" alt="" loading="lazy" class="miniatura-pos">` : ""}<b>${esc(p.nombre)}</b>${pesos(p.precio_venta)}<br><small class="suave">${p.stock <= 0 ? "Agotado" : "Stock " + cant(p.stock)}</small></button>`).join("");
+        ${p.imagen ? `<img src="${esc(p.imagen)}" alt="" loading="lazy" class="miniatura-pos">` : ""}<b>${esc(p.nombre)}</b>${pesos(p.precio_venta)}<br><small class="suave">${p.sinLimite ? "Preparado" : p.stock <= 0 ? "Agotado" : (p.tipo === "PREPARADO" ? "Alcanza para " : "Stock ") + cant(p.stock)}</small></button>`).join("");
       res.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => agregar(items[b.dataset.i])));
     };
     const agregar = (p) => {
@@ -100,6 +118,7 @@ const Inventario = (() => {
       carrito.set(p.id, linea);
       pintarCarrito();
       if (linea.cantidad > p.stock) avisar(`El sistema tiene ${cant(p.stock)} de ${p.nombre}. Se venderá igual y quedará un ajuste para revisar.`);
+      cotizar();
       q.value = ""; res.innerHTML = ""; q.focus();
     };
     const avisar = (m) => { err.textContent = m; err.hidden = !m; };
@@ -116,21 +135,43 @@ const Inventario = (() => {
         const v = parseFloat(inp.value) || 0;
         if (v > l.stock && !sinStock) { inp.value = l.cantidad; avisar(`Solo hay ${cant(l.stock)} de ${l.nombre}.`); return; }
         if (v <= 0) carrito.delete(l.id); else l.cantidad = v;
-        pintarCarrito();
+        pintarCarrito(); cotizar();
       }));
-      totalEl.textContent = pesos(total());
+      const aPagar = totalFinal ?? total();
+      totalEl.textContent = pesos(aPagar);
       btn.disabled = carrito.size === 0;
       const recibido = $("#pos-recibido"), cambio = $("#pos-cambio");
       if (recibido && cambio) {
         const r = parseFloat(recibido.value) || 0;
-        cambio.textContent = r >= total() && total() > 0 ? `Cambio: ${pesos(r - total())}` : "";
+        cambio.textContent = r >= aPagar && aPagar > 0 ? `Cambio: ${pesos(r - aPagar)}` : "";
       }
     };
+    const cuerpoVenta = (extra = {}) => ({
+      lineas: [...carrito.values()].map((l) => ({ producto: l.id, cantidad: l.cantidad })),
+      cliente_id: cliente ? cliente.id : null,
+      puntos: parseInt($("#pos-puntos")?.value || "0", 10) || 0,
+      ...extra,
+    });
+    // Vista previa: ofertas, puntos y total final (lo calcula el servidor, igual que al cobrar)
+    const desc = $("#pos-descuentos");
+    const cotizar = debounce(async () => {
+      if (!urlCotizar || !carrito.size) { totalFinal = null; if (desc) desc.hidden = true; pintarCarrito(); return; }
+      const r = await fetch(urlCotizar, { method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrf() }, body: JSON.stringify(cuerpoVenta()) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) { if (desc) { desc.textContent = d.error || ""; desc.hidden = !d.error; } totalFinal = null; pintarCarrito(); return; }
+      totalFinal = d.total;
+      const partes = [];
+      if (d.ofertas && d.ofertas.length) partes.push("🏷️ " + d.ofertas.join(", ") + `: −${pesos(d.descuento_ofertas)}`);
+      if (d.descuento_puntos) partes.push(`⭐ ${d.puntos_canjeados} puntos: −${pesos(d.descuento_puntos)}`);
+      if (d.puntos_ganados) partes.push(`Gana ${d.puntos_ganados} puntos`);
+      if (desc) { desc.textContent = partes.join(" · "); desc.hidden = !partes.length; }
+      pintarCarrito();
+    }, 250);
 
     q.addEventListener("input", debounce(async () => {
       const texto = q.value.trim();
       if (!texto) { res.innerHTML = ""; return; }
-      const items = await buscarProductos(texto);
+      const items = await buscarProductos(texto, "venta");
       // Lectores de código de barras: coincidencia exacta → agregar directo
       const exacto = items.find((p) => p.codigo_barras && p.codigo_barras === texto);
       if (exacto) { agregar(exacto); res.innerHTML = ""; return; }
@@ -139,12 +180,7 @@ const Inventario = (() => {
     $("#pos-recibido")?.addEventListener("input", pintarCarrito);
 
     const enviar = async (confirmado) => {
-      const cuerpo = {
-        lineas: [...carrito.values()].map((l) => ({ producto: l.id, cantidad: l.cantidad })),
-        medio_pago: $("#pos-medio").value,
-        cliente: $("#pos-cliente").value,
-        confirmado,
-      };
+      const cuerpo = cuerpoVenta({ medio_pago: $("#pos-medio").value, cliente: $("#pos-cliente")?.value || "", confirmado });
       const r = await fetch(urlRegistrar, { method: "POST", headers: { "Content-Type": "application/json", "X-CSRFToken": csrf() }, body: JSON.stringify(cuerpo) });
       return [r, await r.json().catch(() => ({}))];
     };
@@ -163,6 +199,45 @@ const Inventario = (() => {
       avisar(datos.error || "No se pudo registrar la venta.");
       btn.disabled = false;
     });
+
+    // Cliente: buscar, registrar (con autorización) y canjear puntos
+    const cBuscar = $("#pos-cliente-buscar");
+    if (cBuscar) {
+      const cRes = $("#pos-cliente-resultados"), cElegido = $("#pos-cliente-elegido"), cBusqueda = $("#pos-cliente-busqueda");
+      const usar = (c) => {
+        cliente = c;
+        $("#pos-cliente-nombre").textContent = c.nombre;
+        $("#pos-cliente-info").textContent = `${c.nivel} · ${c.puntos} puntos`;
+        const pts = $("#pos-puntos"); if (pts) { pts.value = ""; pts.max = c.puntos; }
+        cElegido.hidden = false; cBusqueda.hidden = true; cRes.innerHTML = ""; cBuscar.value = "";
+        cotizar();
+      };
+      cBuscar.addEventListener("input", debounce(async () => {
+        const q = cBuscar.value.trim();
+        if (q.length < 2) { cRes.innerHTML = ""; return; }
+        const r = await fetch(`/clientes/buscar.json?q=${encodeURIComponent(q)}`, { headers: { Accept: "application/json" } });
+        const items = r.ok ? (await r.json()).resultados : [];
+        cRes.innerHTML = items.length ? items.map((c, i) => `<button type="button" class="producto-btn" data-i="${i}"><b>${esc(c.nombre)}</b><small class="suave">${esc(c.telefono || "")} · ${esc(c.nivel)} · ${c.puntos} pts</small></button>`).join("")
+          : '<p class="suave">No está registrado. Regístralo abajo.</p>';
+        cRes.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => usar(items[b.dataset.i])));
+      }, 250));
+      $("#pos-cliente-quitar").addEventListener("click", () => { cliente = null; cElegido.hidden = true; cBusqueda.hidden = false; cotizar(); });
+      $("#pos-puntos")?.addEventListener("input", cotizar);
+      $("#nc-guardar").addEventListener("click", async () => {
+        const f = new FormData();
+        f.append("nombre", $("#nc-nombre").value); f.append("telefono", $("#nc-telefono").value);
+        if ($("#nc-datos").checked) f.append("acepta_datos", "on");
+        if ($("#nc-ofertas").checked) f.append("acepta_ofertas", "on");
+        if ($("#nc-mayor")?.checked) f.append("mayor_edad_verificado", "on");
+        f.append("activo", "on");
+        const r = await fetch("/clientes/nuevo.json", { method: "POST", headers: { "X-CSRFToken": csrf() }, body: f });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) { avisar(d.error || "No se pudo registrar el cliente."); return; }
+        $("#pos-cliente-nuevo").open = false;
+        ["#nc-nombre", "#nc-telefono"].forEach((s) => { $(s).value = ""; });
+        usar(d.cliente);
+      });
+    }
 
     // Escáner con la cámara (BarcodeDetector, disponible en Chrome/Android)
     const escanear = $("#pos-escanear");
@@ -234,5 +309,5 @@ const Inventario = (() => {
     return { agregar };
   }
 
-  return { editorLineas, formularioProducto, formularioMovimiento, buscadorProducto, pos, escanearCodigo };
+  return { editorLineas, formularioProducto, formularioMovimiento, buscadorProducto, buscadorCliente, pos, escanearCodigo };
 })();

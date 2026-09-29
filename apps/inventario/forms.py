@@ -27,7 +27,8 @@ class MovimientoForm(forms.Form):
 
     def __init__(self, *args, negocio, puede_ver_costos=True, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["producto"].queryset = del_negocio(negocio, Producto).filter(activo=True, es_agrupador=False)
+        self.fields["producto"].queryset = del_negocio(negocio, Producto).filter(activo=True, es_agrupador=False).exclude(
+            tipo="PREPARADO")
         if not puede_ver_costos:
             del self.fields["costo_unitario"]
         if not getattr(negocio.config, "usa_vencimientos", False):

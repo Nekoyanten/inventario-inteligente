@@ -15,4 +15,7 @@ Resumen:
 9. **Reportes**: 14 reportes en Excel, PDF y CSV.
 10. **Roles**: administrador (todo), vendedor (vender y consultar, sin costos), encargado de inventario (entradas, conteos, compras; sin costos ni utilidad).
 11. **Celular**: «Agregar a la pantalla de inicio» para instalarla como app.
-12. **Cerrar la cuenta**: Configuración → «Cerrar mi cuenta y borrar mis datos» (primero descarga tu copia).
+12. **Clientes**: en caja se identifica o registra al cliente (con su autorización); gana y canjea puntos, sube a Frecuente o VIP. El panel muestra quién vuelve, quién se va, cumpleaños y encuestas; el sistema sugiere ofertas y se envían por WhatsApp con un toque.
+13. **Insumos y recetas**: productos, insumos y preparados. Un preparado descuenta los insumos de su receta al venderse; un producto elaborado se registra con «Producción».
+14. **Bares y discotecas** (tipo de negocio Bar, Discoteca o Bar-discoteca): menú «La noche» con cuentas abiertas por mesa (cobro parcial, propina voluntaria de máximo 10 %), cover y aforo en la puerta, reservas VIP y de grupo (anticipo, consumo mínimo, lista de invitados con verificación de mayoría de edad), happy hour y 2×1 por franja, botellas y tragos (la botella rinde tragos y el conteo semanal muestra lo que se pierde en la barra), botellas guardadas y fidelización nocturna (bono por visitas, referidos, puntos al organizador del grupo, cover gratis por nivel, recordatorios por WhatsApp).
+15. **Cerrar la cuenta**: Configuración → «Cerrar mi cuenta y borrar mis datos» (primero descarga tu copia).

@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block titulo %}{% if oferta %}Editar oferta{% else %}Nueva oferta{% endif %}{% endblock %}
+{% block contenido %}
+<section class="tarjeta formulario formulario-libre">
+  <h1>{% if oferta %}Editar oferta{% else %}Nueva oferta{% endif %}</h1>
+  <p class="suave">El descuento se aplica solo en la caja cuando el cliente del grupo elegido compra (con «Todos», a cualquier venta). Nunca baja del costo: si el margen es menor, se limita.</p>
+  <form method="post">{% csrf_token %}{{ form.non_field_errors }}{{ form.as_p }}<button class="boton">Guardar</button></form>
+  <p><a href="{% url 'clientes:ofertas' %}">← Volver</a></p>
+</section>
+{% endblock %}

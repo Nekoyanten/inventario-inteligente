@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
+from apps.clientes.views import encuesta
 from apps.usuarios.seguridad import Ingreso  # noqa: E402
 
 admin.site.site_header = "Inventario Inteligente"
@@ -26,6 +27,9 @@ urlpatterns = [
     path("productos/", include("apps.catalogo.urls")),
     path("inventario/", include("apps.inventario.urls")),
     path("ventas/", include("apps.ventas.urls")),
+    path("clientes/", include("apps.clientes.urls")),
+    path("noche/", include("apps.nocturno.urls")),
+    path("encuesta/<str:token>/", encuesta, name="encuesta"),
     path("proveedores/", include("apps.proveedores.urls")),
     path("compras/que-comprar/", include("apps.recomendaciones.urls")),
     path("compras/", include("apps.compras.urls")),

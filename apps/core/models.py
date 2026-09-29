@@ -20,6 +20,9 @@ class Giro(models.TextChoices):
     BELLEZA = "BELLEZA", "Belleza y cosméticos"
     FARMACIA = "FARMACIA", "Farmacia / droguería"
     RESTAURANTE = "RESTAURANTE", "Restaurante / comidas"
+    BAR = "BAR", "Bar / gastrobar"
+    DISCOTECA = "DISCOTECA", "Discoteca"
+    BAR_DISCOTECA = "BAR_DISCOTECA", "Bar-discoteca"
     GENERICO = "GENERICO", "Otro (genérico)"
 
 
@@ -62,6 +65,17 @@ class ConfiguracionNegocio(ModeloBase):
     permite_venta_sin_stock = models.BooleanField(
         default=True, help_text="Si el sistema dice 0 pero el producto está en la estantería, se vende igual y queda un "
                                 "ajuste para revisar")
+
+    # Clientes y fidelización
+    fidelizacion_activa = models.BooleanField(default=True, help_text="Los clientes registrados acumulan puntos")
+    pesos_por_punto = models.PositiveIntegerField(default=1000, help_text="Cada cuántos pesos de compra se gana 1 punto")
+    valor_punto = models.PositiveIntegerField(default=10, help_text="Cuántos pesos de descuento vale 1 punto al canjear")
+    puntos_minimos_canje = models.PositiveIntegerField(default=100)
+    nivel_frecuente_compras = models.PositiveIntegerField(
+        default=4, help_text="Compras en los últimos 90 días para ser cliente frecuente")
+    nivel_vip_monto = models.PositiveIntegerField(
+        default=500000, help_text="Compras (en pesos) en los últimos 90 días para ser VIP")
+    encuesta_satisfaccion = models.BooleanField(default=True, help_text="Mostrar la encuesta en el comprobante")
 
     # Alertas silenciadas: [{"tipo": "BAJA_ROTACION", "categoria": 3 | null}]
     alertas_silenciadas = models.JSONField(default=list, blank=True)

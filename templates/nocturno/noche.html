@@ -1,0 +1,49 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}La noche{% endblock %}
+{% block contenido %}
+<div class="encabezado"><h1>La noche · {{ hoy|date:"l d/m" }}</h1></div>
+{% include "nocturno/_pestanas.html" %}
+<div class="rejilla">
+  <section class="tarjeta"><h2>Cuentas abiertas</h2><p class="kpi">{{ cuentas|length }}</p><p class="suave">{{ abierto_total|moneda }} por cobrar</p></section>
+  <section class="tarjeta"><h2>Personas que entraron</h2><p class="kpi">{{ presentes }}{% if conf.aforo %} <small>/ {{ conf.aforo }}</small>{% endif %}</p>{% if conf.aforo %}<p class="suave">{% widthratio presentes conf.aforo 100 %} % del aforo</p>{% endif %}</section>
+  <section class="tarjeta"><h2>Precios especiales ahora</h2>{% for p in especiales %}<p><b>{{ p.nombre }}</b> <small class="suave">{{ p.get_tipo_display }}{% if p.tipo == 'PORCENTAJE' %} {{ p.valor|floatformat:0 }} %{% endif %} hasta {{ p.hora_fin|time:"H:i" }}</small></p>{% empty %}<p class="suave">Ninguno en este momento.</p>{% endfor %}</section>
+</div>
+<div class="rejilla-2">
+  <section class="tarjeta formulario-libre">
+    <h2>Abrir cuenta</h2>
+    <form method="post" action="{% url 'nocturno:abrir' %}">{% csrf_token %}
+      <p><label for="mesa">Mesa</label><select id="mesa" name="mesa"><option value="">Barra / sin mesa</option>{% for m in mesas_libres %}<option value="{{ m.pk }}">{{ m }} · {{ m.get_zona_display }}{% if m.consumo_minimo %} · mínimo {{ m.consumo_minimo|moneda }}{% endif %}</option>{% endfor %}</select></p>
+      <p><label for="nombre">Nombre (para ubicarla)</label><input id="nombre" name="nombre" maxlength="80" placeholder="Ej.: barra – camisa roja"></p>
+      <p><label for="personas">Personas</label><input id="personas" name="personas" type="number" min="1" value="2"></p>
+      <button class="boton boton-auto">Abrir</button>
+    </form>
+  </section>
+  {% if conf.cover_valor or conf.aforo %}
+  <section class="tarjeta formulario-libre">
+    <h2>Puerta</h2>
+    <p class="suave">{% if conf.cover_valor %}Cover {{ conf.cover_valor|moneda }} por persona{% if conf.cover_consumible %}, consumible (queda como saldo en su cuenta){% endif %}.{% endif %}{% if conf.cover_gratis_desde != 'NINGUNO' %} Los {{ conf.get_cover_gratis_desde_display|lower }} entran gratis{% if conf.acompanantes_gratis %} con {{ conf.acompanantes_gratis }} acompañante{{ conf.acompanantes_gratis|pluralize }}{% endif %}.{% endif %}</p>
+    <form method="post" action="{% url 'nocturno:entrada' %}">{% csrf_token %}
+      <p><label for="e-personas">Personas</label><input id="e-personas" name="personas" type="number" min="1" value="1"></p>
+      <p><label for="e-cliente">Cliente registrado (opcional)</label><input id="e-buscar" type="search" placeholder="Nombre o celular…" autocomplete="off"><input type="hidden" name="cliente_id" id="e-cliente"><span id="e-elegido" class="suave"></span><span id="e-resultados" class="resultados"></span></p>
+      <button class="boton boton-auto">Registrar entrada</button>
+    </form>
+  </section>
+  {% endif %}
+</div>
+<section class="tarjeta">
+  <h2>Cuentas abiertas</h2>
+  <table class="tabla"><thead><tr><th>Cuenta</th><th class="num">Personas</th><th class="num">Consumo</th><th class="num">Saldo a favor</th><th>Abierta</th></tr></thead><tbody>
+  {% for c in cuentas %}<tr><td><a href="{% url 'nocturno:cuenta' c.pk %}">{{ c }}</a>{% if c.cliente %}<br><small class="suave">👤 {{ c.cliente }}</small>{% endif %}</td>
+    <td class="num" data-titulo="Personas">{{ c.personas }}</td><td class="num" data-titulo="Consumo">{{ c.r.total|moneda }}</td>
+    <td class="num" data-titulo="Saldo">{{ c.credito_disponible|moneda }}</td><td data-titulo="Abierta">{{ c.creado|time:"H:i" }}</td></tr>
+  {% empty %}<tr><td colspan="5" class="vacio">No hay cuentas abiertas.</td></tr>{% endfor %}</tbody></table>
+</section>
+{% if reservas %}<section class="tarjeta"><h2>Reservas de esta noche</h2>
+  <table class="tabla compacta"><tbody>{% for r in reservas %}<tr><td><a href="{% url 'nocturno:reserva' r.pk %}">{{ r.nombre }}</a> · {{ r.get_tipo_display }} · {{ r.personas }} personas{% if r.mesa %} · {{ r.mesa }}{% endif %}</td><td>{{ r.hora|time:"H:i"|default:"" }}</td><td>{{ r.get_estado_display }}</td></tr>{% endfor %}</tbody></table>
+</section>{% endif %}
+{% if recordatorios %}<section class="tarjeta"><h2>📲 Recordatorios para enviar</h2>
+  {% for m in recordatorios %}<p><b>{{ m.tipo }}</b> · {{ m.cliente }} <a class="boton boton-auto boton-chico" href="{{ m.url }}" target="_blank" rel="noopener">WhatsApp</a></p>{% endfor %}
+</section>{% endif %}
+{% endblock %}
+{% block scripts %}{% load static %}<script src="{% static 'js/app.js' %}"></script>
+<script>Inventario.buscadorCliente && Inventario.buscadorCliente("#e-buscar", "#e-resultados", (c) => { document.getElementById("e-cliente").value = c.id; document.getElementById("e-elegido").textContent = "✔ " + c.nombre + " · " + c.nivel; });</script>{% endblock %}

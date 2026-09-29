@@ -1,0 +1,49 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}{{ cliente }}{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div><a class="suave" href="{% url 'clientes:lista' %}">← Clientes</a><h1>{{ cliente }}</h1>
+    <span class="suave">{{ cliente.telefono|default:"sin celular" }}{% if cliente.email %} · {{ cliente.email }}{% endif %}{% if cliente.fecha_nacimiento %} · 🎂 {{ cliente.fecha_nacimiento|date:"d/m" }}{% endif %}</span></div>
+  <div class="acciones">
+    {% if whatsapp %}<a class="boton boton-auto boton-chico" href="{{ whatsapp }}" target="_blank" rel="noopener">WhatsApp</a>{% endif %}
+    <a class="boton boton-auto boton-chico boton-secundario" href="{% url 'clientes:editar' cliente.pk %}">Editar</a>
+  </div>
+</div>
+<div class="rejilla">
+  <section class="tarjeta"><h2>Nivel</h2><p class="kpi">{{ cliente.get_nivel_display }}</p><p class="suave">{{ segmento.0 }}: {{ segmento.1 }}</p></section>
+  <section class="tarjeta"><h2>Puntos</h2><p class="kpi">{{ cliente.puntos }}</p><p class="suave">≈ {% widthratio cliente.puntos 1 negocio.config.valor_punto %} pesos de descuento</p></section>
+  <section class="tarjeta"><h2>Compras</h2><p class="kpi">{{ cliente.n_compras }}</p><p class="suave">{{ cliente.total_compras|moneda }} en total · última {{ cliente.ultima_compra|date:"d/m/Y"|default:"—" }}</p></section>
+  <section class="tarjeta"><h2>Ofertas</h2><p class="kpi">{% if cliente.acepta_ofertas %}Sí{% else %}No{% endif %}</p><p class="suave">{% if cliente.fecha_autorizacion %}autorizó sus datos el {{ cliente.fecha_autorizacion|date:"d/m/Y" }}{% endif %}</p></section>
+</div>
+{% with guardadas=cliente.botellas_guardadas.all referidos=cliente.referidos.all %}{% if guardadas or referidos or cliente.referido_por %}
+<section class="tarjeta"><h2>Vida nocturna</h2>
+  {% if cliente.referido_por %}<p>Lo trajo <a href="{% url 'clientes:detalle' cliente.referido_por_id %}">{{ cliente.referido_por }}</a>.</p>{% endif %}
+  {% if referidos %}<p>Ha traído a {{ referidos|length }}: {% for r in referidos %}<a href="{% url 'clientes:detalle' r.pk %}">{{ r }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.</p>{% endif %}
+  {% for b in guardadas %}<p>🍾 {{ b.producto }} · {{ b.restante_pct }} % · {{ b.get_estado_display|lower }} (vence {{ b.vence|date:"d/m/Y" }})</p>{% endfor %}
+</section>{% endif %}{% endwith %}
+{% if cliente.notas %}<section class="tarjeta"><h2>Notas</h2><p>{{ cliente.notas|linebreaksbr }}</p></section>{% endif %}
+<div class="rejilla-2">
+  <section class="tarjeta"><h2>Lo que más compra</h2>
+    <table class="tabla compacta"><tbody>{% for f in favoritos %}<tr><td>{{ f.producto__nombre }}</td><td class="num">{{ f.veces }} vece{{ f.veces|pluralize:"s" }}</td></tr>{% empty %}<tr><td class="vacio">Sin compras aún.</td></tr>{% endfor %}</tbody></table>
+  </section>
+  <section class="tarjeta"><h2>Últimas compras</h2>
+    <table class="tabla compacta"><tbody>{% for v in ventas %}<tr><td><a href="{% url 'ventas:detalle' v.pk %}">#{{ v.pk }}</a> {{ v.fecha|date:"d/m/Y" }}{% if v.estado == 'ANULADA' %} <small class="suave">anulada</small>{% endif %}</td><td class="num">{{ v.total|moneda }}</td></tr>{% empty %}<tr><td class="vacio">Sin compras.</td></tr>{% endfor %}</tbody></table>
+  </section>
+  <section class="tarjeta"><h2>Movimientos de puntos</h2>
+    <table class="tabla compacta"><tbody>{% for m in puntos %}<tr><td>{{ m.fecha|date:"d/m/Y" }} · {{ m.get_tipo_display }}<br><small class="suave">{{ m.motivo }}</small></td><td class="num">{% if m.puntos > 0 %}+{% endif %}{{ m.puntos }}</td><td class="num suave">{{ m.saldo }}</td></tr>{% empty %}<tr><td class="vacio">Sin movimientos.</td></tr>{% endfor %}</tbody></table>
+    <details><summary>Ajustar puntos</summary>
+      <form method="post" action="{% url 'clientes:ajustar' cliente.pk %}" class="formulario-libre">{% csrf_token %}
+        <p><label for="aj-puntos">Puntos (negativo para restar)</label><input id="aj-puntos" name="puntos" type="number" required></p>
+        <p><label for="aj-motivo">Motivo</label><input id="aj-motivo" name="motivo" maxlength="200" required></p>
+        <button class="boton boton-auto boton-chico">Ajustar</button></form></details>
+  </section>
+  <section class="tarjeta"><h2>Su opinión</h2>
+    {% for e in encuestas %}<p>{% for i in "12345" %}{% if forloop.counter <= e.calificacion %}★{% else %}☆{% endif %}{% endfor %} {{ e.comentario|default:"" }} <small class="suave">{{ e.respondida|date:"d/m/Y" }}</small></p>{% empty %}<p class="vacio">Aún no ha respondido encuestas.</p>{% endfor %}
+    {% if ofertas %}<h3>Ofertas recibidas</h3><ul class="lista-simple">{% for e in ofertas %}<li><a href="{% url 'clientes:oferta' e.oferta_id %}">{{ e.oferta }}</a> · {{ e.fecha|date:"d/m/Y" }}</li>{% endfor %}</ul>{% endif %}
+  </section>
+</div>
+<details class="tarjeta"><summary>Borrar los datos de este cliente</summary>
+  <p class="suave">Si el cliente lo pide (derecho de supresión), se borran su nombre, contacto y puntos. Sus compras quedan en el historial, sin nombre.</p>
+  <form method="post" action="{% url 'clientes:eliminar' cliente.pk %}">{% csrf_token %}<button class="boton boton-auto boton-peligro" onclick="return confirm('¿Borrar definitivamente los datos de {{ cliente.nombre|escapejs }}?')">Borrar sus datos</button></form>
+</details>
+{% endblock %}

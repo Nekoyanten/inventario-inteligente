@@ -69,6 +69,12 @@ class EstadoStock(models.TextChoices):
     EXCESO = "EXCESO", "🔵 Exceso"
 
 
+class TipoProducto(models.TextChoices):
+    PRODUCTO = "PRODUCTO", "Producto (se vende y tiene stock)"
+    INSUMO = "INSUMO", "Insumo (se compra y se gasta; no se vende)"
+    PREPARADO = "PREPARADO", "Preparado o servicio (se vende; gasta insumos de su receta)"
+
+
 class Producto(ModeloBase):
     negocio = models.ForeignKey("core.Negocio", on_delete=models.CASCADE, related_name="productos")
     sku = models.CharField("Código / SKU", max_length=40)
@@ -98,6 +104,7 @@ class Producto(ModeloBase):
         "self", null=True, blank=True, on_delete=models.CASCADE, related_name="variantes"
     )
     es_agrupador = models.BooleanField(default=False, help_text="Producto padre de variantes; no se vende ni maneja stock")
+    tipo = models.CharField(max_length=10, choices=TipoProducto.choices, default=TipoProducto.PRODUCTO, db_index=True)
     imagen = models.ImageField(upload_to=ruta_imagen_producto, null=True, blank=True)
     activo = models.BooleanField(default=True)
 
@@ -115,7 +122,20 @@ class Producto(ModeloBase):
 
     @property
     def vendible(self) -> bool:
-        return self.activo and not self.es_agrupador
+        return self.activo and not self.es_agrupador and self.tipo != TipoProducto.INSUMO
+
+    @property
+    def maneja_stock(self) -> bool:
+        """Los preparados (un almuerzo, un corte de cabello) no tienen stock propio: su stock son sus insumos."""
+        return not self.es_agrupador and self.tipo != TipoProducto.PREPARADO
+
+    @property
+    def es_preparado(self) -> bool:
+        return self.tipo == TipoProducto.PREPARADO
+
+    @property
+    def es_insumo(self) -> bool:
+        return self.tipo == TipoProducto.INSUMO
 
     @property
     def valor_inventario(self) -> Decimal:
@@ -139,3 +159,32 @@ class Producto(ModeloBase):
         if self.stock_actual <= self.stock_minimo:
             return EstadoStock.BAJO
         return EstadoStock.NORMAL
+
+
+class RecetaItem(models.Model):
+    """Cuánto de cada insumo lleva un producto: «Almuerzo ejecutivo» → 0,15 kg de arroz, 0,2 kg de pollo…
+
+    Sirve para dos cosas: al vender un preparado se descuentan sus insumos, y al registrar la producción de un
+    producto elaborado (pan, jabones) se gastan los insumos y entra el producto terminado."""
+
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name="receta")
+    insumo = models.ForeignKey(Producto, on_delete=models.PROTECT, related_name="usado_en")
+    cantidad = models.DecimalField(max_digits=12, decimal_places=3, help_text="Por cada unidad del producto")
+    merma_pct = models.DecimalField("Merma %", max_digits=5, decimal_places=2, default=0,
+                                    help_text="Lo que se pierde al preparar (cáscaras, recortes…)")
+
+    class Meta:
+        unique_together = ("producto", "insumo")
+        ordering = ["insumo__nombre"]
+
+    def __str__(self):
+        return f"{self.producto.nombre}: {self.cantidad} {self.insumo.nombre}"
+
+    @property
+    def cantidad_total(self) -> Decimal:
+        """Cantidad a descontar por unidad, incluida la merma."""
+        return (self.cantidad * (1 + self.merma_pct / 100)).quantize(Decimal("0.001"))
+
+    @property
+    def costo(self) -> Decimal:
+        return self.cantidad_total * self.insumo.precio_compra

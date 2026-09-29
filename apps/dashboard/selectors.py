@@ -61,7 +61,7 @@ def top_productos(negocio, dias=30, limite=5, hoy=None):
 
 def resumen_negocio(negocio, hoy=None) -> dict:
     hoy = hoy or timezone.localdate()
-    productos = Producto.objects.filter(negocio=negocio, activo=True, es_agrupador=False)
+    productos = Producto.objects.filter(negocio=negocio, activo=True, es_agrupador=False).exclude(tipo="PREPARADO")
     config = getattr(negocio, "config", None)
 
     inicio_mes = hoy.replace(day=1)

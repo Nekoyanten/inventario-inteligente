@@ -20,11 +20,12 @@ class ProductoForm(forms.ModelForm):
     class Meta:
         model = Producto
         fields = (
-            "nombre", "sku", "codigo_barras", "categoria", "marca", "unidad", "proveedor_principal",
+            "tipo", "nombre", "sku", "codigo_barras", "categoria", "marca", "unidad", "proveedor_principal",
             "precio_compra", "precio_venta", "stock_minimo", "stock_maximo", "vida_util_dias", "descripcion", "imagen",
             "activo",
         )
         labels = {
+            "tipo": "¿Qué es?",
             "sku": "Código / SKU", "codigo_barras": "Código de barras", "proveedor_principal": "Proveedor principal",
             "precio_compra": "Precio de compra (costo)", "precio_venta": "Precio de venta",
             "stock_minimo": "Stock mínimo", "stock_maximo": "Stock máximo (opcional)", "descripcion": "Descripción",
@@ -46,6 +47,7 @@ class ProductoForm(forms.ModelForm):
             del self.fields["vencimiento_inicial"]
         if not puede_ver_costos:
             del self.fields["precio_compra"]
+        self.fields["tipo"].required = False  # vacío = se conserva el actual (o «producto» si es nuevo)
         # Atributos personalizados de la categoría (se envían como atributo__<id>)
         self.atributos = []
         categoria_id = self.data.get("categoria") or (self.instance.categoria_id if self.instance.pk else None)
@@ -85,11 +87,24 @@ class ProductoForm(forms.ModelForm):
             raise forms.ValidationError("Ya existe un producto con ese código.")
         return sku
 
+    def clean_tipo(self):
+        return self.cleaned_data.get("tipo") or self.instance.tipo or "PRODUCTO"
+
     def clean(self):
         datos = super().clean()
         compra, venta = datos.get("precio_compra"), datos.get("precio_venta")
-        if compra is not None and venta is not None and venta and venta < compra:
+        if compra is not None and venta is not None and venta and venta < compra and datos.get("tipo") != "INSUMO":
             self.add_error("precio_venta", "El precio de venta es menor que el costo (venderías a pérdida).")
+        if datos.get("tipo") == "PREPARADO" and datos.get("stock_inicial"):
+            self.add_error("stock_inicial", "Un preparado no tiene stock propio: agrega el stock a sus insumos.")
+        tipo = datos.get("tipo")
+        if self.instance.pk and tipo and tipo != self.instance.tipo:
+            if tipo == "PREPARADO" and self.instance.stock_actual:
+                self.add_error("tipo", "Para convertirlo en preparado, primero deja su stock en cero con un ajuste.")
+            elif tipo == "INSUMO" and self.instance.receta.exists():
+                self.add_error("tipo", "Tiene receta: un insumo no puede llevar receta.")
+            elif tipo == "PREPARADO" and self.instance.usado_en.exists():
+                self.add_error("tipo", "Es insumo de otras recetas: un preparado no puede ser insumo.")
         return datos
 
     def save(self, commit=True):

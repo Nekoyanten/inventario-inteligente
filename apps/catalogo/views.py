@@ -1,4 +1,6 @@
-"""Productos, variantes y catálogos auxiliares (categorías, marcas, atributos)."""
+"""Productos, insumos, recetas, variantes y catálogos auxiliares (categorías, marcas, atributos)."""
+
+from decimal import InvalidOperation
 
 from django.contrib import messages
 from django.core.paginator import Paginator
@@ -15,7 +17,7 @@ from apps.usuarios.permisos import requiere_permiso
 
 from . import selectors
 from .forms import AtributoForm, CategoriaForm, GenerarVariantesForm, MarcaForm, ProductoForm
-from .models import AtributoPersonalizado, Categoria, EstadoStock, Marca, Producto
+from .models import AtributoPersonalizado, Categoria, EstadoStock, Marca, Producto, RecetaItem, TipoProducto
 from .services import crear_producto, generar_variantes
 
 
@@ -27,6 +29,8 @@ def lista(request):
         qs = qs.filter(categoria_id=request.GET["categoria"])
     if request.GET.get("estado"):
         qs = qs.filter(estado=request.GET["estado"])
+    if request.GET.get("tipo") in TipoProducto.values:
+        qs = qs.filter(tipo=request.GET["tipo"])
     activo = request.GET.get("activo", "1")
     if activo in ("0", "1"):
         qs = qs.filter(activo=activo == "1")
@@ -36,6 +40,7 @@ def lista(request):
         "pagina": pagina,
         "categorias": del_negocio(request.negocio, Categoria),
         "estados": EstadoStock.choices,
+        "tipos": TipoProducto.choices,
         "ver_costos": request.user.puede("ver_precios_compra"),
     })
 
@@ -45,16 +50,28 @@ def lista(request):
 def buscar_json(request):
     """Búsqueda para el punto de venta y los formularios (autocompletado)."""
     qs = selectors.buscar(selectors.productos_con_estado(request.negocio).filter(activo=True), request.GET.get("q"))
+    para = request.GET.get("para", "")
+    if para == "venta":
+        qs = qs.exclude(tipo="INSUMO")
+    elif para == "stock":
+        qs = qs.exclude(tipo="PREPARADO")
     ver_costos = request.user.puede("ver_precios_compra")
+    productos = list(qs.order_by("nombre")[:20])
+    from apps.inventario.recetas import disponibilidades
+
+    alcanza = disponibilidades([p for p in productos if p.es_preparado])
     datos = [
         {
-            "id": p.pk, "nombre": p.nombre, "sku": p.sku, "codigo_barras": p.codigo_barras,
-            "precio_venta": float(p.precio_venta), "stock": float(p.stock_actual), "estado": p.estado,
+            "id": p.pk, "nombre": p.nombre, "sku": p.sku, "codigo_barras": p.codigo_barras, "tipo": p.tipo,
+            "precio_venta": float(p.precio_venta),
+            "stock": (None if alcanza.get(p.pk) is None else float(alcanza[p.pk])) if p.es_preparado
+            else float(p.stock_actual),
+            "estado": p.estado,
             "unidad": p.unidad.abreviatura if p.unidad else "und", "decimales": permite_decimales(p),
             "imagen": p.imagen.url if p.imagen else None,
             **({"costo": float(p.precio_compra)} if ver_costos else {}),
         }
-        for p in qs.order_by("nombre")[:20]
+        for p in productos
     ]
     return JsonResponse({"resultados": datos})
 
@@ -111,7 +128,8 @@ def editar(request, pk):
 def detalle(request, pk):
     producto = obtener_del_negocio(request.negocio, Producto.objects.select_related("categoria", "marca", "unidad",
                                    "proveedor_principal", "padre"), pk=pk)
-    contexto = {"producto": producto, "ver_costos": request.user.puede("ver_precios_compra")}
+    contexto = {"producto": producto, "ver_costos": request.user.puede("ver_precios_compra"),
+                "nocturno": request.negocio.giro in ("BAR", "DISCOTECA", "BAR_DISCOTECA")}
     if producto.es_agrupador:
         from apps.analitica.services import curva_variantes, demanda_familia
 
@@ -123,6 +141,15 @@ def detalle(request, pk):
         contexto["demanda_familia_semana"] = demanda_familia(producto)[0] * 7
     else:
         from apps.analitica.services import analizar_producto, pronostico_mensual, ventas_mensuales
+        from apps.inventario.recetas import costo_receta, disponibilidad
+
+        contexto["receta"] = list(producto.receta.select_related("insumo", "insumo__unidad"))
+        contexto["costo_receta"] = costo_receta(producto) if contexto["receta"] else None
+        contexto["alcanza"] = disponibilidad(producto) if producto.es_preparado else None
+        costo = contexto["costo_receta"]
+        contexto["margen_receta"] = ((producto.precio_venta - costo) / producto.precio_venta * 100
+                                     if costo is not None and producto.precio_venta else None)
+        contexto["usado_en"] = list(producto.usado_en.select_related("producto")[:20])
 
         contexto["analisis"] = analizar_producto(producto)
         contexto["pronostico"] = pronostico_mensual(producto)
@@ -216,3 +243,51 @@ def eliminar_catalogo(request, tipo, pk):
     obj.delete()  # productos quedan sin categoría/marca (SET_NULL)
     messages.success(request, "Eliminado.")
     return redirect("catalogo:catalogos")
+
+
+@negocio_requerido
+@requiere_permiso("gestionar_productos")
+@require_POST
+def receta_agregar(request, pk):
+    from apps.inventario.recetas import guardar_item_receta
+
+    producto = obtener_del_negocio(request.negocio, Producto, pk=pk)
+    insumo = obtener_del_negocio(request.negocio, Producto, pk=request.POST.get("insumo") or 0)
+    try:
+        guardar_item_receta(producto, insumo, request.POST.get("cantidad") or 0, request.POST.get("merma_pct") or 0,
+                            request.user)
+    except (ErrorInventario, InvalidOperation) as e:
+        messages.error(request, str(e) if isinstance(e, ErrorInventario) else "Revisa la cantidad.")
+    else:
+        messages.success(request, f"{insumo.nombre} quedó en la receta.")
+    return redirect("catalogo:detalle", pk=pk)
+
+
+@negocio_requerido
+@requiere_permiso("gestionar_productos")
+@require_POST
+def receta_quitar(request, pk, item_id):
+    from apps.inventario.recetas import actualizar_costo
+
+    producto = obtener_del_negocio(request.negocio, Producto, pk=pk)
+    RecetaItem.objects.filter(producto=producto, pk=item_id).delete()
+    actualizar_costo(producto)
+    auditar(request.negocio, request.user, "editar_receta", producto, quitado=item_id)
+    return redirect("catalogo:detalle", pk=pk)
+
+
+@negocio_requerido
+@requiere_permiso("registrar_movimiento")
+@require_POST
+def producir(request, pk):
+    from apps.inventario.recetas import registrar_produccion
+
+    producto = obtener_del_negocio(request.negocio, Producto, pk=pk)
+    try:
+        registrar_produccion(producto, request.POST.get("cantidad") or 0, request.user)
+    except (ErrorInventario, InvalidOperation) as e:
+        messages.error(request, str(e) if isinstance(e, ErrorInventario) else "Revisa la cantidad.")
+    else:
+        messages.success(request, f"Producción registrada: entraron {request.POST.get('cantidad')} de {producto.nombre} "
+                                  "y se descontaron sus insumos.")
+    return redirect("catalogo:detalle", pk=pk)

@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Clientes{% endblock %}
+{% block contenido %}
+<div class="encabezado"><h1>Clientes</h1><div class="acciones"><a class="boton boton-auto boton-chico" href="{% url 'clientes:crear' %}">+ Nuevo cliente</a></div></div>
+{% include "clientes/_pestanas.html" %}
+<form method="get" class="filtros tarjeta">
+  <input type="search" name="q" value="{{ request.GET.q }}" placeholder="Nombre, celular o documento…" aria-label="Buscar">
+  <select name="segmento" aria-label="Grupo"><option value="">Todos los grupos</option>{% for k, v in segmentos.items %}<option value="{{ k }}" {% if segmento == k %}selected{% endif %}>{{ v.0 }}</option>{% endfor %}</select>
+  <select name="nivel" aria-label="Nivel"><option value="">Todos los niveles</option>{% for v, t in niveles %}<option value="{{ v }}" {% if request.GET.nivel == v %}selected{% endif %}>{{ t }}</option>{% endfor %}</select>
+  <select name="orden" aria-label="Orden"><option value="">Por nombre</option><option value="compras" {% if request.GET.orden == 'compras' %}selected{% endif %}>Más compras</option><option value="reciente" {% if request.GET.orden == 'reciente' %}selected{% endif %}>Compra más reciente</option><option value="puntos" {% if request.GET.orden == 'puntos' %}selected{% endif %}>Más puntos</option></select>
+  <button class="boton boton-auto">Filtrar</button>
+</form>
+<section class="tarjeta">
+  <table class="tabla">
+    <thead><tr><th>Cliente</th><th>Nivel</th><th class="num">Compras</th><th class="num">Puntos</th><th>Última compra</th></tr></thead>
+    <tbody>{% for c in pagina %}<tr class="{% if not c.activo %}inactivo{% endif %}">
+      <td><a href="{% url 'clientes:detalle' c.pk %}">{{ c.nombre }}</a><br><small class="suave">{{ c.telefono|default:"sin celular" }}{% if not c.acepta_ofertas %} · no recibe ofertas{% endif %}</small></td>
+      <td data-titulo="Nivel">{{ c.get_nivel_display }}</td>
+      <td class="num" data-titulo="Compras">{{ c.n_compras }} · {{ c.total_compras|moneda }}</td>
+      <td class="num" data-titulo="Puntos">{{ c.puntos }}</td>
+      <td data-titulo="Última compra">{{ c.ultima_compra|date:"d/m/Y"|default:"—" }}</td></tr>
+    {% empty %}<tr><td colspan="5" class="vacio">No hay clientes con ese filtro.</td></tr>{% endfor %}</tbody>
+  </table>
+  {% include "parciales/paginacion.html" %}
+</section>
+{% endblock %}

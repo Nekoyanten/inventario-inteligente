@@ -1,0 +1,38 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Análisis de la noche{% endblock %}
+{% block contenido %}
+<h1>Análisis de la noche</h1>
+{% include "nocturno/_pestanas.html" %}
+{% if sugerencias %}<section class="tarjeta destacado"><h2>💡 Qué haría con estos datos</h2>
+  {% for s in sugerencias %}<div class="alerta s2"><div class="encabezado" style="margin:0"><div><b>{{ s.titulo }}</b><em>{{ s.razon }}</em></div>
+    {% if s.dia is not None and "configurar_negocio" in permisos %}<a class="boton boton-auto boton-chico" href="{% url 'nocturno:precios' %}?dia={{ s.dia }}">Crear</a>{% endif %}</div></div>{% endfor %}
+</section>{% endif %}
+<div class="rejilla">
+  <section class="tarjeta"><h2>Pour cost (30 días)</h2><p class="kpi">{% if pc.pct is not None %}{{ pc.pct }} %{% else %}—{% endif %}</p><p class="suave">costo de lo servido ÷ ventas de bebidas{% if pc.real_pct is not None and pc.real_pct != pc.pct %} · real con faltantes {{ pc.real_pct }} %{% endif %}</p>
+    {% if pc.por_categoria %}<table class="tabla compacta"><tbody>{% for f in pc.por_categoria %}<tr><td>{{ f.categoria }}</td><td class="num">{% if f.pct is not None %}{{ f.pct }} %{% endif %}</td><td class="num suave">{% if f.alto %}⚠️ {% endif %}ref. {{ f.referencia }} %</td></tr>{% endfor %}</tbody></table>{% endif %}</section>
+  <section class="tarjeta"><h2>Clientes identificados</h2><p class="kpi">{% if fid.ventas_con_cliente_pct is not None %}{{ fid.ventas_con_cliente_pct }} %{% else %}—{% endif %}</p><p class="suave">{{ fid.clientes }} clientes · {{ fid.vuelven }} volvieron otra noche</p></section>
+  <section class="tarjeta"><h2>Reservas</h2><p class="kpi">{{ reservas.total }}</p><p class="suave">{% if reservas.no_show_pct is not None %}{{ reservas.no_show_pct }} % no llegó · {% endif %}{{ reservas.grupos }} grupos ({{ reservas.personas_grupos }} personas)</p></section>
+  <section class="tarjeta"><h2>Puerta (30 días)</h2><p class="kpi">{{ puerta.personas }}</p><p class="suave">personas{% if puerta.promedio_noche %} · {{ puerta.promedio_noche|floatformat:0 }} por noche{% endif %} · cover {{ puerta.cover|moneda }}</p></section>
+</div>
+<div class="rejilla-2">
+  <section class="tarjeta"><h2>Venta promedio por noche</h2>
+    <table class="tabla compacta"><tbody>{% for d in dias %}<tr><td>{{ d.dia }}</td><td class="num">{{ d.promedio|moneda }}</td><td class="num suave">{{ d.noches }} noches</td></tr>{% empty %}<tr><td class="vacio">Sin ventas aún.</td></tr>{% endfor %}</tbody></table></section>
+  <section class="tarjeta"><h2>¿A qué hora se vende?</h2>
+    <table class="tabla compacta"><tbody>{% for h in horas %}<tr><td>{{ h.hora }}</td><td class="num">{{ h.valor|moneda }}</td></tr>{% endfor %}</tbody></table></section>
+  <section class="tarjeta ancho"><h2>Rendimiento de botellas (30 días)</h2>
+    <p class="suave">Lo que faltó en los conteos es licor que salió sin cobrarse: medidas generosas, cortesías sin registrar o pérdidas. Cuenta las botellas abiertas cada semana (en décimos).</p>
+    <table class="tabla"><thead><tr><th>Botella</th><th class="num">Enteras</th><th class="num">En tragos</th><th class="num">Faltó</th><th class="num">Merma</th><th class="num">Valor</th></tr></thead><tbody>
+    {% for b in botellas %}<tr><td>{{ b.producto }}</td><td class="num">{{ b.enteras|cantidad }}</td><td class="num">{{ b.tragos|cantidad }}</td><td class="num">{{ b.faltante|cantidad }}</td><td class="num">{{ b.merma_pct }} %</td><td class="num">{{ b.valor_faltante|moneda }}</td></tr>{% empty %}<tr><td colspan="6" class="vacio">Sin movimientos de botellas.</td></tr>{% endfor %}</tbody></table></section>
+  <section class="tarjeta"><h2>Grupos vs. el resto</h2>
+    <p>Consumo por persona en grupos: <b>{{ reservas.consumo_por_persona_grupo|moneda }}</b></p>
+    <p>Consumo por persona sin reserva: <b>{{ reservas.consumo_por_persona_otros|moneda }}</b></p></section>
+  <section class="tarjeta"><h2>Promotores</h2>
+    <table class="tabla compacta"><tbody>{% for p in promotores %}<tr><td>{{ p.promotor }}</td><td class="num">{{ p.llegaron }}/{{ p.esperados }} llegaron</td><td class="num">{{ p.consumo|moneda }}</td></tr>{% empty %}<tr><td class="vacio">Sin reservas con promotor.</td></tr>{% endfor %}</tbody></table></section>
+  <section class="tarjeta"><h2>Fidelización</h2><ul class="lista-simple">
+    <li>Bonos por visitas: {{ fid.bonos_visita }}</li><li>Bonos por traer amigos: {{ fid.bonos_referido }} ({{ fid.referidos }} clientes referidos)</li>
+    <li>Bonos a organizadores de grupos: {{ fid.bonos_grupo }}</li>
+    <li>Botellas guardadas: {{ fid.botellas.GUARDADA|default:0 }} · entregadas {{ fid.botellas.RETIRADA|default:0 }} · vencidas {{ fid.botellas.VENCIDA|default:0 }}</li>
+    <li>Propinas: {{ fid.propinas|moneda }}</li>
+    <li>Lo que costó: {{ fid.costo.total|moneda }} (puntos {{ fid.costo.puntos|moneda }} · ofertas {{ fid.costo.ofertas|moneda }} · cover gratis {{ fid.costo.cover_gratis|moneda }})</li></ul></section>
+</div>
+{% endblock %}

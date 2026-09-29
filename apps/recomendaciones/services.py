@@ -162,7 +162,7 @@ def recomendar_familia(padre: Producto, hoy=None, ciclos: dict | None = None,
 def generar_recomendaciones(negocio, hoy=None) -> list[RecomendacionCompra]:
     recs, ciclos, por_producto = [], {}, {}
     config = getattr(negocio, "config", None)
-    for p in Producto.objects.filter(negocio=negocio, activo=True, es_agrupador=False).select_related(
+    for p in Producto.objects.filter(negocio=negocio, activo=True, es_agrupador=False).exclude(tipo="PREPARADO").select_related(
         "negocio__config", "proveedor_principal"
     ):
         rec = recomendar_producto(p, hoy, ciclos)

@@ -6,6 +6,17 @@ personalizados por categoría. Agregar un nuevo tipo de negocio = agregar un dic
 
 from .models import Giro
 
+NOCTURNO_CATEGORIAS = {
+    "Botellas": ["Presentación (ml)"],
+    "Tragos y cócteles": [],
+    "Cervezas": [],
+    "Bebidas sin alcohol": [],
+    "Comida y pasabocas": [],
+    "Entradas y cover": [],
+    "Insumos de barra": [],
+}
+GIROS_NOCTURNOS = {"BAR", "DISCOTECA", "BAR_DISCOTECA"}
+
 PLANTILLAS = {
     Giro.MINIMERCADO: {
         "icono": "🛒",
@@ -52,6 +63,8 @@ PLANTILLAS = {
             "Cabello": [],
             "Uñas": ["Color"],
             "Fragancias": ["Presentación (ml)"],
+            "Servicios": [],
+            "Insumos de salón": [],
         },
     },
     Giro.FARMACIA: {
@@ -76,7 +89,25 @@ PLANTILLAS = {
             dias_vencimiento_amarillo=7,
             horizonte_compra_dias=3,
         ),
-        "categorias": {"Carnes": [], "Verduras": [], "Granos": [], "Bebidas": [], "Desechables": []},
+        "categorias": {"Platos": [], "Carnes": [], "Verduras": [], "Granos": [], "Bebidas": [], "Desechables": []},
+    },
+    Giro.BAR: {
+        "icono": "🍺",
+        "descripcion": "Cuentas por mesa, botellas y tragos, happy hour, reservas y clientes frecuentes.",
+        "config": dict(permite_fracciones=True, horizonte_compra_dias=7, dias_sin_movimiento=30),
+        "categorias": NOCTURNO_CATEGORIAS,
+    },
+    Giro.DISCOTECA: {
+        "icono": "🪩",
+        "descripcion": "Cover y aforo, mesas VIP con consumo mínimo, listas y grupos, botellas y tragos.",
+        "config": dict(permite_fracciones=True, horizonte_compra_dias=7, dias_sin_movimiento=30),
+        "categorias": NOCTURNO_CATEGORIAS,
+    },
+    Giro.BAR_DISCOTECA: {
+        "icono": "🍸",
+        "descripcion": "Bar temprano y discoteca en la noche: cuentas, cover, happy hour, VIP y grupos.",
+        "config": dict(permite_fracciones=True, horizonte_compra_dias=7, dias_sin_movimiento=30),
+        "categorias": NOCTURNO_CATEGORIAS,
     },
     Giro.GENERICO: {
         "icono": "📦",
@@ -95,6 +126,11 @@ def aplicar_plantilla(negocio):
 
     plantilla = PLANTILLAS.get(negocio.giro, PLANTILLAS[Giro.GENERICO])
     config, _ = ConfiguracionNegocio.objects.update_or_create(negocio=negocio, defaults=plantilla["config"])
+    if negocio.giro in GIROS_NOCTURNOS:
+        from apps.nocturno.models import ConfiguracionNocturna
+
+        ConfiguracionNocturna.objects.get_or_create(negocio=negocio, defaults=ConfiguracionNocturna.valores_para(
+            negocio.giro))
     for nombre_cat, atributos in plantilla["categorias"].items():
         categoria, _ = Categoria.objects.get_or_create(negocio=negocio, nombre=nombre_cat)
         for atributo in atributos:

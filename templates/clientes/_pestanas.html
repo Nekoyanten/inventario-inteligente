@@ -1,0 +1,8 @@
+{% with n=request.resolver_match.url_name %}
+<nav class="acciones" style="margin-bottom:1rem" aria-label="Clientes">
+  <a class="boton boton-auto boton-chico {% if n != 'panel' %}boton-secundario{% endif %}" href="{% url 'clientes:panel' %}">Resumen</a>
+  <a class="boton boton-auto boton-chico {% if n != 'lista' %}boton-secundario{% endif %}" href="{% url 'clientes:lista' %}">Clientes</a>
+  <a class="boton boton-auto boton-chico {% if 'oferta' not in n %}boton-secundario{% endif %}" href="{% url 'clientes:ofertas' %}">Ofertas</a>
+  <a class="boton boton-auto boton-chico {% if n != 'configuracion' %}boton-secundario{% endif %}" href="{% url 'clientes:configuracion' %}">Programa de puntos</a>
+</nav>
+{% endwith %}

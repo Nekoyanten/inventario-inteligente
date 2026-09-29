@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block titulo %}{% if cliente %}Editar {{ cliente }}{% else %}Nuevo cliente{% endif %}{% endblock %}
+{% block contenido %}
+<section class="tarjeta formulario formulario-libre">
+  <h1>{% if cliente %}Editar {{ cliente }}{% else %}Nuevo cliente{% endif %}</h1>
+  <p class="suave">Pregúntale al cliente si autoriza guardar sus datos para acumular puntos y, aparte, si quiere recibir ofertas. Sin autorización no se puede registrar.</p>
+  <form method="post">{% csrf_token %}{{ form.non_field_errors }}{{ form.as_p }}<button class="boton">Guardar</button></form>
+  <p><a href="{% if cliente %}{% url 'clientes:detalle' cliente.pk %}{% else %}{% url 'clientes:panel' %}{% endif %}">← Volver</a></p>
+</section>
+{% endblock %}

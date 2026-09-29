@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Mesas y ajustes{% endblock %}
+{% block contenido %}
+<h1>Mesas y ajustes de la noche</h1>
+{% include "nocturno/_pestanas.html" %}
+<div class="rejilla-2">
+<section class="tarjeta formulario-libre"><h2>Ajustes</h2>
+  <form method="post">{% csrf_token %}{{ form.as_p }}<button class="boton boton-auto">Guardar</button></form></section>
+<section class="tarjeta formulario-libre"><h2>Mesas</h2>
+  <table class="tabla compacta"><tbody>{% for m in mesas %}<tr class="{% if not m.activa %}inactivo{% endif %}"><td>{{ m }}</td><td>{{ m.get_zona_display }}</td><td class="num">{{ m.capacidad }} p.</td><td class="num">{% if m.consumo_minimo %}mín. {{ m.consumo_minimo|moneda }}{% endif %}</td></tr>{% empty %}<tr><td class="vacio">Aún no hay mesas.</td></tr>{% endfor %}</tbody></table>
+  <h3>Nueva mesa</h3><form method="post">{% csrf_token %}<input type="hidden" name="tipo" value="mesa">{{ mesa_form.as_p }}<button class="boton boton-auto boton-chico">Crear mesa</button></form></section>
+</div>
+{% endblock %}

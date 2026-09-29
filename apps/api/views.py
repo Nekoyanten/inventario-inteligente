@@ -79,7 +79,8 @@ class VentaViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, mixins.Crea
     def create(self, request, *args, **kwargs):
         ser = s.NuevaVentaSerializer(data=request.data)
         ser.is_valid(raise_exception=True)
-        productos = del_negocio(request.user.negocio, Producto).filter(activo=True, es_agrupador=False)
+        productos = del_negocio(request.user.negocio, Producto).filter(activo=True, es_agrupador=False).exclude(
+            tipo="INSUMO")
         lineas = []
         for linea in ser.validated_data["lineas"]:
             producto = productos.filter(pk=linea["producto"]).first()

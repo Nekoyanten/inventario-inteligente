@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Ofertas{% endblock %}
+{% block contenido %}
+<div class="encabezado"><h1>Ofertas</h1><div class="acciones"><a class="boton boton-auto boton-chico" href="{% url 'clientes:oferta_crear' %}">+ Nueva oferta</a></div></div>
+{% include "clientes/_pestanas.html" %}
+{% if sugerencias %}
+<section class="tarjeta destacado">
+  <h2>💡 Sugeridas por el sistema</h2>
+  {% for s in sugerencias %}<div class="alerta s2"><div class="encabezado" style="margin:0"><div><b>{{ s.titulo }}</b> · {{ s.descuento_pct|floatformat:0 }} %<em>{{ s.razon }}</em></div>
+    <form method="post" action="{% url 'clientes:crear_sugerida' %}">{% csrf_token %}<input type="hidden" name="clave" value="{{ s.clave }}"><button class="boton boton-auto boton-chico">Crear</button></form></div></div>{% endfor %}
+</section>
+{% endif %}
+<section class="tarjeta">
+  <table class="tabla">
+    <thead><tr><th>Oferta</th><th>Para</th><th>Vigencia</th><th class="num">Enviada a</th><th class="num">Volvieron</th><th class="num">Ventas con oferta</th></tr></thead>
+    <tbody>{% for o, e in filas %}<tr class="{% if not o.activa or o.hasta < hoy %}inactivo{% endif %}">
+      <td><a href="{% url 'clientes:oferta' o.pk %}">{{ o.titulo }}</a><br><small class="suave">{{ o.descuento_pct|floatformat:0 }} %{% if o.producto %} en {{ o.producto }}{% elif o.categoria %} en {{ o.categoria }}{% else %} en toda la compra{% endif %}{% if o.origen == 'SUGERIDA' %} · sugerida{% endif %}</small></td>
+      <td data-titulo="Para">{{ o.get_segmento_display }}</td>
+      <td data-titulo="Vigencia">{{ o.desde|date:"d/m" }} – {{ o.hasta|date:"d/m/Y" }}</td>
+      <td class="num" data-titulo="Enviada a">{{ e.enviados }}</td>
+      <td class="num" data-titulo="Volvieron">{% if e.retorno_pct is not None %}{{ e.volvieron }} ({{ e.retorno_pct }} %){% else %}—{% endif %}</td>
+      <td class="num" data-titulo="Ventas">{{ e.ventas_con_oferta }} · {{ e.ingreso|moneda }}</td></tr>
+    {% empty %}<tr><td colspan="6" class="vacio">Aún no hay ofertas. Crea una o usa las sugeridas.</td></tr>{% endfor %}</tbody>
+  </table>
+</section>
+{% endblock %}

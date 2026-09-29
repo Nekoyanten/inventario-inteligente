@@ -15,6 +15,7 @@ class TipoMovimiento(models.TextChoices):
     ENTRADA_COMPRA = "ENTRADA_COMPRA", "Compra a proveedor"
     ENTRADA_DEVOLUCION_CLIENTE = "ENTRADA_DEVOLUCION_CLIENTE", "Devolución de cliente"
     ENTRADA_AJUSTE = "ENTRADA_AJUSTE", "Ajuste positivo"
+    ENTRADA_PRODUCCION = "ENTRADA_PRODUCCION", "Producción propia (elaborado con insumos)"
     # Salidas (−)
     SALIDA_VENTA = "SALIDA_VENTA", "Venta"
     SALIDA_DANADO = "SALIDA_DANADO", "Producto dañado"
@@ -22,6 +23,7 @@ class TipoMovimiento(models.TextChoices):
     SALIDA_DEVOLUCION_PROVEEDOR = "SALIDA_DEVOLUCION_PROVEEDOR", "Devolución al proveedor"
     SALIDA_AJUSTE = "SALIDA_AJUSTE", "Ajuste negativo"
     SALIDA_CONSUMO_INTERNO = "SALIDA_CONSUMO_INTERNO", "Consumo interno (uso en servicios o cocina)"
+    SALIDA_INSUMO = "SALIDA_INSUMO", "Insumo usado en una receta (venta o producción)"
 
     @classmethod
     def es_entrada(cls, tipo: str) -> bool:

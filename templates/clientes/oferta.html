@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}{{ oferta }}{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div><a class="suave" href="{% url 'clientes:ofertas' %}">← Ofertas</a><h1>{{ oferta }}</h1>
+    <span class="suave">{{ oferta.descuento_pct|floatformat:0 }} %{% if oferta.producto %} en {{ oferta.producto }}{% elif oferta.categoria %} en {{ oferta.categoria }}{% else %} en toda la compra{% endif %} · {{ oferta.get_segmento_display }} · {{ oferta.desde|date:"d/m" }} – {{ oferta.hasta|date:"d/m/Y" }}
+    {% if not vigente %}<span class="insignia gris">no vigente</span>{% endif %}</span></div>
+  <div class="acciones"><a class="boton boton-auto boton-chico boton-secundario" href="{% url 'clientes:oferta_editar' oferta.pk %}">Editar</a></div>
+</div>
+{% if oferta.razon %}<p class="explicacion">💡 {{ oferta.razon }}</p>{% endif %}
+<div class="rejilla">
+  <section class="tarjeta"><h2>Enviada a</h2><p class="kpi">{{ efectividad.enviados }}</p></section>
+  <section class="tarjeta"><h2>Volvieron a comprar</h2><p class="kpi">{% if efectividad.retorno_pct is not None %}{{ efectividad.retorno_pct }} %{% else %}—{% endif %}</p><p class="suave">{{ efectividad.volvieron }} de los contactados, mientras estuvo vigente</p></section>
+  <section class="tarjeta"><h2>Ventas con la oferta</h2><p class="kpi">{{ efectividad.ventas_con_oferta }}</p><p class="suave">{{ efectividad.ingreso|moneda }}</p></section>
+</div>
+<section class="tarjeta">
+  <h2>Enviar por WhatsApp ({{ destinatarios|length }})</h2>
+  <p class="suave">Solo aparecen clientes del grupo que aceptaron recibir ofertas y tienen celular. Cada botón abre WhatsApp con el mensaje listo; tú lo envías.</p>
+  {% if ejemplo %}<p class="explicacion">Ejemplo: «{{ ejemplo|linebreaksbr }}»</p>{% endif %}
+  {% if vigente %}
+  <table class="tabla compacta"><tbody>{% for c, enviado in destinatarios %}<tr><td><a href="{% url 'clientes:detalle' c.pk %}">{{ c.nombre }}</a> <small class="suave">{{ c.get_nivel_display }} · {{ c.puntos }} pts</small></td>
+    <td><form method="post" action="{% url 'clientes:enviar' oferta.pk c.pk %}" target="_blank">{% csrf_token %}<button class="boton boton-auto boton-chico {% if enviado %}boton-secundario{% endif %}">{% if enviado %}✔ Reenviar{% else %}Enviar{% endif %}</button></form></td></tr>
+  {% empty %}<tr><td class="vacio">No hay clientes en este grupo que acepten ofertas.</td></tr>{% endfor %}</tbody></table>
+  {% else %}<p class="vacio">La oferta no está vigente: actívala o cambia las fechas para enviarla.</p>{% endif %}
+</section>
+{% endblock %}

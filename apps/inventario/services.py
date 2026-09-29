@@ -20,7 +20,7 @@ class ErrorInventario(Exception):
     pass
 
 
-TIPOS_DEMANDA = {TipoMovimiento.SALIDA_VENTA, TipoMovimiento.SALIDA_CONSUMO_INTERNO}
+TIPOS_DEMANDA = {TipoMovimiento.SALIDA_VENTA, TipoMovimiento.SALIDA_CONSUMO_INTERNO, TipoMovimiento.SALIDA_INSUMO}
 
 _evaluacion_automatica = ContextVar("evaluacion_automatica", default=True)
 
@@ -82,6 +82,8 @@ def registrar_movimiento(
     # el lado opcional de un LEFT JOIN (negocio__config es una relación inversa opcional).
     if producto.es_agrupador:
         raise ErrorInventario(f"{producto.nombre} agrupa variantes; registre el movimiento en una variante.")
+    if producto.es_preparado:
+        raise ErrorInventario(f"{producto.nombre} es un preparado: no tiene stock propio, se descuentan sus insumos.")
     validar_cantidad(producto, cantidad)
 
     producto = Producto.objects.select_for_update(of=("self",)).select_related("negocio__config").get(pk=producto.pk)
@@ -154,6 +156,10 @@ def registrar_movimiento(
     if es_entrada and tipo == TipoMovimiento.ENTRADA_COMPRA and costo_unitario is not None:
         producto.precio_compra = costo  # último costo
         producto.save(update_fields=["precio_compra"])
+        from .recetas import actualizar_costo
+
+        for preparado in Producto.objects.filter(receta__insumo=producto, tipo="PREPARADO").distinct():
+            actualizar_costo(preparado)  # el plato cuesta lo que hoy cuestan sus ingredientes
 
     if tipo in TIPOS_DEMANDA:  # lo consumido en servicios o cocina también hay que reponerlo
         from apps.analitica.services import acumular_demanda_diaria
@@ -218,7 +224,7 @@ def crear_conteo(negocio, responsable, categoria=None, productos=None, observaci
     if productos is not None:
         productos = Producto.objects.filter(negocio=negocio, pk__in=[p.pk for p in productos])
     else:
-        productos = Producto.objects.filter(negocio=negocio, activo=True, es_agrupador=False)
+        productos = Producto.objects.filter(negocio=negocio, activo=True, es_agrupador=False).exclude(tipo="PREPARADO")
         if categoria is not None:
             productos = productos.filter(categoria=categoria)
     conteo = ConteoFisico.objects.create(
@@ -278,7 +284,8 @@ def productos_para_conteo_ciclico(negocio, cuantos: int = PRODUCTOS_CONTEO_CICLI
         negocio=negocio, estado__in=[Alerta.Estado.ABIERTA, Alerta.Estado.VISTA],
         tipo__in=[Alerta.Tipo.VENTA_SIN_STOCK, Alerta.Tipo.ANOMALIA]).values_list("producto_id", flat=True))
     candidatos = []
-    for p in Producto.objects.filter(negocio=negocio, activo=True, es_agrupador=False).only("pk", "creado", "nombre"):
+    for p in (Producto.objects.filter(negocio=negocio, activo=True, es_agrupador=False).exclude(tipo="PREPARADO")
+              .only("pk", "creado", "nombre")):
         desde = ultimos.get(p.pk) or p.creado
         dias = max(0, (hoy - timezone.localdate(desde)).days)
         puntaje = (dias + 1) / FRECUENCIA_ABC.get(abc.get(p.pk, "C"), 60)

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block titulo %}Programa de puntos{% endblock %}
+{% block contenido %}
+<h1>Clientes</h1>
+{% include "clientes/_pestanas.html" %}
+<section class="tarjeta formulario formulario-libre">
+  <h2>Programa de puntos y niveles</h2>
+  <p class="suave">Ejemplo con los valores por defecto: por cada $1.000 de compra el cliente gana 1 punto; 100 puntos valen $1.000 de descuento (le devuelves el 1 %). Los clientes <b>Frecuentes</b> ganan 25 % más puntos y los <b>VIP</b> 50 % más.</p>
+  <form method="post">{% csrf_token %}{{ form.non_field_errors }}{{ form.as_p }}<button class="boton">Guardar</button></form>
+</section>
+{% endblock %}

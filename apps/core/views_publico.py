@@ -64,9 +64,11 @@ def comentario(request):
 def exportar_datos(request):
     """Descarga de todos los datos del negocio (portabilidad; Ley 1581 de 2012)."""
     from apps.alertas.models import Alerta
-    from apps.catalogo.models import AtributoPersonalizado, Categoria, Marca, Producto
+    from apps.catalogo.models import AtributoPersonalizado, Categoria, Marca, Producto, RecetaItem
+    from apps.clientes.models import Cliente, Encuesta, EnvioOferta, MovimientoPuntos, Oferta
     from apps.compras.models import DetalleOrdenCompra, OrdenCompra
     from apps.inventario.models import Lote, Movimiento
+    from apps.nocturno.models import BotellaGuardada, Cuenta, Ingreso, Invitado, ItemCuenta, Mesa, PrecioEspecial, Reserva
     from apps.proveedores.models import ProductoProveedor, Proveedor
     from apps.ventas.models import DetalleVenta, Venta
 
@@ -80,6 +82,12 @@ def exportar_datos(request):
         "lotes": del_negocio(n, Lote), "movimientos": del_negocio(n, Movimiento), "ventas": del_negocio(n, Venta),
         "detalles_venta": del_negocio(n, DetalleVenta), "ordenes_compra": del_negocio(n, OrdenCompra),
         "detalles_orden": del_negocio(n, DetalleOrdenCompra), "alertas": del_negocio(n, Alerta),
+        "recetas": del_negocio(n, RecetaItem), "clientes": del_negocio(n, Cliente),
+        "puntos": del_negocio(n, MovimientoPuntos), "ofertas": del_negocio(n, Oferta),
+        "envios_oferta": del_negocio(n, EnvioOferta), "encuestas": del_negocio(n, Encuesta),
+        "mesas": del_negocio(n, Mesa), "cuentas_noche": del_negocio(n, Cuenta), "pedidos": del_negocio(n, ItemCuenta),
+        "reservas": del_negocio(n, Reserva), "invitados": del_negocio(n, Invitado), "entradas": del_negocio(n, Ingreso),
+        "precios_especiales": del_negocio(n, PrecioEspecial), "botellas_guardadas": del_negocio(n, BotellaGuardada),
     }
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:

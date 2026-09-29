@@ -14,4 +14,7 @@ urlpatterns = [
     path("<int:pk>/editar/", views.editar, name="editar"),
     path("<int:pk>/estado/", views.cambiar_estado, name="cambiar_estado"),
     path("<int:pk>/variantes/", views.variantes, name="variantes"),
+    path("<int:pk>/receta/", views.receta_agregar, name="receta_agregar"),
+    path("<int:pk>/receta/<int:item_id>/quitar/", views.receta_quitar, name="receta_quitar"),
+    path("<int:pk>/producir/", views.producir, name="producir"),
 ]

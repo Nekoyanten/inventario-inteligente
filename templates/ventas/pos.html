@@ -12,15 +12,39 @@
   <section class="tarjeta">
     <h2>Venta actual</h2>
     <div id="pos-carrito"></div>
+    {% if puede_clientes %}
+    <div class="cliente-caja">
+      <div id="pos-cliente-elegido" hidden>
+        <p class="encabezado"><span>👤 <b id="pos-cliente-nombre"></b> <small id="pos-cliente-info" class="suave"></small></span><button type="button" id="pos-cliente-quitar" class="enlace">Quitar</button></p>
+        {% if fidelizacion %}<p><label for="pos-puntos">Canjear puntos</label><input id="pos-puntos" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></p>{% endif %}
+      </div>
+      <div id="pos-cliente-busqueda">
+        <label for="pos-cliente-buscar">Cliente (opcional)</label>
+        <input id="pos-cliente-buscar" type="search" placeholder="Nombre o celular…" autocomplete="off">
+        <div id="pos-cliente-resultados" class="resultados"></div>
+        <details id="pos-cliente-nuevo"><summary class="enlace">+ Registrar cliente nuevo</summary>
+          <div class="formulario-libre">
+            <p><label for="nc-nombre">Nombre</label><input id="nc-nombre" maxlength="120"></p>
+            <p><label for="nc-telefono">Celular / WhatsApp</label><input id="nc-telefono" inputmode="tel" maxlength="20"></p>
+            <p><label><input type="checkbox" id="nc-datos"> Autoriza el tratamiento de sus datos para acumular puntos (Ley 1581)</label></p>
+            <p><label><input type="checkbox" id="nc-ofertas"> Quiere recibir ofertas por WhatsApp</label></p>
+            {% if nocturno %}<p><label><input type="checkbox" id="nc-mayor"> Verifiqué su cédula: es mayor de edad</label></p>{% endif %}
+            <button type="button" id="nc-guardar" class="boton boton-auto boton-chico">Registrar y usar</button>
+          </div>
+        </details>
+      </div>
+    </div>
+    {% endif %}
+    <p id="pos-descuentos" class="suave" hidden></p>
     <p class="encabezado" style="margin-top:1rem"><span>Total</span><span id="pos-total" class="total">$0</span></p>
     <p><label for="pos-medio">Medio de pago</label>
       <select id="pos-medio">{% for v, t in medios %}<option value="{{ v }}">{{ t }}</option>{% endfor %}</select></p>
     <p><label for="pos-recibido">Recibido (efectivo)</label><input id="pos-recibido" type="number" min="0" inputmode="numeric"><span id="pos-cambio" class="suave"></span></p>
-    <p><label for="pos-cliente">Cliente (opcional)</label><input id="pos-cliente" maxlength="120"></p>
+    {% if not puede_clientes %}<p><label for="pos-cliente">Cliente (opcional)</label><input id="pos-cliente" maxlength="120"></p>{% endif %}
     <p id="pos-error" class="mensaje error" hidden></p>
     <button id="pos-cobrar" class="boton" disabled>Cobrar</button>
   </section>
 </div>
 {% endblock %}
 {% block scripts %}<script src="{% static 'js/app.js' %}"></script>
-<script>Inventario.pos({ urlRegistrar: "{% url 'ventas:registrar' %}", urlTicket: "{% url 'ventas:detalle' 0 %}", sinStock: {{ sin_stock|yesno:"true,false" }} });</script>{% endblock %}
+<script>Inventario.pos({ urlRegistrar: "{% url 'ventas:registrar' %}", urlTicket: "{% url 'ventas:detalle' 0 %}", sinStock: {{ sin_stock|yesno:"true,false" }}, urlCotizar: "{% url 'ventas:cotizar' %}" });</script>{% endblock %}

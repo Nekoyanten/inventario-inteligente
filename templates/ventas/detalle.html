@@ -4,14 +4,18 @@
 {% block contenido %}
 <section class="tarjeta formulario">
   <div class="encabezado"><h1>Venta #{{ venta.pk }}</h1>{% if venta.estado == 'ANULADA' %}<span class="insignia gris">Anulada</span>{% endif %}</div>
-  <p class="suave">{{ negocio.nombre }}{% if negocio.nit %} · NIT {{ negocio.nit }}{% endif %}<br>{{ venta.fecha|date:"d/m/Y H:i" }} · atendió {{ venta.vendedor }}{% if venta.cliente %} · cliente {{ venta.cliente }}{% endif %}</p>
+  <p class="suave">{{ negocio.nombre }}{% if negocio.nit %} · NIT {{ negocio.nit }}{% endif %}<br>{{ venta.fecha|date:"d/m/Y H:i" }} · atendió {{ venta.vendedor }}{% if venta.cliente_ref and "gestionar_clientes" in permisos %} · cliente <a href="{% url 'clientes:detalle' venta.cliente_ref_id %}">{{ venta.cliente_ref }}</a>{% elif venta.cliente %} · cliente {{ venta.cliente }}{% endif %}</p>
   <table class="tabla">
     <thead><tr><th>Producto</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Subtotal</th></tr></thead>
-    <tbody>{% for d in detalles %}<tr><td>{{ d.producto.nombre }}</td><td class="num" data-titulo="Cantidad">{{ d.cantidad|cantidad }}</td><td class="num" data-titulo="Precio">{{ d.precio_unitario|moneda }}</td><td class="num" data-titulo="Subtotal">{{ d.subtotal|moneda }}</td></tr>{% endfor %}</tbody>
+    <tbody>{% for d in detalles %}<tr><td>{{ d.producto.nombre }}</td><td class="num" data-titulo="Cantidad">{{ d.cantidad|cantidad }}</td><td class="num" data-titulo="Precio">{{ d.precio_unitario|moneda }}</td><td class="num" data-titulo="Subtotal">{{ d.subtotal|moneda }}{% if d.descuento %}<br><small class="suave">−{{ d.descuento|moneda }}{% if d.oferta %} {{ d.oferta.titulo }}{% endif %}</small>{% endif %}</td></tr>{% endfor %}</tbody>
   </table>
+  {% if venta.descuento_puntos %}<p class="encabezado"><span>Descuento por {{ venta.puntos_canjeados }} puntos</span><span>−{{ venta.descuento_puntos|moneda }}</span></p>{% endif %}
   <p class="encabezado" style="margin-top:1rem"><span>{{ venta.get_medio_pago_display }}</span><span class="total">{{ venta.total|moneda }}</span></p>
+  {% if venta.cliente_ref %}<p class="suave">{{ venta.cliente_ref.primer_nombre }}{% if venta.puntos_ganados %} ganó {{ venta.puntos_ganados }} puntos;{% endif %} tiene {{ venta.cliente_ref.puntos }} puntos.</p>{% endif %}
+  {% if encuesta_url %}<p class="suave">¿Cómo te atendimos? Califícanos en <b>{{ encuesta_url }}</b></p>{% endif %}
   <div class="acciones no-imprimir">
     <button class="boton boton-auto" onclick="window.print()">Imprimir</button>
+    {% if whatsapp_gracias %}<a class="boton boton-auto boton-secundario" href="{{ whatsapp_gracias }}" target="_blank" rel="noopener">Enviar por WhatsApp (gracias + encuesta)</a>{% endif %}
     <a class="boton boton-auto boton-secundario" href="{% url 'ventas:pos' %}">Nueva venta</a>
   </div>
   {% if venta.estado != 'ANULADA' and "configurar_negocio" in permisos %}

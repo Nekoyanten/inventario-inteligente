@@ -20,6 +20,11 @@ class Command(BaseCommand):
                     n_alertas = evaluar_negocio(negocio)
                     n_recs = len(generar_recomendaciones(negocio))
                     registrar_y_evaluar_pronosticos(negocio)
+                    if negocio.giro in ("BAR", "DISCOTECA", "BAR_DISCOTECA"):
+                        from apps.nocturno.services import reservas_vencidas, vencer_botellas
+
+                        vencer_botellas(negocio)
+                        reservas_vencidas(negocio)
                 except Exception:  # un negocio con datos raros no debe frenar el análisis de los demás
                     import logging
 

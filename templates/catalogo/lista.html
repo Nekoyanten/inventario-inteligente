@@ -18,6 +18,9 @@
   <select name="estado" aria-label="Estado"><option value="">Todos los estados</option>
     {% for v, t in estados %}{% if v != "EXCESO" %}<option value="{{ v }}" {% if request.GET.estado == v %}selected{% endif %}>{{ t }}</option>{% endif %}{% endfor %}
   </select>
+  <select name="tipo" aria-label="Tipo"><option value="">Productos, insumos y preparados</option>
+    {% for v, t in tipos %}<option value="{{ v }}" {% if request.GET.tipo == v %}selected{% endif %}>{{ t }}</option>{% endfor %}
+  </select>
   <select name="activo" aria-label="Activos"><option value="1">Activos</option><option value="0" {% if request.GET.activo == "0" %}selected{% endif %}>Inactivos</option><option value="todos" {% if request.GET.activo == "todos" %}selected{% endif %}>Todos</option></select>
   <button class="boton boton-auto">Filtrar</button>
 </form>
@@ -27,12 +30,12 @@
     <tbody>
     {% for p in pagina %}
       <tr class="{% if not p.activo %}inactivo{% endif %}">
-        <td>{% if p.imagen %}<img class="miniatura" src="{{ p.imagen.url }}" alt="" loading="lazy" width="40" height="40">{% endif %}<a href="{% url 'catalogo:detalle' p.pk %}">{{ p.nombre }}</a><br><small class="suave">{{ p.sku }}{% if p.categoria %} · {{ p.categoria }}{% endif %}</small></td>
-        <td class="num" data-titulo="Stock">{{ p.stock_actual|cantidad }} {{ p.unidad.abreviatura|default:"" }}</td>
+        <td>{% if p.imagen %}<img class="miniatura" src="{{ p.imagen.url }}" alt="" loading="lazy" width="40" height="40">{% endif %}<a href="{% url 'catalogo:detalle' p.pk %}">{{ p.nombre }}</a><br><small class="suave">{{ p.sku }}{% if p.categoria %} · {{ p.categoria }}{% endif %}{% if p.tipo == "INSUMO" %} · 🧂 insumo{% elif p.tipo == "PREPARADO" %} · 🍲 preparado{% endif %}</small></td>
+        <td class="num" data-titulo="Stock">{% if p.tipo == "PREPARADO" %}—{% else %}{{ p.stock_actual|cantidad }} {{ p.unidad.abreviatura|default:"" }}{% endif %}</td>
         <td class="num solo-escritorio" data-titulo="Mínimo">{{ p.stock_minimo|cantidad }}</td>
         <td class="num" data-titulo="Precio venta">{{ p.precio_venta|moneda }}</td>
         {% if ver_costos %}<td class="num solo-escritorio" data-titulo="Costo">{{ p.precio_compra|moneda }}</td>{% endif %}
-        <td data-titulo="Estado">{{ p.estado|insignia }}</td>
+        <td data-titulo="Estado">{% if p.tipo == "PREPARADO" %}<span class="suave">según insumos</span>{% else %}{{ p.estado|insignia }}{% endif %}</td>
       </tr>
     {% empty %}
       <tr><td colspan="6" class="vacio">No hay productos con esos filtros.{% if "gestionar_productos" in permisos %} <a href="{% url 'catalogo:crear' %}">Crea el primero</a>.{% endif %}</td></tr>

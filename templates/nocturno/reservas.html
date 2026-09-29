@@ -1,0 +1,17 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Reservas y grupos{% endblock %}
+{% block contenido %}
+<h1>Reservas y grupos</h1>
+{% include "nocturno/_pestanas.html" %}
+<div class="rejilla-2">
+<section class="tarjeta formulario-libre">
+  <h2>Nueva reserva</h2>
+  <p class="suave">Desde {{ conf.grupo_minimo_personas }} personas es <b>grupo</b>: {{ conf.grupo_descuento_pct|floatformat:0 }} % de descuento en la cuenta y quien organiza gana {{ conf.grupo_puntos_por_asistente }} puntos por cada persona que llegue. Un anticipo se descuenta de la cuenta y reduce las reservas que no llegan.</p>
+  <form method="post">{% csrf_token %}{{ form.non_field_errors }}{{ form.as_p }}<button class="boton boton-auto">Guardar reserva</button></form>
+</section>
+<section class="tarjeta">
+  <h2>Próximas</h2>
+  <table class="tabla compacta"><tbody>{% for r in proximas %}<tr><td><a href="{% url 'nocturno:reserva' r.pk %}">{{ r.nombre }}</a><br><small class="suave">{{ r.get_tipo_display }} · {{ r.personas }} personas{% if r.es_grupo %} · 👥 grupo{% endif %}{% if r.promotor %} · {{ r.promotor }}{% endif %}</small></td><td>{{ r.fecha|date:"D d/m" }} {{ r.hora|time:"H:i"|default:"" }}</td><td>{{ r.get_estado_display }}</td></tr>{% empty %}<tr><td class="vacio">Sin reservas próximas.</td></tr>{% endfor %}</tbody></table>
+</section>
+</div>
+{% endblock %}

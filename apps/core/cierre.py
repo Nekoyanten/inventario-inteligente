@@ -22,9 +22,11 @@ def _borrar_archivo(campo):
 def eliminar_negocio(negocio) -> dict:
     from apps.alertas.models import Alerta
     from apps.analitica.models import DemandaDiaria, RegistroPronostico
-    from apps.catalogo.models import Producto
+    from apps.catalogo.models import Producto, RecetaItem
+    from apps.clientes.models import Cliente, Encuesta, Oferta
     from apps.compras.models import OrdenCompra
     from apps.inventario.models import ConteoFisico, Movimiento
+    from apps.nocturno.models import BotellaGuardada, Cuenta, PrecioEspecial
     from apps.recomendaciones.models import RecomendacionCompra
     from apps.usuarios.models import Usuario
     from apps.ventas.models import Venta
@@ -37,6 +39,12 @@ def eliminar_negocio(negocio) -> dict:
     with transaction.atomic():
         pasos = [
             ("alertas", Alerta.objects.filter(negocio=negocio)),
+            ("encuestas", Encuesta.objects.filter(negocio=negocio)),
+            ("cuentas_noche", Cuenta.objects.filter(negocio=negocio)),
+            ("botellas_guardadas", BotellaGuardada.objects.filter(negocio=negocio)),
+            ("precios_especiales", PrecioEspecial.objects.filter(negocio=negocio)),
+            ("clientes", Cliente.objects.filter(negocio=negocio)),
+            ("ofertas", Oferta.objects.filter(negocio=negocio)),
             ("recomendaciones", RecomendacionCompra.objects.filter(negocio=negocio)),
             ("movimientos", Movimiento.objects.filter(negocio=negocio)),
             ("ventas", Venta.objects.filter(negocio=negocio)),
@@ -44,6 +52,7 @@ def eliminar_negocio(negocio) -> dict:
             ("conteos", ConteoFisico.objects.filter(negocio=negocio)),
             ("demanda", DemandaDiaria.objects.filter(producto__negocio=negocio)),
             ("pronosticos", RegistroPronostico.objects.filter(producto__negocio=negocio)),
+            ("recetas", RecetaItem.objects.filter(producto__negocio=negocio)),
             ("variantes", Producto.objects.filter(negocio=negocio, padre__isnull=False)),
             ("productos", Producto.objects.filter(negocio=negocio)),
             ("usuarios", Usuario.objects.filter(negocio=negocio, is_superuser=False)),

@@ -15,17 +15,20 @@ MINIMO_INUSUAL = 5
 
 @transaction.atomic
 def registrar_venta(*, negocio, vendedor, lineas, medio_pago=Venta.MedioPago.EFECTIVO, cliente="", fecha=None,
-                    evaluar_alertas=True, permitir_sin_stock=None):
+                    evaluar_alertas=True, permitir_sin_stock=None, cliente_ref=None, puntos_canjear=0,
+                    descuento_general_pct=0, propina=0, pagado_con_credito=0):
     """Registra una venta y descuenta el inventario.
 
     lineas: lista de dicts {"producto": Producto, "cantidad": n, "precio_unitario": opcional, "descuento": opcional}
 
-    Si el sistema no tiene stock suficiente:
-    - con `permite_venta_sin_stock` (configuración del negocio), la venta se registra igual: se crea un ajuste
-      positivo por lo que falta y una alerta para que el administrador lo revise (no se pierde la venta ni el dato);
-    - si no, toda la venta se revierte (transacción).
+    - Preparados (un almuerzo, un servicio): se descuentan los insumos de su receta.
+    - Con cliente (`cliente_ref`): se aplican sus ofertas vigentes, se canjean los puntos pedidos y gana puntos.
+    - Si el sistema no tiene stock suficiente: con `permite_venta_sin_stock` se registra igual (ajuste + alerta para
+      revisar); si no, toda la venta se revierte (transacción).
     """
     from apps.catalogo.models import Producto
+    from apps.clientes.services import cotizar, puntos_por_compra, registrar_compra
+    from apps.inventario.recetas import costo_receta
     from apps.inventario.services import ErrorInventario
 
     fecha = fecha or timezone.now()
@@ -34,52 +37,81 @@ def registrar_venta(*, negocio, vendedor, lineas, medio_pago=Venta.MedioPago.EFE
         permitir_sin_stock = bool(config and config.permite_venta_sin_stock)
     if any(linea["producto"].negocio_id != negocio.pk for linea in lineas):
         raise ErrorInventario("Uno de los productos no pertenece a este negocio.")
-    # Cantidad total por producto (una misma referencia puede venir en dos líneas)
-    pedido: dict[int, Decimal] = {}
+    lineas = [{**linea, "producto": Producto.objects.get(pk=linea["producto"].pk)} for linea in lineas]
     for linea in lineas:
-        pk = linea["producto"].pk
-        pedido[pk] = pedido.get(pk, Decimal("0")) + Decimal(str(linea["cantidad"]))
+        p = linea["producto"]
+        if p.es_insumo or p.es_agrupador:
+            raise ErrorInventario(f"{p.nombre} no se vende directamente"
+                                  f"{' (es un insumo)' if p.es_insumo else ' (elige una variante)'}.")
+
+    # Qué sale del inventario: los productos con stock y, por cada preparado, los insumos de su receta
+    salidas: dict[int, list] = {}
+    for linea in lineas:
+        p, cantidad = linea["producto"], Decimal(str(linea["cantidad"]))
+        if p.es_preparado:
+            for item in p.receta.select_related("insumo"):
+                fila = salidas.setdefault(item.insumo_id, [item.insumo, Decimal("0"), TipoMovimiento.SALIDA_INSUMO])
+                fila[1] += item.cantidad_total * cantidad
+        else:
+            fila = salidas.setdefault(p.pk, [p, Decimal("0"), TipoMovimiento.SALIDA_VENTA])
+            fila[1] += cantidad
     # Se bloquean las filas (siempre en el mismo orden) ANTES de calcular lo que falta: si dos cajas venden el mismo
-    # producto a la vez, la segunda espera y calcula con el stock ya descontado por la primera.
-    bloqueados = Producto.objects.select_for_update(of=("self",)).filter(pk__in=pedido).order_by("pk")
+    # producto o insumo a la vez, la segunda espera y calcula con el stock ya descontado por la primera.
+    for bloqueado in Producto.objects.select_for_update(of=("self",)).filter(pk__in=salidas).order_by("pk"):
+        salidas[bloqueado.pk][0] = bloqueado
     faltantes = []
-    for producto in bloqueados:
-        falta = pedido[producto.pk] - producto.stock_actual
+    for producto, requerido, _tipo in salidas.values():
+        falta = requerido - producto.stock_actual
         if falta > 0:
             if not permitir_sin_stock:
                 raise ErrorInventario(
-                    f"Stock insuficiente de {producto.nombre}: hay {producto.stock_actual}, se piden {pedido[producto.pk]}.")
+                    f"Stock insuficiente de {producto.nombre}: hay {producto.stock_actual}, se piden {requerido}.")
             faltantes.append((producto, falta))
+
+    # Precios: precios por horario, ofertas y puntos (salvo que las líneas ya traigan su descuento)
+    manuales = any("descuento" in linea for linea in lineas)
+    cot = None if manuales else cotizar(negocio, lineas, cliente_ref, puntos_canjear, timezone.localdate(fecha),
+                                        descuento_general_pct=descuento_general_pct, momento=fecha)
+    if cot:
+        lineas = cot["lineas"]
     venta = Venta.objects.create(
-        negocio=negocio, vendedor=vendedor, fecha=fecha, cliente=cliente, medio_pago=medio_pago
+        negocio=negocio, vendedor=vendedor, fecha=fecha, cliente=cliente or (cliente_ref.nombre if cliente_ref else ""),
+        medio_pago=medio_pago, cliente_ref=cliente_ref, oferta=cot["oferta"] if cot else None,
+        puntos_canjeados=cot["puntos_canjeados"] if cot else 0, descuento_puntos=cot["descuento_puntos"] if cot else 0,
+        propina=Decimal(str(propina or 0)),
     )
     for producto, falta in faltantes:
         _ajuste_venta_sin_stock(producto, falta, vendedor, fecha, venta)
+
     total = Decimal("0")
-    for linea in sorted(lineas, key=lambda linea_: linea_["producto"].pk):
+    for linea in lineas:
         producto = linea["producto"]
         detalle = DetalleVenta.objects.create(
             venta=venta,
             producto=producto,
             cantidad=Decimal(str(linea["cantidad"])),
             precio_unitario=Decimal(str(linea.get("precio_unitario", producto.precio_venta))),
-            costo_unitario=producto.precio_compra,
+            costo_unitario=costo_receta(producto) if producto.es_preparado else producto.precio_compra,
             descuento=Decimal(str(linea.get("descuento", 0))),
-        )
-        registrar_movimiento(
-            producto=producto,
-            tipo=TipoMovimiento.SALIDA_VENTA,
-            cantidad=detalle.cantidad,
-            usuario=vendedor,
-            fecha=fecha,
-            motivo=f"Venta #{venta.pk}",
-            referencia_tipo="venta",
-            referencia_id=venta.pk,
-            evaluar_alertas=evaluar_alertas,
+            oferta=linea.get("oferta"),
+            promocion=linea.get("promocion", ""),
         )
         total += detalle.subtotal
+        if producto.es_preparado:  # el plato no tiene stock, pero su demanda sirve para analizar las ventas
+            from apps.analitica.services import acumular_demanda_diaria
+
+            acumular_demanda_diaria(producto, timezone.localdate(fecha), detalle.cantidad)
+    for producto, cantidad, tipo in sorted(salidas.values(), key=lambda f: f[0].pk):  # orden fijo de bloqueo
+        registrar_movimiento(
+            producto=producto, tipo=tipo, cantidad=cantidad, usuario=vendedor, fecha=fecha,
+            motivo=f"Venta #{venta.pk}", referencia_tipo="venta", referencia_id=venta.pk,
+            evaluar_alertas=evaluar_alertas,
+        )
     venta.total = total
-    venta.save(update_fields=["total"])
+    venta.puntos_ganados = puntos_por_compra(negocio, cliente_ref, total)
+    venta.pagado_con_credito = min(Decimal(str(pagado_con_credito or 0)), total)
+    venta.save(update_fields=["total", "puntos_ganados", "pagado_con_credito"])
+    registrar_compra(venta)
     return venta
 
 
@@ -148,8 +180,9 @@ def limites_habituales(producto_ids) -> dict:
 
 @transaction.atomic
 def anular_venta(venta: Venta, usuario, motivo: str, fecha=None) -> Venta:
-    """Revierte el inventario (devolución de cliente) y descuenta la demanda registrada."""
+    """Revierte el inventario (devolución de cliente), descuenta la demanda registrada y los puntos."""
     from apps.analitica.services import acumular_demanda_diaria
+    from apps.clientes.services import revertir_compra
     from apps.core.auditoria import auditar
 
     if venta.estado == Venta.Estado.ANULADA:
@@ -158,13 +191,31 @@ def anular_venta(venta: Venta, usuario, motivo: str, fecha=None) -> Venta:
         raise ValueError("Indica el motivo de la anulación.")
     dia = timezone.localdate(venta.fecha)
     for d in venta.detalles.select_related("producto"):
+        acumular_demanda_diaria(d.producto, dia, -d.cantidad)
+    # Vuelve lo que salió del inventario con esta venta (productos e insumos de las recetas)
+    for producto, cantidad, tipo in salidas_de_venta(venta):
         registrar_movimiento(
-            producto=d.producto, tipo=TipoMovimiento.ENTRADA_DEVOLUCION_CLIENTE, cantidad=d.cantidad, usuario=usuario,
+            producto=producto, tipo=TipoMovimiento.ENTRADA_DEVOLUCION_CLIENTE, cantidad=cantidad, usuario=usuario,
             motivo=f"Anulación venta #{venta.pk}: {motivo}", referencia_tipo="venta", referencia_id=venta.pk,
             fecha=fecha,
         )
-        acumular_demanda_diaria(d.producto, dia, -d.cantidad)
+        if tipo == TipoMovimiento.SALIDA_INSUMO:
+            acumular_demanda_diaria(producto, dia, -cantidad)
     venta.estado = Venta.Estado.ANULADA
     venta.save(update_fields=["estado"])
+    revertir_compra(venta, usuario)
     auditar(venta.negocio, usuario, "anular_venta", venta, motivo=motivo, total=str(venta.total))
     return venta
+
+
+def salidas_de_venta(venta: Venta) -> list[tuple]:
+    """(producto, cantidad, tipo) que salieron del inventario con la venta, uno por producto (los lotes se suman)."""
+    from apps.inventario.models import Movimiento
+
+    agrupadas: dict[int, list] = {}
+    for m in Movimiento.objects.filter(referencia_tipo="venta", referencia_id=venta.pk, negocio=venta.negocio,
+                                       tipo__in=[TipoMovimiento.SALIDA_VENTA, TipoMovimiento.SALIDA_INSUMO]
+                                       ).select_related("producto").order_by("producto_id"):
+        fila = agrupadas.setdefault(m.producto_id, [m.producto, Decimal("0"), m.tipo])
+        fila[1] += m.cantidad
+    return [tuple(f) for f in agrupadas.values()]
