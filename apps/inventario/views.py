@@ -10,7 +10,7 @@ from apps.reportes.exportadores import a_csv
 from apps.usuarios.permisos import requiere_permiso
 
 from .forms import FiltroMovimientosForm, MovimientoForm
-from .models import Movimiento
+from .models import Movimiento, TipoMovimiento
 from .services import ErrorInventario, kardex, registrar_movimiento
 
 
@@ -80,9 +80,32 @@ def kardex_producto(request, pk):
         filas = [[m.fecha.strftime("%Y-%m-%d %H:%M"), m.get_tipo_display(),
                   m.cantidad if m.es_entrada else -m.cantidad, m.stock_resultante, str(m.usuario or ""), m.motivo]
                  for m in qs]
-        return a_csv(f"kardex-{producto.sku}", ["Fecha", "Tipo", "Cantidad", "Saldo", "Usuario", "Motivo"], filas)
+        return a_csv(f"kardex-{producto.sku}", ["Fecha", "Qué pasó", "Cantidad", "Quedan", "Quién", "Por qué"], filas)
     pagina = Paginator(qs.order_by("-fecha", "-id"), 50).get_page(request.GET.get("pagina"))
+    detalles = que_se_preparo(producto, pagina.object_list)
+    for m in pagina.object_list:
+        m.detalle_claro = detalles.get(m.pk, "")
     return render(request, "inventario/kardex.html", {"producto": producto, "form": form, "pagina": pagina})
+
+
+def que_se_preparo(insumo, movimientos) -> dict:
+    """Para cada salida de un insumo por una venta: qué se preparó con él («8 × Trago de Aguardiente (30 ml)»)."""
+    from apps.catalogo.models import RecetaItem
+    from apps.core.formato import numero
+    from apps.ventas.models import DetalleVenta
+
+    ventas = {m.referencia_id: m.pk for m in movimientos
+              if m.tipo == TipoMovimiento.SALIDA_INSUMO and m.referencia_tipo == "venta" and m.referencia_id}
+    if not ventas:
+        return {}
+    usan = set(RecetaItem.objects.filter(insumo=insumo).values_list("producto_id", flat=True))
+    from django.db.models import Sum
+
+    textos: dict = {}
+    for d in (DetalleVenta.objects.filter(venta_id__in=ventas, producto_id__in=usan)
+              .values("venta_id", "producto__nombre").annotate(n=Sum("cantidad")).order_by("venta_id", "producto__nombre")):
+        textos.setdefault(ventas[d["venta_id"]], []).append(f"{numero(d['n'])} × {d['producto__nombre']}")
+    return {pk: "Se preparó: " + ", ".join(t) for pk, t in textos.items()}
 
 
 # ---------------------------------------------------------------- Vencimientos

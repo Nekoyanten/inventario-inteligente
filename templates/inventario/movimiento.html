@@ -10,7 +10,7 @@
     {{ form.non_field_errors }}
     <p><label for="buscar-producto">Producto</label>
       <input id="buscar-producto" type="search" placeholder="Busca por nombre, código o escanea…" autocomplete="off">
-      <span id="producto-elegido" class="suave">{% if producto %}<strong>{{ producto.nombre }}</strong> · stock actual {{ producto.stock_actual|cantidad }}{% else %}Ningún producto elegido{% endif %}</span>
+      <span id="producto-elegido" class="suave">{% if producto %}<strong>{{ producto.nombre }}</strong> · hay {{ producto.stock_actual|clara:producto.unidad }}{% else %}Ningún producto elegido{% endif %}</span>
       {{ form.producto }}{{ form.producto.errors }}</p>
     <p>{{ form.tipo.label_tag }}{{ form.tipo }}</p>
     <p>{{ form.cantidad.label_tag }}{{ form.cantidad }}{{ form.cantidad.errors }}</p>

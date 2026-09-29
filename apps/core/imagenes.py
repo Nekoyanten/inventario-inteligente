@@ -25,3 +25,7 @@ def optimizar_imagen(archivo, lado_max: int | None = None, calidad: int = 80) ->
 def ruta_imagen_producto(instancia, nombre):
     """productos/<negocio>/<archivo>: ordena el bucket por negocio (facilita exportar o borrar sus datos)."""
     return f"productos/{instancia.negocio_id or 'sin-negocio'}/{nombre}"
+
+
+def ruta_logo(instancia, nombre):
+    return f"logos/{instancia.negocio_id or 'sin-negocio'}/{nombre}"

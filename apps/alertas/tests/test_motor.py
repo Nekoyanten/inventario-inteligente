@@ -36,7 +36,7 @@ def test_riesgo_de_agotamiento_relaciona_ventas_y_proveedor(producto, admin):
     alertas = evaluar_producto(producto.pk)
     riesgo = [a for a in alertas if a.tipo == Alerta.Tipo.RIESGO_AGOTAMIENTO]
     assert riesgo and riesgo[0].severidad == Alerta.Severidad.ACTUAR
-    assert "tu proveedor tarda 4 días" in riesgo[0].mensaje
+    assert "el proveedor tarda 4 días" in riesgo[0].mensaje
 
 
 def test_alertas_no_se_duplican(producto, admin):
@@ -72,4 +72,4 @@ def test_recomendacion_explicada(producto, admin):
     _historial(producto, admin, 3)
     rec = recomendar_producto(producto)
     assert rec is not None and rec.cantidad_sugerida > 0
-    assert "se recomienda pedir aproximadamente" in rec.explicacion
+    assert "conviene pedir" in rec.explicacion

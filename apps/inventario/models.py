@@ -11,19 +11,19 @@ from apps.core.models import ModeloBase
 
 class TipoMovimiento(models.TextChoices):
     # Entradas (+)
-    ENTRADA_INICIAL = "ENTRADA_INICIAL", "Inventario inicial"
-    ENTRADA_COMPRA = "ENTRADA_COMPRA", "Compra a proveedor"
-    ENTRADA_DEVOLUCION_CLIENTE = "ENTRADA_DEVOLUCION_CLIENTE", "Devolución de cliente"
-    ENTRADA_AJUSTE = "ENTRADA_AJUSTE", "Ajuste positivo"
-    ENTRADA_PRODUCCION = "ENTRADA_PRODUCCION", "Producción propia (elaborado con insumos)"
+    ENTRADA_INICIAL = "ENTRADA_INICIAL", "Inventario inicial (con lo que empezó)"
+    ENTRADA_COMPRA = "ENTRADA_COMPRA", "Llegó mercancía del proveedor"
+    ENTRADA_DEVOLUCION_CLIENTE = "ENTRADA_DEVOLUCION_CLIENTE", "Un cliente la devolvió"
+    ENTRADA_AJUSTE = "ENTRADA_AJUSTE", "Corrección: había más de lo anotado"
+    ENTRADA_PRODUCCION = "ENTRADA_PRODUCCION", "Se produjo aquí con insumos"
     # Salidas (−)
-    SALIDA_VENTA = "SALIDA_VENTA", "Venta"
-    SALIDA_DANADO = "SALIDA_DANADO", "Producto dañado"
-    SALIDA_VENCIDO = "SALIDA_VENCIDO", "Producto vencido"
-    SALIDA_DEVOLUCION_PROVEEDOR = "SALIDA_DEVOLUCION_PROVEEDOR", "Devolución al proveedor"
-    SALIDA_AJUSTE = "SALIDA_AJUSTE", "Ajuste negativo"
-    SALIDA_CONSUMO_INTERNO = "SALIDA_CONSUMO_INTERNO", "Consumo interno (uso en servicios o cocina)"
-    SALIDA_INSUMO = "SALIDA_INSUMO", "Insumo usado en una receta (venta o producción)"
+    SALIDA_VENTA = "SALIDA_VENTA", "Se vendió"
+    SALIDA_DANADO = "SALIDA_DANADO", "Se dañó o se rompió"
+    SALIDA_VENCIDO = "SALIDA_VENCIDO", "Se venció"
+    SALIDA_DEVOLUCION_PROVEEDOR = "SALIDA_DEVOLUCION_PROVEEDOR", "Se devolvió al proveedor"
+    SALIDA_AJUSTE = "SALIDA_AJUSTE", "Corrección: había menos de lo anotado (faltante)"
+    SALIDA_CONSUMO_INTERNO = "SALIDA_CONSUMO_INTERNO", "Consumo interno (cocina, servicios o la casa)"
+    SALIDA_INSUMO = "SALIDA_INSUMO", "Se usó para preparar (tragos, cócteles o platos)"
 
     @classmethod
     def es_entrada(cls, tipo: str) -> bool:

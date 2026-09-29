@@ -1,0 +1,12 @@
+{% load ui %}<ul class="movimientos">
+{% for m in movimientos %}
+  <li class="{% if m.es_entrada %}entra{% else %}sale{% endif %}">
+    <div class="mov-cantidad">{% if m.es_entrada %}+{% else %}−{% endif %} {{ m.cantidad|clara:producto.unidad }}</div>
+    <div class="mov-texto"><strong>{{ m.get_tipo_display }}</strong>
+      {% if m.detalle_claro %}<br>{{ m.detalle_claro }}{% endif %}
+      {% if m.motivo and m.motivo != m.detalle_claro %}<br><span class="suave">{{ m.motivo }}</span>{% endif %}
+      <br><small class="suave">{{ m.fecha|date:"d/m/Y H:i" }} · {{ m.usuario|default:"sistema" }}{% if m.lote %} · lote {{ m.lote.codigo|default:m.lote_id }}{% endif %}</small></div>
+    <div class="mov-quedan"><small class="suave">quedaron</small><br><strong>{{ m.stock_resultante|clara:producto.unidad }}</strong></div>
+  </li>
+{% empty %}<li class="vacio">Sin movimientos.</li>{% endfor %}
+</ul>

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block titulo %}{{ n.nombre }} · Plataforma{% endblock %}
+{% block contenido %}
+<div class="encabezado">
+  <div><a class="suave" href="{% url 'plataforma:panel' %}">← Todos los negocios</a><h1>{{ n.nombre }}</h1>
+    <p class="suave">{{ n.get_giro_display }}{% if n.telefono %} · {{ n.telefono }}{% endif %}{% if n.direccion %} · {{ n.direccion }}{% endif %} · desde {{ n.creado|date:"d/m/Y" }}</p></div>
+  <form method="post" action="{% url 'plataforma:entrar' n.pk %}">{% csrf_token %}<button class="boton boton-auto">Entrar al negocio</button></form>
+</div>
+
+<div class="rejilla">
+  <section class="tarjeta"><h2>Plan</h2><p class="kpi kpi-texto">{{ s.limites.nombre }}</p>
+    <p class="suave">{% if s.en_prueba %}Prueba con todo hasta el {{ s.prueba_hasta|date:"d/m/Y" }}{% elif s.vencido %}⚠️ Venció el {{ s.pagado_hasta|date:"d/m/Y" }}: está con límites de Gratis{% elif s.pagado_hasta %}Activo hasta el {{ s.pagado_hasta|date:"d/m/Y" }}{% else %}Sin fecha de vencimiento{% endif %}</p></section>
+  <section class="tarjeta"><h2>Productos</h2><p class="kpi">{{ uso.productos }} <small>de {{ s.limites.productos }}</small></p></section>
+  <section class="tarjeta"><h2>Usuarios</h2><p class="kpi">{{ uso.usuarios }} <small>de {{ s.limites.usuarios }}</small></p></section>
+</div>
+
+<form method="post" class="tarjeta formulario-libre">{% csrf_token %}
+  <h2>Plan a la medida</h2>
+  <p class="suave">Elige un plan base y ajusta solo lo que este negocio necesite. Lo que dejes en «lo del plan base» sigue la plantilla.</p>
+  {% if form.errors %}<div class="mensaje error">{{ form.errors }}</div>{% endif %}
+  <div class="rejilla-2">
+    <p>{{ form.plan.label_tag }}{{ form.plan }}</p>
+    <p>{{ form.pagado_hasta.label_tag }}{{ form.pagado_hasta }}<small class="suave">{{ form.pagado_hasta.help_text }}</small></p>
+    <p>{{ form.limite_productos.label_tag }}{{ form.limite_productos }}<small class="suave">{{ form.limite_productos.help_text }}</small></p>
+    <p>{{ form.limite_usuarios.label_tag }}{{ form.limite_usuarios }}<small class="suave">{{ form.limite_usuarios.help_text }}</small></p>
+    <p>{{ form.reportes_pdf.label_tag }}{{ form.reportes_pdf }}</p>
+    <p>{{ form.api.label_tag }}{{ form.api }}</p>
+    <p>{{ form.prueba_hasta.label_tag }}{{ form.prueba_hasta }}<small class="suave">{{ form.prueba_hasta.help_text }}</small></p>
+  </div>
+  <fieldset><legend>{{ form.modulos.label }}</legend>{% for m in form.modulos %}<label class="opcion">{{ m.tag }} {{ m.choice_label }}</label>{% endfor %}</fieldset>
+  <p>{{ form.notas.label_tag }}{{ form.notas }}</p>
+  <p><button class="boton boton-auto">Guardar el plan</button></p>
+</form>
+
+<section class="tarjeta tabla-scroll">
+  <div class="encabezado"><h2>Usuarios del negocio</h2><a class="boton boton-auto boton-chico boton-secundario" href="/{{ admin_url }}usuarios/usuario/?negocio__id__exact={{ n.pk }}">Administrar en el panel</a></div>
+  <table class="tabla compacta"><thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Último ingreso</th><th>Estado</th></tr></thead><tbody>
+  {% for u in usuarios %}<tr><td>{{ u.username }}</td><td>{{ u.get_full_name|default:"—" }}</td><td>{{ u.get_rol_display }}</td><td>{{ u.last_login|timesince|default:"nunca" }}</td><td>{% if u.is_active %}Activo{% else %}<span class="suave">Inactivo</span>{% endif %}</td></tr>
+  {% empty %}<tr><td colspan="5" class="vacio">Sin usuarios.</td></tr>{% endfor %}</tbody></table>
+</section>
+{% endblock %}

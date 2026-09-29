@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block titulo %}Apariencia{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><a class="suave" href="{% url 'negocio:configuracion' %}">← Configuración</a><h1>Apariencia</h1></div></div>
+<p class="explicacion">Dale a la aplicación los colores de tu negocio. Todos los que trabajan contigo la verán igual.</p>
+<form method="post" enctype="multipart/form-data" class="tarjeta formulario-libre apariencia">{% csrf_token %}
+  {% if form.errors %}<div class="mensaje error">{{ form.errors }}</div>{% endif %}
+  <h2>Color de tu marca</h2>
+  <div class="paletas" role="radiogroup" aria-label="Colores sugeridos">
+    {% for hex, nombre in paletas %}<button type="button" class="muestra" data-color="{{ hex }}" style="--c:{{ hex }}" aria-label="{{ nombre }}" title="{{ nombre }}"><span></span>{{ nombre }}</button>{% endfor %}
+  </div>
+  <p><label for="{{ form.color_principal.id_for_label }}">O elige cualquier color</label>{{ form.color_principal }}</p>
+
+  <h2>Modo</h2>
+  <div class="opciones-tema">{% for r in form.tema %}<label class="opcion">{{ r.tag }} {{ r.choice_label }}</label>{% endfor %}</div>
+
+  <h2>Letra</h2>
+  <label class="opcion">{{ form.letra_grande }} Letra más grande (para ver la caja de lejos o si cuesta leer)</label>
+
+  <h2>Logo</h2>
+  {% if config.logo %}<p><img src="{{ config.logo.url }}" alt="Logo actual" class="logo-previa"></p>{% endif %}
+  <p>{{ form.logo }}<br><small class="suave">PNG o JPG. Se ve en la barra de arriba y en el comprobante.</small></p>
+
+  <div class="vista-previa" id="vista-previa" aria-hidden="true">
+    <span class="suave">Así se verá:</span>
+    <button type="button" class="boton boton-auto">Cobrar</button>
+    <button type="button" class="boton boton-auto boton-secundario">Agregar producto</button>
+    <a href="#" onclick="return false">Un enlace</a>
+  </div>
+  <p><button class="boton">Guardar</button></p>
+</form>
+{% if config.logo %}<form method="post" class="acciones-simples">{% csrf_token %}<input type="hidden" name="quitar_logo" value="1"><button class="enlace">Quitar el logo</button></form>{% endif %}
+<script>
+(function () {
+  const campo = document.getElementById("{{ form.color_principal.id_for_label }}");
+  const previa = document.getElementById("vista-previa");
+  function aplicar(c) { campo.value = c; previa.style.setProperty("--marca", c); previa.style.setProperty("--marca-2", c); }
+  document.querySelectorAll(".muestra").forEach(b => b.addEventListener("click", () => aplicar(b.dataset.color)));
+  campo.addEventListener("input", () => aplicar(campo.value));
+})();
+</script>
+{% endblock %}

@@ -79,4 +79,4 @@ def test_generar_variantes(client, admin, negocio):
 def test_detalle_producto(client, admin, producto):
     client.force_login(admin)
     html = client.get(f"/productos/{producto.pk}/").content.decode()
-    assert "Ritmo de ventas" in html and "Kárdex" in html or "kárdex" in html
+    assert "¿Cuánto se vende?" in html and "Qué ha pasado últimamente" in html

@@ -33,7 +33,8 @@ Deja vacío el campo *Docker Command*: se usa el `CMD` del Dockerfile. La base d
 El superusuario (`DJANGO_SUPERUSER_USERNAME`) es el **administrador de la plataforma**: al entrar llega a `/plataforma/`, donde ve todos los negocios y puede:
 
 - **Entrar** a cualquier negocio para dar soporte: ve y hace todo lo que su administrador. Aparece un aviso mientras está dentro y la entrada y la salida quedan en la bitácora del negocio.
-- **Cambiar el plan** de un negocio (Gratis, o Emprendedor o Negocio por N días). También queda en la bitácora.
+- **Crear negocios** (*+ Crear negocio*): tipo, dueño y plan. Genera una clave temporal y un botón para enviársela por WhatsApp.
+- **Administrar** cada negocio con un **plan a la medida**: plan base, fecha de vencimiento, prueba, límite de productos y usuarios, reportes Excel/PDF, API y módulos (clientes, la noche, compras, reportes). Un módulo apagado desaparece del menú y su página ofrece pedirlo por WhatsApp. Todo cambio queda en la bitácora.
 - Ir al **admin de Django** (`/ADMIN_URL`) para usuarios, contraseñas y datos.
 
 ## Opción B: VPS propio (Ubuntu + Docker)

@@ -37,3 +37,24 @@ class SuscripcionMiddleware:
 
             request.suscripcion = suscripcion(request.negocio)
         return self.get_response(request)
+
+
+class ModulosMiddleware:
+    """Si el negocio no tiene un módulo en su plan, sus páginas muestran cómo pedirlo en vez de abrirse."""
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        s = getattr(request, "suscripcion", None)
+        if s is not None:
+            from .modulos import MODULOS, modulo_de_ruta
+
+            clave = modulo_de_ruta(request.path)
+            if clave and not s.tiene_modulo(clave):
+                from django.conf import settings
+                from django.shortcuts import render
+
+                return render(request, "negocio/modulo_apagado.html", {
+                    "modulo": MODULOS[clave][0], "contacto": settings.CONTACTO_VENTAS}, status=403)
+        return self.get_response(request)

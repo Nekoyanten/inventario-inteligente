@@ -8,6 +8,7 @@ from apps.analitica import algoritmos as alg
 from apps.analitica.services import analizar_producto, horizonte_compra
 from apps.catalogo.models import Producto
 from apps.compras.models import DetalleOrdenCompra, OrdenCompra
+from apps.core.formato import cantidad_clara, ritmo_claro
 from apps.core.formato import numero as _n
 
 from .models import RecomendacionCompra
@@ -93,11 +94,11 @@ def recomendar_producto(producto: Producto, hoy=None, ciclos: dict | None = None
         pendientes.delete()
         return None
 
+    u = producto.unidad.abreviatura if producto.unidad_id else "und"
     explicacion = (
-        f"Tienes {_n(a.stock)} unidades de {producto.nombre}. Vendes aproximadamente {_n(a.demanda_diaria)} por día "
-        f"(~{_n(a.demanda_diaria * 7)} por semana) y tu proveedor tarda {_n(a.tiempo_entrega)} días. "
-        f"{_texto_horizonte(horizonte, origen, producto)} más un stock de seguridad de {_n(a.stock_seguridad)}, "
-        f"se recomienda pedir aproximadamente {cantidad} unidades."
+        f"Hay {cantidad_clara(a.stock, u)} de {producto.nombre}. {ritmo_claro(a.demanda_diaria, u)} y el proveedor "
+        f"tarda {_n(a.tiempo_entrega)} días. {_texto_horizonte(horizonte, origen, producto)} más una reserva para "
+        f"imprevistos de {cantidad_clara(a.stock_seguridad, u)}, conviene pedir {cantidad_clara(cantidad, u)}."
     )
     if limitado:
         explicacion += (f" Se limitó a {cantidad} porque {producto.nombre} dura {producto.vida_util_dias} días: "

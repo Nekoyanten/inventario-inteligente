@@ -49,7 +49,7 @@ def test_recomendaciones_a_ordenes_con_cantidad_editada(client, admin, producto)
     generar_recomendaciones(producto.negocio)
     rec = RecomendacionCompra.objects.get()
     client.force_login(admin)
-    assert "se recomienda pedir" in client.get("/compras/que-comprar/").content.decode()
+    assert "conviene pedir" in client.get("/compras/que-comprar/").content.decode()
     client.post("/compras/que-comprar/procesar/", {"seleccion": [rec.pk], f"cantidad-{rec.pk}": "50", "accion": "ordenar"})
     orden = OrdenCompra.objects.get()
     assert orden.detalles.get().cantidad_pedida == 50

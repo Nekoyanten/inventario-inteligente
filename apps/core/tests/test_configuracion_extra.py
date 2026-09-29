@@ -44,4 +44,4 @@ def test_token_api_y_regenerar(client, admin):
 def test_pagina_mi_plan(client, admin):
     client.force_login(admin)
     html = client.get("/negocio/plan/").content.decode()
-    assert "período de prueba" in html and "Emprendedor" in html
+    assert "todas las funciones" in html and "a la medida" in html and "Productos" in html

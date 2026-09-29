@@ -1,11 +1,12 @@
 {% load static %}<!doctype html>
-<html lang="es">
+<html lang="es" data-tema="{{ apariencia.tema|lower }}"{% if apariencia.letra_grande %} class="letra-grande"{% endif %}>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#1f7a4d">
+  <meta name="theme-color" content="{{ apariencia.color }}">
   <title>{% block titulo %}Inventario Inteligente{% endblock %} · Inventario Inteligente</title>
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <style>:root{--marca:{{ apariencia.color }};--marca-2:{{ apariencia.oscuro }};--sobre-marca:{{ apariencia.sobre }};--marca-suave:{{ apariencia.suave }};--marca-foco:{{ apariencia.foco }};--marca-texto:{{ apariencia.texto }}}</style>
   {% url "pwa:manifest" as url_manifest %}{% if url_manifest %}<link rel="manifest" href="{{ url_manifest }}">{% endif %}
   <link rel="icon" href="{% static 'img/icono.svg' %}" type="image/svg+xml">
   <link rel="apple-touch-icon" href="{% static 'img/icono-192.png' %}">
@@ -14,7 +15,7 @@
 <body class="{% if user.is_authenticated and negocio %}con-menu{% endif %}">
   <header class="barra">
     <a class="marca" href="{% if user.is_authenticated %}{% url 'dashboard:inicio' %}{% else %}/{% endif %}">
-      <img src="{% static 'img/icono.svg' %}" alt="" width="26" height="26">
+      {% if apariencia.logo %}<img src="{{ apariencia.logo.url }}" alt="" class="logo-negocio">{% else %}<img src="{% static 'img/icono.svg' %}" alt="" width="26" height="26">{% endif %}
       <span>{{ negocio|default:"Inventario Inteligente" }}</span>
     </a>
     {% if user.is_authenticated %}

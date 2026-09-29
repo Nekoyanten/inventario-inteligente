@@ -25,7 +25,7 @@ def test_panel_solo_para_el_dueno_de_la_plataforma(client, admin, dueno_platafor
     assert client.get("/plataforma/").status_code == 302
     client.force_login(dueno_plataforma)
     resp = client.get("/plataforma/")
-    assert resp.status_code == 200 and "Negocios del piloto" in resp.content.decode()
+    assert resp.status_code == 200 and "Crear negocio" in resp.content.decode()
 
 
 def test_metricas_del_piloto(client, admin, producto, dueno_plataforma):

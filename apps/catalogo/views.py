@@ -154,7 +154,13 @@ def detalle(request, pk):
         contexto["analisis"] = analizar_producto(producto)
         contexto["pronostico"] = pronostico_mensual(producto)
         contexto["ventas_mensuales"] = ventas_mensuales(producto)
-        contexto["movimientos"] = kardex(producto).order_by("-fecha", "-id")[:8]
+        from apps.inventario.views import que_se_preparo
+
+        movimientos = list(kardex(producto).order_by("-fecha", "-id")[:8])
+        detalles = que_se_preparo(producto, movimientos)
+        for m in movimientos:
+            m.detalle_claro = detalles.get(m.pk, "")
+        contexto["movimientos"] = movimientos
         contexto["lotes"] = producto.lotes.filter(cantidad__gt=0)
         contexto["alertas"] = producto.alertas.filter(estado__in=["ABIERTA", "VISTA"])
     return render(request, "catalogo/detalle.html", contexto)

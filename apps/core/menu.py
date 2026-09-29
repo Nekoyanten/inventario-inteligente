@@ -30,9 +30,15 @@ def construir_menu(request, permisos, contadores=None):
     items = []
     negocio = getattr(request, "negocio", None)
     nocturno = getattr(negocio, "giro", "") in ("BAR", "DISCOTECA", "BAR_DISCOTECA")
+    suscripcion = getattr(request, "suscripcion", None)
+    from .modulos import modulo_de_menu
+
     for permiso, nombre, icono, texto, activa in MENU:
         if permiso and permiso not in permisos:
             continue
+        modulo = modulo_de_menu(nombre)
+        if modulo and suscripcion is not None and not suscripcion.tiene_modulo(modulo):
+            continue  # no está en su plan
         if nombre.startswith("nocturno:") and not nocturno:
             continue  # solo bares y discotecas
         try:

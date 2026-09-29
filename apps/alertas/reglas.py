@@ -11,14 +11,21 @@ from apps.analitica import algoritmos as alg
 from apps.analitica.models import DemandaDiaria
 from apps.analitica.services import AnalisisProducto
 from apps.catalogo.models import EstadoStock
+from apps.core.formato import cantidad_clara, ritmo_claro
 from apps.core.formato import numero as _n
 
 from .models import Alerta
+
+
+def _abrev(producto) -> str:
+    return producto.unidad.abreviatura if getattr(producto, "unidad", None) else "und"
+
 
 S = Alerta.Severidad
 
 
 @dataclass
+
 class Hallazgo:
     tipo: str
     severidad: int
@@ -53,7 +60,8 @@ class ReglaStockMinimo(Regla):
                 Hallazgo(
                     Alerta.Tipo.STOCK_CRITICO,
                     S.ACTUAR,
-                    f"{p.nombre} en nivel crítico ({_n(a.stock)} de {_n(float(p.stock_minimo))} mínimo).",
+                    f"{p.nombre} está casi agotado: quedan {cantidad_clara(a.stock, _abrev(p))} "
+                    f"(el mínimo es {cantidad_clara(p.stock_minimo, _abrev(p))}).",
                     "Revisar pedido sugerido",
                 )
             ]
@@ -61,7 +69,8 @@ class ReglaStockMinimo(Regla):
             Hallazgo(
                 Alerta.Tipo.STOCK_BAJO,
                 S.REVISAR,
-                f"{p.nombre} está por debajo del mínimo ({_n(a.stock)} de {_n(float(p.stock_minimo))}).",
+                f"{p.nombre} está por debajo del mínimo: quedan {cantidad_clara(a.stock, _abrev(p))} "
+                f"(el mínimo es {cantidad_clara(p.stock_minimo, _abrev(p))}).",
                 "Programar reposición",
             )
         ]
@@ -77,10 +86,10 @@ class ReglaRiesgoAgotamiento(Regla):
         if a.cobertura_dias >= margen:
             return []
         severidad = S.ACTUAR if a.cobertura_dias < a.tiempo_entrega else S.REVISAR
+        u = _abrev(a.producto)
         msg = (
-            f"Tienes {_n(a.stock)} unidades de {a.producto.nombre}, vendes aproximadamente "
-            f"{_n(a.demanda_diaria)} por día y tu proveedor tarda {_n(a.tiempo_entrega)} días. "
-            f"Podría agotarse en ~{_n(a.cobertura_dias)} días."
+            f"Hay {cantidad_clara(a.stock, u)} de {a.producto.nombre}. {ritmo_claro(a.demanda_diaria, u)} y el "
+            f"proveedor tarda {_n(a.tiempo_entrega)} días en traerlo: podría acabarse en unos {_n(a.cobertura_dias)} días."
         )
         return [
             Hallazgo(
