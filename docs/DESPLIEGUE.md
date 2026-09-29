@@ -16,6 +16,18 @@ Guía para publicar Inventario Inteligente y venderlo como servicio (SaaS).
 
 > Revisa los planes y precios vigentes de Render. Para empezar con pocos clientes basta con los planes pequeños.
 
+### Render gratis (para probar), sin consola
+
+El plan gratis de Render no tiene consola, así que el arranque (`scripts/iniciar.sh`) puede hacer lo que harías a mano:
+
+| Variable | Qué hace |
+|---|---|
+| `DJANGO_SUPERUSER_USERNAME`, `DJANGO_SUPERUSER_EMAIL`, `DJANGO_SUPERUSER_PASSWORD` | Crea tu usuario administrador en el primer arranque (si ya existe, no hace nada). |
+| `CARGAR_DEMO=1` (y opcional `DEMO_DIAS`, por defecto 30) | Carga los 5 negocios de demostración en segundo plano. Quítala cuando termine. |
+| `WEB_CONCURRENCY=1` | Un solo proceso: el plan gratis tiene 512 MB. |
+
+Deja vacío el campo *Docker Command*: se usa el `CMD` del Dockerfile. La base de datos gratis vence a los 30 días.
+
 ## Opción B: VPS propio (Ubuntu + Docker)
 
 ```bash
