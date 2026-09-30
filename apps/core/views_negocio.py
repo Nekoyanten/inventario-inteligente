@@ -32,6 +32,28 @@ def configuracion(request):
 
 @negocio_requerido
 @requiere_permiso("configurar_negocio")
+def apariencia(request):
+    """Color de la marca, modo claro/oscuro, letra grande y logo del negocio."""
+    from .apariencia import PALETAS
+    from .forms import AparienciaForm
+
+    config = request.negocio.config
+    form = AparienciaForm(request.POST or None, request.FILES or None, instance=config)
+    if request.method == "POST" and request.POST.get("quitar_logo"):
+        config.logo = None
+        config.save(update_fields=["logo"])
+        messages.success(request, "Se quitó el logo.")
+        return redirect("negocio:apariencia")
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        auditar(request.negocio, request.user, "cambiar_apariencia", config, cambios=form.changed_data)
+        messages.success(request, "Listo: así se ve ahora tu negocio.")
+        return redirect("negocio:apariencia")
+    return render(request, "negocio/apariencia.html", {"form": form, "paletas": PALETAS, "config": config})
+
+
+@negocio_requerido
+@requiere_permiso("configurar_negocio")
 def restaurar_plantilla(request):
     """Vuelve a aplicar la plantilla del giro (no borra nada: solo agrega categorías faltantes)."""
     if request.method == "POST":
@@ -127,8 +149,11 @@ def plan(request):
     s = request.suscripcion
     uso = {"productos": Producto.objects.filter(negocio=request.negocio, es_agrupador=False).count(),
            "usuarios": U.objects.filter(negocio=request.negocio, is_active=True).count()}
-    planes = [{"clave": k, **v} for k, v in settings.PLANES.items()]
-    return render(request, "negocio/plan.html", {"s": s, "uso": uso, "planes": planes,
+    from .modulos import MODULOS
+
+    modulos = [{"nombre": v[0], "activo": s.tiene_modulo(k)} for k, v in MODULOS.items()
+               if k != "nocturno" or request.negocio.giro in ("BAR", "DISCOTECA", "BAR_DISCOTECA")]
+    return render(request, "negocio/plan.html", {"s": s, "uso": uso, "modulos": modulos,
                                                  "contacto": settings.CONTACTO_VENTAS})
 
 

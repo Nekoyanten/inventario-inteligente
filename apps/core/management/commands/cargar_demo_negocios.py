@@ -44,9 +44,23 @@ class Command(BaseCommand):
                 self.stdout.write(f"Eliminado: {n.nombre}")
             return
         solo = set(o["solo"] or demo.usuarios_demo())
+        # Se puede correr varias veces (p. ej. en cada arranque del servidor): los negocios completos se dejan como
+        # están; uno que quedó a medias (se cortó la carga) se borra y se vuelve a crear.
+        from apps.core.cierre import eliminar_negocio
+
+        for perfil in demo.NOCTURNOS_DEMO + demo.TIENDAS_DEMO:
+            if perfil["usuario"] not in solo:
+                continue
+            negocio = Negocio.objects.filter(nombre=perfil["negocio"]).select_related("suscripcion").first()
+            if negocio and demo.MARCA_COMPLETO in (negocio.suscripcion.notas or ""):
+                self.stdout.write(f"Ya estaba: {perfil['negocio']}")
+                solo.discard(perfil["usuario"])
+            elif negocio:
+                eliminar_negocio(negocio)
+                self.stdout.write(f"Quedó a medias, se vuelve a cargar: {perfil['negocio']}")
         ya = Usuario.objects.filter(username__in=solo).values_list("username", flat=True)
         if ya:
-            raise CommandError(f"Ya existen: {', '.join(ya)}. Usa --borrar primero.")
+            raise CommandError(f"Ya existen usuarios con estos nombres en otro negocio: {', '.join(ya)}.")
         dias, semilla = o["dias"], o["semilla"]
         filas = []
         for perfil in demo.NOCTURNOS_DEMO + demo.TIENDAS_DEMO:

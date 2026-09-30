@@ -26,7 +26,10 @@ def negocio(request):
         menu = construir_menu(request, permisos, {"alertas:lista": abiertas})
     from django.conf import settings
 
+    from .apariencia import de_negocio
+
     return {
+        "apariencia": de_negocio(neg),
         "empresa": settings.EMPRESA,
         "negocio": neg,
         "config_negocio": getattr(neg, "config", None) if neg else None,

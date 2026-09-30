@@ -3,6 +3,7 @@
 {% block cabeza %}<style>@media print { .barra, .menu-lateral, .no-imprimir { display:none !important } body.con-menu .contenedor { margin:0 } .tarjeta { border:0; box-shadow:none } }</style>{% endblock %}
 {% block contenido %}
 <section class="tarjeta formulario">
+  {% if apariencia.logo %}<img src="{{ apariencia.logo.url }}" alt="{{ negocio.nombre }}" class="logo-comprobante">{% endif %}
   <div class="encabezado"><h1>Venta #{{ venta.pk }}</h1>{% if venta.estado == 'ANULADA' %}<span class="insignia gris">Anulada</span>{% endif %}</div>
   <p class="suave">{{ negocio.nombre }}{% if negocio.nit %} · NIT {{ negocio.nit }}{% endif %}<br>{{ venta.fecha|date:"d/m/Y H:i" }} · atendió {{ venta.vendedor }}{% if venta.cliente_ref and "gestionar_clientes" in permisos %} · cliente <a href="{% url 'clientes:detalle' venta.cliente_ref_id %}">{{ venta.cliente_ref }}</a>{% elif venta.cliente %} · cliente {{ venta.cliente }}{% endif %}</p>
   <table class="tabla">

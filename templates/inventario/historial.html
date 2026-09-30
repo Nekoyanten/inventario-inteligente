@@ -10,16 +10,16 @@
 </form>
 <section class="tarjeta">
   <table class="tabla">
-    <thead><tr><th>Fecha</th><th>Producto</th><th>Tipo</th><th class="num">Cantidad</th><th class="num">Saldo</th><th>Usuario</th><th>Motivo</th></tr></thead>
+    <thead><tr><th>Fecha</th><th>Producto</th><th>Qué pasó</th><th class="num">Cantidad</th><th class="num">Quedaron</th><th>Quién</th><th>Por qué</th></tr></thead>
     <tbody>
     {% for m in pagina %}
       <tr><td>{{ m.fecha|date:"d/m/Y H:i" }}{% if m.marcado_anomalo %} ⚠️{% endif %}</td>
         <td data-titulo="Producto"><a href="{% url 'inventario:kardex' m.producto_id %}">{{ m.producto.nombre }}</a></td>
-        <td data-titulo="Tipo">{{ m.get_tipo_display }}</td>
-        <td class="num" data-titulo="Cantidad">{% if m.es_entrada %}+{% else %}−{% endif %}{{ m.cantidad|cantidad }}</td>
-        <td class="num" data-titulo="Saldo">{{ m.stock_resultante|cantidad }}</td>
-        <td data-titulo="Usuario">{{ m.usuario|default:"—" }}</td>
-        <td data-titulo="Motivo">{{ m.motivo|default:"—" }}</td></tr>
+        <td data-titulo="Qué pasó">{{ m.get_tipo_display }}</td>
+        <td class="num" data-titulo="Cantidad">{% if m.es_entrada %}+{% else %}−{% endif %} {{ m.cantidad|clara:m.producto.unidad }}</td>
+        <td class="num" data-titulo="Quedaron">{{ m.stock_resultante|clara:m.producto.unidad }}</td>
+        <td data-titulo="Quién">{{ m.usuario|default:"sistema" }}</td>
+        <td data-titulo="Por qué">{{ m.motivo|default:"—" }}</td></tr>
     {% empty %}<tr><td colspan="7" class="vacio">Sin movimientos.</td></tr>{% endfor %}
     </tbody>
   </table>

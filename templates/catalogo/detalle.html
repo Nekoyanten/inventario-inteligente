@@ -24,7 +24,7 @@
   <table class="tabla"><thead><tr><th>Variante</th><th class="num">Stock</th><th class="num">Precio</th><th class="num">Curva</th><th>Estado</th></tr></thead><tbody>
   {% for v in variantes %}
     <tr><td><a href="{% url 'catalogo:detalle' v.pk %}">{{ v.nombre }}</a><br><small class="suave">{{ v.sku }}</small></td>
-      <td class="num" data-titulo="Stock">{{ v.stock_actual|cantidad }}</td><td class="num" data-titulo="Precio">{{ v.precio_venta|moneda }}</td>
+      <td class="num" data-titulo="Stock">{{ v.stock_actual|clara:v.unidad }}</td><td class="num" data-titulo="Precio">{{ v.precio_venta|moneda }}</td>
       <td class="num" data-titulo="Curva">{{ v.participacion }} %</td>
       <td data-titulo="Estado">{{ v.estado_basico|insignia }}</td></tr>
   {% endfor %}
@@ -42,14 +42,14 @@
   {% else %}
   <section class="tarjeta">
     <h2>Stock{% if producto.es_insumo %} del insumo{% endif %}</h2>
-    <p class="kpi">{{ producto.stock_actual|cantidad }} <small>{{ producto.unidad.abreviatura|default:"und" }}</small></p>
-    <p>{{ analisis.estado|insignia }} · mínimo {{ producto.stock_minimo|cantidad }}</p>
+    <p class="kpi kpi-texto">{{ producto.stock_actual|clara:producto.unidad }}</p>
+    <p>{{ analisis.estado|insignia }} · avisa cuando queden {{ producto.stock_minimo|clara:producto.unidad }}</p>
   </section>
   {% endif %}
   <section class="tarjeta">
-    <h2>Ritmo de ventas</h2>
-    <p class="kpi">{{ analisis.demanda_diaria|floatformat:1 }} <small>por día</small></p>
-    <p>{% if analisis.stock <= 0 and not producto.es_preparado %}Agotado: no se está vendiendo por falta de stock{% elif analisis.cobertura_dias is not None and analisis.demanda_diaria >= 0.05 %}Alcanza para ~{{ analisis.cobertura_dias|floatformat:0 }} días{% else %}Sin ventas recientes{% endif %}</p>
+    <h2>¿Cuánto se vende?</h2>
+    <p class="kpi kpi-texto">{{ analisis.demanda_diaria|ritmo:producto.unidad }}</p>
+    <p>{% if analisis.stock <= 0 and not producto.es_preparado %}Agotado: se está perdiendo venta por falta de producto{% elif analisis.cobertura_dias is not None and analisis.demanda_diaria > 0 %}Lo que hay alcanza para unos {{ analisis.cobertura_dias|floatformat:0 }} días{% else %}Sin ventas en los últimos días{% endif %}</p>
   </section>
   <section class="tarjeta">
     <h2>Precios</h2>
@@ -59,23 +59,23 @@
   {% if not producto.es_preparado %}<section class="tarjeta">
     <h2>Rotación y reposición</h2>
     <p>{{ analisis.rotacion|insignia }} rotación</p>
-    <p class="suave">Proveedor: {{ producto.proveedor_principal|default:"sin asignar" }} · entrega ~{{ analisis.tiempo_entrega|floatformat:0 }} días<br>
-    Punto de reorden: {{ analisis.punto_reorden|floatformat:0 }} · seguridad: {{ analisis.stock_seguridad|floatformat:0 }}</p>
+    <p class="suave">Proveedor: {{ producto.proveedor_principal|default:"sin asignar" }} · tarda unos {{ analisis.tiempo_entrega|floatformat:0 }} días en traerlo<br>
+    Pide más cuando queden <b>{{ analisis.punto_reorden|clara:producto.unidad }}</b> (incluye {{ analisis.stock_seguridad|clara:producto.unidad }} de reserva para imprevistos).</p>
   </section>{% endif %}
 </div>
 
 {% for a in alertas %}<p class="alerta s{{ a.severidad }}">{{ a.mensaje }} <em>{{ a.accion_sugerida }}</em></p>{% endfor %}
 
 {% if not producto.es_insumo %}
-<section class="tarjeta">
+{% if producto.es_preparado or receta %}<section class="tarjeta">{% else %}<details class="tarjeta receta-plegada"><summary>🧪 ¿Lo elaboras tú (pan, jabones, postres…)? Agrega su receta</summary>{% endif %}
   <div class="encabezado"><h2>Receta {% if producto.es_preparado %}(se descuenta al vender){% else %}(para producción propia){% endif %}</h2>
     {% if costo_receta is not None and ver_costos %}<span>Costo por unidad: <b>{{ costo_receta|moneda }}</b>{% if margen_receta is not None %} · margen {{ margen_receta|floatformat:0 }} %{% endif %}</span>{% endif %}</div>
   {% if receta %}
   <table class="tabla compacta"><thead><tr><th>Insumo</th><th class="num">Cantidad</th><th class="num">Merma</th><th class="num">Hay</th>{% if ver_costos %}<th class="num">Costo</th>{% endif %}<th></th></tr></thead><tbody>
   {% for i in receta %}<tr><td><a href="{% url 'catalogo:detalle' i.insumo_id %}">{{ i.insumo.nombre }}</a></td>
-    <td class="num" data-titulo="Cantidad">{{ i.cantidad|cantidad }} {{ i.insumo.unidad.abreviatura|default:"und" }}</td>
+    <td class="num" data-titulo="Cantidad">{{ i.cantidad|clara:i.insumo.unidad }}</td>
     <td class="num" data-titulo="Merma">{{ i.merma_pct|floatformat:0 }} %</td>
-    <td class="num" data-titulo="Hay">{{ i.insumo.stock_actual|cantidad }}</td>
+    <td class="num" data-titulo="Hay">{{ i.insumo.stock_actual|clara:i.insumo.unidad }}</td>
     {% if ver_costos %}<td class="num" data-titulo="Costo">{{ i.costo|moneda }}</td>{% endif %}
     <td>{% if "gestionar_productos" in permisos %}<form method="post" action="{% url 'catalogo:receta_quitar' producto.pk i.pk %}">{% csrf_token %}<button class="enlace" aria-label="Quitar {{ i.insumo.nombre }}">✕</button></form>{% endif %}</td></tr>
   {% endfor %}</tbody></table>
@@ -96,7 +96,7 @@
     <div class="campo-linea"><input id="producir-cantidad" name="cantidad" type="number" step="any" min="0.001" required placeholder="¿Cuántas unidades hiciste?"><button class="boton boton-auto">Registrar</button></div>
   </form>
   {% endif %}
-</section>
+{% if producto.es_preparado or receta %}</section>{% else %}</details>{% endif %}
 {% endif %}
 {% if nocturno and not producto.es_preparado and "gestionar_productos" in permisos %}
 <details class="tarjeta"><summary><b>🥃 Vender por tragos</b> · crea el trago y descuenta la botella en fracciones</summary>
@@ -110,7 +110,7 @@
 {% endif %}
 {% if usado_en %}
 <section class="tarjeta"><h2>Se usa en</h2>
-  <ul class="lista-simple">{% for i in usado_en %}<li><a href="{% url 'catalogo:detalle' i.producto_id %}">{{ i.producto.nombre }}</a> · {{ i.cantidad|cantidad }} {{ producto.unidad.abreviatura|default:"und" }} por unidad</li>{% endfor %}</ul>
+  <ul class="lista-simple">{% for i in usado_en %}<li><a href="{% url 'catalogo:detalle' i.producto_id %}">{{ i.producto.nombre }}</a> · usa {{ i.cantidad|clara:producto.unidad }} por cada uno</li>{% endfor %}</ul>
 </section>
 {% endif %}
 
@@ -121,14 +121,8 @@
     {% if pronostico.valor %}<p class="explicacion">Según el historial, en los próximos 30 días se venderían entre <strong>{{ pronostico.minimo|floatformat:0 }}</strong> y <strong>{{ pronostico.maximo|floatformat:0 }}</strong> unidades (≈ {{ pronostico.valor|floatformat:0 }}). Es una estimación, no una certeza.</p>{% endif %}
   </section>
   <section class="tarjeta">
-    <div class="encabezado"><h2>Últimos movimientos</h2><a href="{% url 'inventario:kardex' producto.pk %}">Ver kárdex completo →</a></div>
-    <table class="tabla compacta"><thead><tr><th>Fecha</th><th>Tipo</th><th class="num">Cant.</th><th class="num">Saldo</th></tr></thead><tbody>
-    {% for m in movimientos %}
-      <tr><td>{{ m.fecha|date:"d/m H:i" }}</td><td data-titulo="Tipo">{{ m.get_tipo_display }}</td>
-        <td class="num" data-titulo="Cantidad">{% if m.es_entrada %}+{% else %}−{% endif %}{{ m.cantidad|cantidad }}</td>
-        <td class="num" data-titulo="Saldo">{{ m.stock_resultante|cantidad }}</td></tr>
-    {% empty %}<tr><td colspan="4" class="vacio">Sin movimientos.</td></tr>{% endfor %}
-    </tbody></table>
+    <div class="encabezado"><h2>Qué ha pasado últimamente</h2><a href="{% url 'inventario:kardex' producto.pk %}">Ver todo →</a></div>
+    {% include "inventario/_movimientos.html" %}
   </section>
   {% if lotes %}
   <section class="tarjeta ancho">

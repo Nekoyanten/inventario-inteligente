@@ -1,7 +1,10 @@
 """Núcleo: negocio, configuración adaptativa (plantillas de giro) y auditoría."""
 
 from django.conf import settings
+from django.core.validators import RegexValidator
 from django.db import models
+
+from .imagenes import ruta_logo
 
 
 class ModeloBase(models.Model):
@@ -78,6 +81,19 @@ class ConfiguracionNegocio(ModeloBase):
         default=500000, help_text="Compras (en pesos) en los últimos 90 días para ser VIP")
     encuesta_satisfaccion = models.BooleanField(default=True, help_text="Mostrar la encuesta en el comprobante")
 
+    # Apariencia (cada negocio con su color, su modo y su logo)
+    class Tema(models.TextChoices):
+        AUTO = "AUTO", "Automático (como el celular)"
+        CLARO = "CLARO", "Claro"
+        OSCURO = "OSCURO", "Oscuro"
+
+    color_principal = models.CharField(max_length=7, default="#1f7a4d", validators=[RegexValidator(
+        r"^#[0-9a-fA-F]{6}$", "Usa un color como #1f7a4d.")], help_text="Botones, menú y enlaces")
+    tema = models.CharField(max_length=6, choices=Tema.choices, default=Tema.AUTO)
+    letra_grande = models.BooleanField(default=False, help_text="Letra más grande en toda la aplicación")
+    logo = models.ImageField(upload_to=ruta_logo, null=True, blank=True,
+                             help_text="Aparece en la barra de arriba y en el comprobante")
+
     # Alertas silenciadas: [{"tipo": "BAJA_ROTACION", "categoria": 3 | null}]
     alertas_silenciadas = models.JSONField(default=list, blank=True)
 
@@ -127,6 +143,12 @@ class Suscripcion(ModeloBase):
     prueba_hasta = models.DateField(null=True, blank=True)
     pagado_hasta = models.DateField(null=True, blank=True)
     notas = models.TextField(blank=True, help_text="Pagos recibidos, acuerdos comerciales…")
+    # Plan a la medida: lo que el administrador de la plataforma ajusta para este negocio (vacío = lo del plan base)
+    limite_productos = models.PositiveIntegerField(null=True, blank=True)
+    limite_usuarios = models.PositiveIntegerField(null=True, blank=True)
+    reportes_pdf = models.BooleanField(null=True, blank=True)
+    api = models.BooleanField(null=True, blank=True)
+    modulos_apagados = models.JSONField(default=list, blank=True, help_text="Módulos que este negocio no tiene")
 
     def __str__(self):
         return f"{self.negocio} · {self.get_plan_display()}"
@@ -151,10 +173,33 @@ class Suscripcion(ModeloBase):
         return self.plan if (self.al_dia or self.plan == self.Plan.GRATIS) else self.Plan.GRATIS
 
     @property
+    def vencido(self) -> bool:
+        return not self.en_prueba and not self.al_dia and self.plan != self.Plan.GRATIS
+
+    @property
+    def a_la_medida(self) -> bool:
+        return any(v is not None for v in (self.limite_productos, self.limite_usuarios, self.reportes_pdf, self.api)) \
+            or bool(self.modulos_apagados)
+
+    @property
     def limites(self) -> dict:
+        """Lo que puede usar: el plan base y, encima, lo que se le ajustó a la medida (si el pago no está vencido)."""
         from django.conf import settings
 
-        return settings.PLANES[self.plan_efectivo]
+        lim = dict(settings.PLANES[self.plan_efectivo])
+        if self.vencido:
+            return lim
+        for campo, clave in (("limite_productos", "productos"), ("limite_usuarios", "usuarios"),
+                             ("reportes_pdf", "reportes_pdf"), ("api", "api")):
+            valor = getattr(self, campo)
+            if valor is not None:
+                lim[clave] = valor
+        if self.a_la_medida and not self.en_prueba:
+            lim["nombre"] = f"{lim['nombre']} a la medida"
+        return lim
+
+    def tiene_modulo(self, clave: str) -> bool:
+        return clave not in (self.modulos_apagados or [])
 
     @property
     def dias_restantes(self) -> int | None:

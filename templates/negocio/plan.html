@@ -3,25 +3,23 @@
 {% block contenido %}
 <h1>Mi plan</h1>
 <section class="tarjeta">
-  {% if s.en_prueba %}<p>Estás en el <strong>período de prueba</strong> con todas las funciones: te quedan <strong>{{ s.dias_restantes }} días</strong>.</p>
-  {% elif s.al_dia %}<p>Plan <strong>{{ s.get_plan_display }}</strong> activo hasta el {{ s.pagado_hasta|date:"d/m/Y" }}.</p>
-  {% else %}<p>Estás en el plan <strong>Gratis</strong>. Tus datos siguen seguros; solo aplican los límites del plan.</p>{% endif %}
-  <p class="suave">Uso actual: {{ uso.productos }} de {{ s.limites.productos }} productos · {{ uso.usuarios }} de {{ s.limites.usuarios }} usuarios.</p>
+  <p class="kpi kpi-texto">{{ s.limites.nombre }}</p>
+  <p>{% if s.en_prueba %}Estás probando <strong>todas las funciones</strong>: te quedan <strong>{{ s.dias_restantes }} días</strong>.
+  {% elif s.vencido %}⚠️ Tu plan venció el {{ s.pagado_hasta|date:"d/m/Y" }}. Tus datos siguen seguros; mientras lo renuevas aplican los límites básicos.
+  {% elif s.pagado_hasta %}Activo hasta el <strong>{{ s.pagado_hasta|date:"d/m/Y" }}</strong>.{% endif %}</p>
+  <p class="explicacion">Tu plan es <strong>a la medida</strong>: lo ajustamos según lo que tu negocio necesita. Si quieres algo más (otro módulo, más usuarios o productos), escríbenos y te lo activamos.</p>
+  {% if contacto %}<p><a class="boton boton-auto" href="https://wa.me/{{ contacto }}?text={{ 'Hola, quiero hacer un cambio en el plan de '|urlencode }}{{ negocio.nombre|urlencode }}" target="_blank" rel="noopener">Pedir un cambio por WhatsApp</a></p>{% endif %}
 </section>
-<div class="planes">
-  {% for p in planes %}
-  <section class="tarjeta plan {% if p.clave == 'EMPRENDEDOR' %}destacado{% endif %}">
-    <h2>{{ p.nombre }}</h2>
-    <p class="kpi">{% if p.precio %}{{ p.precio|moneda }}<small>/mes</small>{% else %}$0{% endif %}</p>
+<div class="rejilla-2">
+  <section class="tarjeta"><h2>Lo que tienes</h2>
     <ul class="lista-simple">
-      <li>Hasta {{ p.productos }} productos</li>
-      <li>{{ p.usuarios }} usuario{{ p.usuarios|pluralize }}</li>
-      <li>Alertas y recomendaciones inteligentes</li>
-      <li>{% if p.reportes_pdf %}Reportes en Excel y PDF{% else %}Reportes en CSV{% endif %}</li>
-      <li>{% if p.api %}API para conectar tu tienda en línea{% else %}<span class="suave">Sin API</span>{% endif %}</li>
-    </ul>
-    {% if p.precio and contacto %}<a class="boton" href="https://wa.me/{{ contacto }}?text={{ 'Hola, quiero el plan '|urlencode }}{{ p.nombre|urlencode }}{{ ' para '|urlencode }}{{ negocio.nombre|urlencode }}" target="_blank" rel="noopener">Quiero este plan</a>{% endif %}
-  </section>
-  {% endfor %}
+      <li>📦 Productos: <strong>{{ uso.productos }}</strong> de {{ s.limites.productos }}</li>
+      <li>👥 Usuarios: <strong>{{ uso.usuarios }}</strong> de {{ s.limites.usuarios }}</li>
+      <li>{% if s.limites.reportes_pdf %}✅ Reportes en Excel y PDF{% else %}➖ Reportes en CSV (Excel y PDF no incluidos){% endif %}</li>
+      <li>{% if s.limites.api %}✅ API para conectar otros sistemas{% else %}➖ Sin API{% endif %}</li>
+      <li>✅ Alertas y recomendaciones de compra</li>
+    </ul></section>
+  <section class="tarjeta"><h2>Módulos</h2>
+    <ul class="lista-simple">{% for m in modulos %}<li>{% if m.activo %}✅{% else %}➖{% endif %} {{ m.nombre }}{% if not m.activo %} <small class="suave">(no incluido)</small>{% endif %}</li>{% endfor %}</ul></section>
 </div>
 {% endblock %}

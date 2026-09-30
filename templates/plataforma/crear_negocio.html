@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block titulo %}Crear negocio · Plataforma{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><a class="suave" href="{% url 'plataforma:panel' %}">← Todos los negocios</a><h1>Crear un negocio</h1></div></div>
+<p class="explicacion">Creas el negocio y el usuario de su dueño. El sistema aplica la plantilla de su tipo de negocio (categorías y funciones) y te da una clave temporal para enviársela.</p>
+<form method="post" class="tarjeta formulario-libre">{% csrf_token %}
+  {% if form.errors %}<div class="mensaje error">Revisa los campos marcados.</div>{% endif %}
+  <h2>El negocio</h2>
+  <div class="rejilla-2">{% for c in form %}{% if c.name in "nombre giro nit telefono direccion" %}<p>{{ c.label_tag }}{{ c }}{% for e in c.errors %}<small class="error">{{ e }}</small>{% endfor %}</p>{% endif %}{% endfor %}</div>
+  <h2>Su dueño</h2>
+  <div class="rejilla-2">{% for c in form %}{% if c.name in "dueno usuario correo" %}<p>{{ c.label_tag }}{{ c }}{% if c.help_text %}<small class="suave">{{ c.help_text }}</small>{% endif %}{% for e in c.errors %}<br><small class="error">{{ e }}</small>{% endfor %}</p>{% endif %}{% endfor %}</div>
+  <h2>Plan</h2>
+  <div class="rejilla-2"><p>{{ form.plan.label_tag }}{{ form.plan }}</p><p>{{ form.dias.label_tag }}{{ form.dias }}<small class="suave">{{ form.dias.help_text }}</small></p></div>
+  <p class="suave">Después de crearlo puedes ajustar módulos y límites a la medida.</p>
+  <p><button class="boton boton-auto">Crear negocio</button></p>
+</form>
+{% endblock %}

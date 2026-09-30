@@ -54,6 +54,7 @@ class NegocioForm(forms.ModelForm):
         labels = {"nit": "NIT / documento", "telefono": "Teléfono / WhatsApp", "direccion": "Dirección"}
 
 
+CAMPOS_APARIENCIA = ("color_principal", "tema", "letra_grande", "logo")
 CAMPOS_FIDELIZACION = ("fidelizacion_activa", "pesos_por_punto", "valor_punto", "puntos_minimos_canje",
                        "nivel_frecuente_compras", "nivel_vip_monto", "encuesta_satisfaccion")
 
@@ -63,7 +64,7 @@ class ConfiguracionForm(forms.ModelForm):
         from .models import ConfiguracionNegocio
 
         model = ConfiguracionNegocio
-        exclude = ("negocio", "alertas_silenciadas") + CAMPOS_FIDELIZACION
+        exclude = ("negocio", "alertas_silenciadas") + CAMPOS_FIDELIZACION + CAMPOS_APARIENCIA
         labels = {
             "usa_vencimientos": "Controlar fechas de vencimiento",
             "usa_lotes": "Manejar lotes (salida FEFO)",
@@ -114,3 +115,29 @@ class CerrarCuentaForm(forms.Form):
         if not self.usuario.check_password(self.cleaned_data["password"]):
             raise forms.ValidationError("Contraseña incorrecta.")
         return self.cleaned_data["password"]
+
+
+class AparienciaForm(forms.ModelForm):
+    class Meta:
+        from .models import ConfiguracionNegocio
+
+        model = ConfiguracionNegocio
+        fields = CAMPOS_APARIENCIA
+        widgets = {"color_principal": forms.TextInput(attrs={"type": "color"}), "tema": forms.RadioSelect}
+        labels = {"color_principal": "Color de tu marca", "tema": "Modo", "letra_grande": "Letra más grande",
+                  "logo": "Logo del negocio"}
+
+    def clean_logo(self):
+        from django.conf import settings
+
+        from .imagenes import optimizar_imagen
+
+        logo = self.cleaned_data.get("logo")
+        if logo and hasattr(logo, "size") and logo.size > settings.TAMANO_MAX_ARCHIVO_MB * 1024 * 1024:
+            raise forms.ValidationError(f"La imagen supera {settings.TAMANO_MAX_ARCHIVO_MB} MB.")
+        if logo and hasattr(logo, "content_type"):
+            try:
+                return optimizar_imagen(logo, lado_max=400)
+            except Exception as exc:  # noqa: BLE001 — archivo que no es imagen
+                raise forms.ValidationError("No pudimos leer esa imagen. Prueba con un PNG o JPG.") from exc
+        return logo

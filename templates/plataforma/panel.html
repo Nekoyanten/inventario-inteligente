@@ -2,7 +2,7 @@
 {% block titulo %}Plataforma{% endblock %}
 {% block contenido %}
 <div class="encabezado"><h1>Panel de la plataforma</h1>
-  <div class="acciones"><a class="boton boton-auto boton-chico boton-secundario" href="?formato=csv">Métricas CSV</a><a class="boton boton-auto boton-chico boton-secundario" href="/{{ admin_url }}">Admin</a></div></div>
+  <div class="acciones"><a class="boton boton-auto boton-chico" href="{% url 'plataforma:crear_negocio' %}">+ Crear negocio</a><a class="boton boton-auto boton-chico boton-secundario" href="?formato=csv">Métricas CSV</a><a class="boton boton-auto boton-chico boton-secundario" href="/{{ admin_url }}">Admin</a></div></div>
 
 <div class="rejilla">
   <section class="tarjeta"><h2>Negocios</h2><p class="kpi">{{ filas|length }}</p></section>
@@ -25,12 +25,15 @@
 </div>
 
 <section class="tarjeta tabla-scroll">
-  <h2>Negocios del piloto</h2>
+  <h2>Negocios</h2>
   <table class="tabla">
-    <thead><tr><th>Negocio</th><th>Plan</th><th class="num">Productos</th><th class="num">Usuarios</th><th>Último ingreso</th><th class="num">Ventas 7 días</th><th class="num">Días con ventas</th><th class="num">Arranque</th><th class="num">Comentarios</th></tr></thead>
+    <thead><tr><th>Negocio</th><th>Acciones</th><th>Plan</th><th class="num">Productos</th><th class="num">Usuarios</th><th>Último ingreso</th><th class="num">Ventas 7 días</th><th class="num">Días con ventas</th><th class="num">Arranque</th><th class="num">Comentarios</th></tr></thead>
     <tbody>
     {% for f in filas %}
       <tr><td><strong>{{ f.negocio.nombre }}</strong><br><small class="suave">{{ f.giro }} · desde {{ f.creado|date:"d/m/Y" }}</small></td>
+        <td data-titulo="Acciones"><div class="acciones-fila">
+          <a class="boton boton-auto boton-chico" href="{% url 'plataforma:negocio' f.negocio.pk %}">Administrar</a>
+          <form method="post" action="{% url 'plataforma:entrar' f.negocio.pk %}">{% csrf_token %}<button class="boton boton-auto boton-chico boton-secundario">Entrar</button></form></div></td>
         <td data-titulo="Plan">{{ f.plan }}{% if f.dias_restantes is not None %}<br><small class="suave">{{ f.dias_restantes }} días</small>{% endif %}</td>
         <td class="num" data-titulo="Productos">{{ f.productos }}</td><td class="num" data-titulo="Usuarios">{{ f.usuarios }}</td>
         <td data-titulo="Último ingreso">{{ f.ultimo_ingreso|timesince|default:"nunca" }}</td>
@@ -38,7 +41,7 @@
         <td class="num" data-titulo="Días con ventas"><span class="insignia {% if f.dias_activos >= 15 %}verde{% elif f.dias_activos >= 7 %}amarillo{% else %}rojo{% endif %}">{{ f.dias_activos }}/{{ f.dias_piloto }}</span></td>
         <td class="num" data-titulo="Arranque">{{ f.arranque }} %</td>
         <td class="num" data-titulo="Comentarios">{{ f.comentarios_pendientes }}{% if f.calificacion %} · ⭐ {{ f.calificacion|floatformat:1 }}{% endif %}</td></tr>
-    {% empty %}<tr><td colspan="9" class="vacio">Aún no hay negocios.</td></tr>{% endfor %}
+    {% empty %}<tr><td colspan="10" class="vacio">Aún no hay negocios.</td></tr>{% endfor %}
     </tbody>
   </table>
 </section>

@@ -36,6 +36,21 @@ def cantidad(valor):
 
 
 @register.filter
+def clara(valor, unidad=None):
+    """{{ producto.stock_actual|clara:producto.unidad.abreviatura }} → «3 botellas y 90 % de otra»"""
+    from apps.core.formato import cantidad_clara
+
+    return cantidad_clara(valor, getattr(unidad, "abreviatura", unidad) or "und")
+
+
+@register.filter
+def ritmo(valor, unidad=None):
+    from apps.core.formato import ritmo_claro
+
+    return ritmo_claro(valor, getattr(unidad, "abreviatura", unidad) or "und")
+
+
+@register.filter
 def porcentaje(valor, decimales=0):
     n = _num(valor)
     return "—" if n is None else f"{n:.{int(decimales)}f} %".replace(".", ",")

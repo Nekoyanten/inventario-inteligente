@@ -70,6 +70,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "apps.core.middleware.NegocioActualMiddleware",
     "apps.core.middleware.SuscripcionMiddleware",
+    "apps.core.middleware.ModulosMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
