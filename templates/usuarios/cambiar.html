@@ -1,25 +1,24 @@
 {% extends "base.html" %}
 {% block titulo %}Cambiar de usuario{% endblock %}
 {% block contenido %}
-<section class="tarjeta formulario formulario-libre">
+<section class="tarjeta formulario formulario-libre ingreso">
   <h1>¿Quién atiende ahora?</h1>
-  {% if usuarios %}
-  <p class="suave">Elige tu nombre y escribe tu PIN. Así cada venta queda a nombre de quien la hizo.</p>
+  <p class="suave">Toca tu nombre y escribe tu PIN (o tu contraseña). Así cada venta queda a nombre de quien la hizo.</p>
   {% if error %}<p class="mensaje error">{{ error }}</p>{% endif %}
   <form method="post">{% csrf_token %}
-    <fieldset class="opciones-usuario">
-      <legend>Persona</legend>
-      {% for u in usuarios %}
-        <label class="opcion"><input type="radio" name="usuario" value="{{ u.pk }}" required {% if forloop.first and usuarios|length == 1 %}checked{% endif %}> {{ u.get_full_name|default:u.username }} <small class="suave">{{ u.get_rol_display }}</small></label>
-      {% endfor %}
-    </fieldset>
-    <p><label for="pin">PIN</label><input id="pin" name="pin" type="password" inputmode="numeric" pattern="[0-9]{4,6}" maxlength="6" autocomplete="off" required></p>
+    <div class="personas" role="radiogroup" aria-label="Persona">
+      {% for u in usuarios %}<label class="persona{% if u.pk == user.pk %} actual{% endif %}"><input type="radio" name="usuario" value="{{ u.pk }}" data-pin="{{ u.con_pin|yesno:'1,' }}" required><span class="avatar">{{ u.first_name|default:u.username|slice:":1"|upper }}</span><span><b>{{ u.first_name|default:u.username }}</b><small>{{ u.get_rol_display }}{% if u.pk == user.pk %} · ahora{% endif %}</small></span></label>{% endfor %}
+    </div>
+    <p><label for="pin" id="etiqueta-pin">PIN o contraseña</label><input id="pin" name="pin" type="password" autocomplete="off" required></p>
     <button class="boton">Entrar</button>
   </form>
-  {% else %}
-  <p>Nadie tiene PIN todavía. El administrador puede asignar uno a cada vendedor o encargado en
-    {% if "gestionar_usuarios" in permisos %}<a href="{% url 'usuarios:lista' %}">Usuarios</a>{% else %}Usuarios{% endif %}.</p>
-  {% endif %}
-  <p class="suave">¿Eres administrador? <a href="{% url 'login' %}">Entra con tu contraseña</a>.</p>
+  {% if "gestionar_usuarios" in permisos %}<p class="suave">Para que alguien entre con PIN, asígnaselo en <a href="{% url 'usuarios:lista' %}">Equipo</a>.</p>{% endif %}
 </section>
 {% endblock %}
+{% block scripts %}<script>
+document.querySelectorAll(".personas input[type=radio]").forEach((r) => r.addEventListener("change", () => {
+  const pin = !!r.dataset.pin, campo = document.getElementById("pin");
+  document.getElementById("etiqueta-pin").textContent = pin ? "PIN" : "Contraseña";
+  campo.inputMode = pin ? "numeric" : "text"; campo.value = ""; campo.focus();
+}));
+</script>{% endblock %}

@@ -309,3 +309,22 @@ class BotellaGuardada(models.Model):
 
     class Meta:
         ordering = ["vence"]
+
+
+class EntregaMesero(models.Model):
+    """Plata que un mesero cobró en efectivo en su mesa y debe entregar en la caja."""
+
+    negocio = models.ForeignKey("core.Negocio", on_delete=models.CASCADE, related_name="entregas_mesero")
+    mesero = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="entregas")
+    cuenta = models.ForeignKey(Cuenta, on_delete=models.CASCADE, related_name="entregas")
+    venta = models.ForeignKey("ventas.Venta", on_delete=models.CASCADE, related_name="+")
+    valor = models.DecimalField(max_digits=12, decimal_places=2, help_text="Lo que entra a la caja")
+    paga_con = models.DecimalField(max_digits=12, decimal_places=2, default=0, help_text="Billete con que pagó el cliente")
+    vueltas = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    creado = models.DateTimeField(default=timezone.now)
+    recibida = models.DateTimeField(null=True, blank=True)
+    recibida_por = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+                                     related_name="+")
+
+    class Meta:
+        ordering = ["recibida", "-creado"]

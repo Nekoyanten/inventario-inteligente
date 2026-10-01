@@ -47,9 +47,11 @@
   </section>
   {% endif %}
   <section class="tarjeta">
-    <h2>¿Cuánto se vende? {% ayuda "Promedio de las últimas semanas. Sirve para saber cuántos días te alcanza lo que tienes." %}</h2>
-    <p class="kpi kpi-texto">{{ analisis.demanda_diaria|ritmo:producto.unidad }}</p>
-    <p>{% if analisis.stock <= 0 and not producto.es_preparado %}Agotado: se está perdiendo venta por falta de producto{% elif analisis.cobertura_dias is not None and analisis.demanda_diaria > 0 %}Lo que hay alcanza para unos {{ analisis.cobertura_dias|floatformat:0 }} días{% else %}Sin ventas en los últimos días{% endif %}</p>
+    <h2>Cómo se mueve {% ayuda "Lo vendido en los últimos 30 días y qué tan rápido sale comparado con tus otros productos." %}</h2>
+    {% if ultimos30.unidades %}<p class="kpi kpi-texto">{{ ultimos30.valor|moneda }} <small>en 30 días</small></p>
+    <p>{{ ultimos30.unidades|clara:producto.unidad }} vendidas · {% if analisis.rotacion == "ALTA" %}<span class="insignia verde">sale rápido</span>{% elif analisis.rotacion == "MEDIA" %}<span class="insignia amarillo">sale normal</span>{% else %}<span class="insignia rojo">sale lento</span>{% endif %}</p>
+    {% else %}<p class="kpi kpi-texto">Sin ventas</p><p class="suave">en los últimos 30 días</p>{% endif %}
+    {% if analisis.stock <= 0 and not producto.es_preparado %}<p class="texto-alerta">Agotado: estás perdiendo ventas.</p>{% elif analisis.cobertura_dias is not None and analisis.demanda_diaria > 0 %}<p class="suave">Te alcanza para ~{{ analisis.cobertura_dias|floatformat:0 }} días.</p>{% endif %}
   </section>
   <section class="tarjeta">
     <h2>Precios</h2>
@@ -57,10 +59,9 @@
     {% if ver_costos %}<p>Costo {{ producto.precio_compra|moneda }} · margen {{ producto.margen|floatformat:0 }} %</p>{% endif %}
   </section>
   {% if not producto.es_preparado %}<section class="tarjeta">
-    <h2>Cuándo pedir más {% ayuda "El sistema calcula cuándo pedir para no quedarte sin mercancía, según lo que vendes y lo que tarda el proveedor en traerla." %}</h2>
-    <p>{{ analisis.rotacion|insignia }} rotación</p>
-    <p class="suave">Proveedor: {{ producto.proveedor_principal|default:"sin asignar" }} · tarda unos {{ analisis.tiempo_entrega|floatformat:0 }} días en traerlo<br>
-    Pide más cuando queden <b>{{ analisis.punto_reorden|clara:producto.unidad }}</b> (incluye {{ analisis.stock_seguridad|clara:producto.unidad }} de reserva para imprevistos).</p>
+    <h2>Cuándo pedir más {% ayuda "Calculado con lo que vendes y lo que tarda el proveedor. Incluye una pequeña reserva para imprevistos." %}</h2>
+    <p class="kpi kpi-texto">Al quedar {{ analisis.punto_reorden|clara:producto.unidad }}</p>
+    <p class="suave">{{ producto.proveedor_principal|default:"Sin proveedor" }} · tarda {{ analisis.tiempo_entrega|floatformat:0 }} día{{ analisis.tiempo_entrega|floatformat:0|pluralize }}</p>
   </section>{% endif %}
 </div>
 

@@ -48,4 +48,4 @@ def test_kardex_de_botella_en_palabras_y_con_lo_que_se_preparo(client, admin, ne
     assert "Se usó para preparar" in html and "Se preparó: 8 × Trago de Aguardiente 750" in html
     assert "Saldo" not in html and "quedaron" in html
     detalle = client.get(f"/productos/{agu.pk}/").content.decode()
-    assert "3 botellas y dos tercios" in detalle and "¿Cuánto se vende?" in detalle
+    assert "3 botellas y dos tercios" in detalle and "Cómo se mueve" in detalle

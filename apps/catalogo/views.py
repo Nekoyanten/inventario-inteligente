@@ -152,11 +152,24 @@ def detalle(request, pk):
         contexto["usado_en"] = list(producto.usado_en.select_related("producto")[:20])
 
         contexto["analisis"] = analizar_producto(producto)
+        from datetime import timedelta
+
+        from django.db.models import DecimalField, ExpressionWrapper, F, Sum
+        from django.utils import timezone
+
+        from apps.ventas.models import DetalleVenta, Venta
+
+        desde = timezone.now() - timedelta(days=30)
+        neto = ExpressionWrapper(F("cantidad") * F("precio_unitario") - F("descuento"),
+                                 output_field=DecimalField(max_digits=14, decimal_places=2))
+        contexto["ultimos30"] = DetalleVenta.objects.filter(
+            producto=producto, venta__estado=Venta.Estado.COMPLETADA, venta__fecha__gte=desde).aggregate(
+            unidades=Sum("cantidad"), valor=Sum(neto))
         contexto["pronostico"] = pronostico_mensual(producto)
         contexto["ventas_mensuales"] = ventas_mensuales(producto)
         from apps.inventario.views import que_se_preparo
 
-        movimientos = list(kardex(producto).order_by("-fecha", "-id")[:8])
+        movimientos = list(kardex(producto).order_by("-fecha", "-id")[:5])
         detalles = que_se_preparo(producto, movimientos)
         for m in movimientos:
             m.detalle_claro = detalles.get(m.pk, "")

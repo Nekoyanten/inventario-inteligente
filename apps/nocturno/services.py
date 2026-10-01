@@ -18,6 +18,7 @@ from .models import (
     BotellaGuardada,
     ConfiguracionNocturna,
     Cuenta,
+    EntregaMesero,
     Ingreso,
     Invitado,
     ItemCuenta,
@@ -144,6 +145,55 @@ def puede_atender(usuario, cuenta: Cuenta) -> bool:
         return True
     return bool(cuenta.mesa_id and AsignacionMesa.objects.filter(mesa_id=cuenta.mesa_id, noche=cuenta.noche,
                                                                  mesero=usuario).exists())
+
+
+def quien_tiene(mesa: Mesa, noche):
+    """(cuenta abierta, mesero asignado) de la mesa esta noche."""
+    abierta = Cuenta.objects.filter(mesa=mesa, estado=Cuenta.Estado.ABIERTA).select_related("mesero").first()
+    return abierta, mesero_de(mesa, noche)
+
+
+def tomar_mesa(negocio, mesero, mesa: Mesa, personas=2) -> Cuenta:
+    """El mesero toca una mesa libre en el tablero y queda a su cargo hasta que se cobre o se libere."""
+    noche = noche_de(timezone.now(), negocio)
+    abierta, asignado = quien_tiene(mesa, noche)
+    if abierta is not None:
+        quien = (abierta.mesero.get_full_name() or abierta.mesero.username) if abierta.mesero else "otra persona"
+        raise ErrorNocturno(f"La mesa {mesa} ya la está atendiendo {quien}.")
+    if asignado is not None and asignado.pk != mesero.pk:
+        raise ErrorNocturno(f"La mesa {mesa} está asignada a {asignado.get_full_name() or asignado.username} esta noche.")
+    return abrir_cuenta(negocio, mesero, mesa=mesa, personas=personas, mesero=mesero)
+
+
+def liberar_mesa(cuenta: Cuenta, usuario):
+    """La gente se fue sin pedir nada: la mesa vuelve a quedar libre (si hay pedidos, primero se cobra)."""
+    _validar_abierta(cuenta)
+    if cuenta.items.exists():
+        raise ErrorNocturno("Esta mesa tiene pedidos: cóbrala para dejarla libre.")
+    cuenta.estado, cuenta.cerrada = Cuenta.Estado.ANULADA, timezone.now()
+    cuenta.save(update_fields=["estado", "cerrada", "actualizado"])
+    auditar(cuenta.negocio, usuario, "liberar_mesa", cuenta)
+
+
+def registrar_entrega(cuenta: Cuenta, venta, mesero, paga_con=0) -> EntregaMesero | None:
+    """Cuando el mesero cobra en efectivo, la caja queda esperando esa plata (y sabe cuántas vueltas se dieron)."""
+    if venta.medio_pago != "EFECTIVO":
+        return None
+    valor = venta.total - venta.pagado_con_credito + venta.propina
+    if valor <= 0:
+        return None
+    paga_con = Decimal(str(paga_con or 0))
+    vueltas = max(Decimal("0"), paga_con - valor) if paga_con else Decimal("0")
+    return EntregaMesero.objects.create(negocio=cuenta.negocio, mesero=mesero, cuenta=cuenta, venta=venta,
+                                        valor=valor, paga_con=paga_con if paga_con else valor, vueltas=vueltas)
+
+
+def recibir_entrega(entrega: EntregaMesero, usuario):
+    if entrega.recibida is None:
+        entrega.recibida, entrega.recibida_por = timezone.now(), usuario
+        entrega.save(update_fields=["recibida", "recibida_por"])
+        auditar(entrega.negocio, usuario, "recibir_entrega", entrega.cuenta, valor=str(entrega.valor),
+                mesero=entrega.mesero.username)
 
 
 def pedir_la_cuenta(cuenta: Cuenta, usuario):

@@ -2,11 +2,11 @@
 {% block titulo %}{{ c }}{% endblock %}
 {% block contenido %}
 <div class="encabezado">
-  <div><a class="suave" href="{% url volver %}">← {% if cobra %}La noche{% else %}Mis mesas{% endif %}</a><h1>{{ c }}</h1>
+  <div><a class="suave" href="{% url volver %}">← {% if es_caja %}La noche{% else %}Mesas{% endif %}</a><h1>{{ c }}</h1>
     <span class="suave">{{ c.personas }} persona{{ c.personas|pluralize }} · abierta {{ c.creado|time:"H:i" }}{% if c.mesero %} · atiende {{ c.mesero.get_full_name|default:c.mesero.username }}{% endif %}{% if c.reserva %} · <a href="{% url 'nocturno:reserva' c.reserva_id %}">reserva de {{ c.reserva.nombre }}</a>{% endif %}{% if c.descuento_grupo_pct %} · 👥 grupo −{{ c.descuento_grupo_pct|floatformat:0 }} %{% endif %}</span>
     {% if c.estado != 'ABIERTA' %}<span class="insignia gris">{{ c.get_estado_display }}</span>{% endif %}
     {% if c.pide_cuenta %}<span class="insignia rojo">🔔 Pidió la cuenta {{ c.pide_cuenta|time:"H:i" }}</span>{% endif %}</div>
-  {% if c.estado == 'ABIERTA' and not cobra and r.lineas %}<form method="post" action="{% url 'nocturno:pedir_cuenta' c.pk %}">{% csrf_token %}<button class="boton boton-auto">🔔 {% if c.pide_cuenta %}Avisar otra vez{% else %}Pedir la cuenta{% endif %}</button></form>{% endif %}
+  {% if c.estado == 'ABIERTA' and not r.lineas and not cobrados %}<form method="post" action="{% url 'nocturno:liberar' c.pk %}">{% csrf_token %}<button class="boton boton-auto boton-secundario">Se fueron sin pedir · liberar mesa</button></form>{% endif %}
 </div>
 {% if c.estado == 'ABIERTA' %}
 <section class="tarjeta formulario-libre">
@@ -23,7 +23,7 @@
   </form>
 </section>
 {% endif %}
-<section class="tarjeta">
+<section class="tiquete">
   <h2>Pedidos</h2>
   <form method="post" action="{% url 'nocturno:cobrar' c.pk %}" id="form-cobrar">{% csrf_token %}
   <ul class="pedidos">
@@ -42,11 +42,14 @@
   {% if fidelizacion and r.puntos_ganados %}<p class="suave">{{ c.cliente.primer_nombre }} gana {{ r.puntos_ganados }} puntos.</p>{% endif %}
   {% if c.estado == 'ABIERTA' and r.lineas and cobra %}
   <div class="rejilla-2 formulario-libre">
-    <p><label for="medio">Medio de pago</label><select id="medio" name="medio_pago"><option value="EFECTIVO">Efectivo</option><option value="TRANSFERENCIA">Transferencia / Nequi / Daviplata</option><option value="TARJETA">Tarjeta</option></select></p>
+    <p><label for="medio">¿Cómo paga?</label><select id="medio" name="medio_pago"><option value="EFECTIVO">Efectivo</option><option value="TRANSFERENCIA">Transferencia / Nequi / Daviplata</option><option value="TARJETA">Tarjeta</option></select></p>
     <p><label for="propina">Propina voluntaria (sugerida {{ conf.propina_sugerida_pct }} % = {{ r.propina_sugerida|moneda }})</label><input id="propina" name="propina" type="number" min="0" step="100" placeholder="0"><span class="helptext">Solo si el cliente la acepta.</span></p>
+    <p id="caja-paga"><label for="paga_con">¿Con cuánto paga? <small class="suave">(efectivo)</small></label><input id="paga_con" name="paga_con" type="number" min="0" step="1000" inputmode="numeric" placeholder="Ej.: 50000" data-total="{{ r.a_pagar|floatformat:"0u" }}"><span class="vueltas" id="vueltas" aria-live="polite"></span></p>
     {% if fidelizacion and c.cliente and c.cliente.puntos %}<p><label for="puntos">Canjear puntos (tiene {{ c.cliente.puntos }})</label><input id="puntos" name="puntos" type="number" min="0" step="1"></p>{% endif %}
   </div>
-  <div class="acciones"><button class="boton boton-auto">Cobrar todo</button><button class="boton boton-auto boton-secundario" name="parcial" value="1">Cobrar solo lo marcado</button></div>
+  {% if not es_caja %}<p class="mensaje info">Si cobras en efectivo, la caja queda esperando que entregues esa plata.</p>{% endif %}
+  <div class="acciones"><button class="boton boton-auto boton-grande">Cobrar y terminar mesa</button><button class="boton boton-auto boton-secundario" name="parcial" value="1">Cobrar solo lo marcado</button>
+    {% if not es_caja %}<button class="boton boton-auto boton-secundario" formaction="{% url 'nocturno:pedir_cuenta' c.pk %}" formnovalidate>🔔 {% if c.pide_cuenta %}Avisar otra vez a caja{% else %}Que cobre la caja{% endif %}</button>{% endif %}</div>
   {% endif %}
   </form>
   {% for l in r.lineas %}<form method="post" action="{% url 'nocturno:quitar' c.pk l.item_id %}" id="quitar-{{ l.item_id }}">{% csrf_token %}</form>{% endfor %}
@@ -60,9 +63,9 @@
     <input id="c-buscar" type="search" placeholder="Buscar cliente…" autocomplete="off"><input type="hidden" name="cliente_id" id="c-cliente"><span id="c-elegido" class="suave"></span><span id="c-resultados" class="resultados"></span>
     <p><label for="c-personas">Personas</label><input id="c-personas" name="personas" type="number" min="1" value="{{ c.personas }}"></p>
     <button class="boton boton-auto boton-chico">Guardar</button></form>
-  {% for b in guardadas %}<form method="post" action="{% url 'nocturno:retirar_botella' b.pk %}">{% csrf_token %}<input type="hidden" name="volver" value="{{ request.path }}">🍾 Tiene guardada: {{ b.producto }} ({{ b.restante_pct }} %) {{ b.ubicacion }} {% if cobra %}<button class="enlace">Entregar</button>{% endif %}</form>{% endfor %}
+  {% for b in guardadas %}<form method="post" action="{% url 'nocturno:retirar_botella' b.pk %}">{% csrf_token %}<input type="hidden" name="volver" value="{{ request.path }}">🍾 Tiene guardada: {{ b.producto }} ({{ b.restante_pct }} %) {{ b.ubicacion }} {% if es_caja %}<button class="enlace">Entregar</button>{% endif %}</form>{% endfor %}
 </section>
-{% if c.cliente and cobra %}<section class="tarjeta formulario-libre">
+{% if c.cliente and es_caja %}<section class="tarjeta formulario-libre">
   <h2>🍾 Guardar botella</h2>
   <p class="suave">Si queda licor, se guarda a nombre de {{ c.cliente.primer_nombre }} por {{ conf.botella_guardada_dias }} días. Le da una razón para volver.</p>
   <form method="post" action="{% url 'nocturno:guardar_botella' c.pk %}">{% csrf_token %}
@@ -81,5 +84,17 @@
 const elegir = (buscar, oculto, etiqueta) => { const b = document.getElementById(buscar); if (b) Inventario.buscadorProducto(b, (p) => { document.getElementById(oculto).value = p.id; document.getElementById(etiqueta).textContent = "✔ " + p.nombre; b.value = p.nombre; }); };
 elegir("p-buscar", "p-producto", "p-elegido"); elegir("g-buscar", "g-producto", "g-elegido");
 Inventario.buscadorCliente && Inventario.buscadorCliente("#c-buscar", "#c-resultados", (c) => { document.getElementById("c-cliente").value = c.id; document.getElementById("c-elegido").textContent = "✔ " + c.nombre + " · " + c.puntos + " pts"; });
-document.querySelector("#form-cobrar button:not([name])")?.addEventListener("click", () => document.querySelectorAll("#form-cobrar input[name=items]").forEach((i) => { i.checked = false; }));
+(() => {
+  const paga = document.getElementById("paga_con"), medio = document.getElementById("medio"), propina = document.getElementById("propina"), out = document.getElementById("vueltas");
+  if (!paga) return;
+  const fmt = (v) => "$" + Math.round(v).toLocaleString("es-CO");
+  const calc = () => {
+    document.getElementById("caja-paga").hidden = medio.value !== "EFECTIVO";
+    const total = Number(paga.dataset.total || 0) + Number(propina?.value || 0), recibido = Number(paga.value || 0);
+    out.textContent = !recibido ? "" : recibido < total ? "Faltan " + fmt(total - recibido) : "Vueltas: " + fmt(recibido - total);
+    out.classList.toggle("falta", recibido > 0 && recibido < total);
+  };
+  [paga, medio, propina].forEach((e) => e && e.addEventListener("input", calc)); calc();
+})();
+document.querySelector("#form-cobrar button:not([name]):not([formaction])")?.addEventListener("click", () => document.querySelectorAll("#form-cobrar input[name=items]").forEach((i) => { i.checked = false; }));
 </script>{% endblock %}

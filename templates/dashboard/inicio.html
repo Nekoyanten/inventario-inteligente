@@ -4,8 +4,8 @@
 <div class="encabezado">
   <h1>¿Cómo está mi negocio?</h1>
   <div class="acciones">
-    {% if "registrar_venta" in permisos %}<a class="boton boton-auto boton-chico" href="{% url 'ventas:pos' %}">🧾 Vender</a>{% endif %}
-    {% if "gestionar_compras" in permisos %}{% url 'recomendaciones:lista' as u_rec %}{% if u_rec %}<a class="boton boton-auto boton-chico boton-secundario" href="{{ u_rec }}">🛒 Qué comprar</a>{% endif %}{% endif %}
+    {% if "registrar_venta" in permisos %}<a class="boton boton-auto boton-chico" href="{% url 'ventas:pos' %}">{% icono "receipt" %} Vender</a>{% endif %}
+    {% if "gestionar_compras" in permisos %}{% url 'recomendaciones:lista' as u_rec %}{% if u_rec %}<a class="boton boton-auto boton-chico boton-secundario" href="{{ u_rec }}">{% icono "shopping-cart" %} Qué comprar</a>{% endif %}{% endif %}
   </div>
 </div>
 {% if arranque and not arranque.completo and "configurar_negocio" in permisos %}

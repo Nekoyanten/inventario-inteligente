@@ -22,6 +22,7 @@ from .models import (
     AsignacionMesa,
     BotellaGuardada,
     Cuenta,
+    EntregaMesero,
     Ingreso,
     Invitado,
     ItemCuenta,
@@ -84,6 +85,8 @@ def noche(request):
         "recordatorios": recordatorios(n) if request.user.puede("gestionar_clientes") else [],
         "ingresos": del_negocio(n, Ingreso).filter(noche=hoy)[:10],
         "por_cobrar": sum(1 for c in abiertas if c.pide_cuenta),
+        "entregas": del_negocio(n, EntregaMesero).filter(recibida__isnull=True).select_related("mesero", "cuenta",
+                                                                                             "cuenta__mesa"),
         "sin_asignar": del_negocio(n, Mesa).filter(activa=True).exists()
         and not del_negocio(n, AsignacionMesa).filter(noche=hoy).exists(),
     })
@@ -141,17 +144,70 @@ def mesas(request):
 @negocio_requerido
 @requiere_permiso("atender_mesas")
 def mis_mesas(request):
-    """Lo único que necesita el mesero: sus mesas de esta noche."""
+    """Tablero del mesero: todas las mesas. Toca una libre y queda a su cargo; las de otros se ven ocupadas."""
     n = request.negocio
     hoy = noche_de(timezone.now(), n)
-    mias = s.orden_natural(s.mesas_de(n, request.user, hoy))
-    abiertas = {c.mesa_id: c for c in del_negocio(n, Cuenta).filter(estado=Cuenta.Estado.ABIERTA, mesa__in=mias)}
-    for m in mias:
-        m.cuenta = abiertas.get(m.pk)
+    todas = s.orden_natural(del_negocio(n, Mesa).filter(activa=True))
+    abiertas = {c.mesa_id: c for c in del_negocio(n, Cuenta).filter(estado=Cuenta.Estado.ABIERTA, mesa__isnull=False)
+                .select_related("mesero")}
+    asignadas = {a.mesa_id: a.mesero for a in del_negocio(n, AsignacionMesa).filter(noche=hoy).select_related("mesero")}
+    yo = request.user
+    zonas, mias = {}, 0
+    for m in todas:
+        m.cuenta, m.asignado = abiertas.get(m.pk), asignadas.get(m.pk)
         if m.cuenta:
             m.cuenta.r = s.resumen(m.cuenta)
-    otras = del_negocio(n, Cuenta).filter(estado=Cuenta.Estado.ABIERTA, mesa__isnull=True, mesero=request.user)
-    return render(request, "nocturno/mis_mesas.html", {"hoy": hoy, "mesas": mias, "otras": otras})
+            m.mia = s.puede_atender(yo, m.cuenta)
+            m.estado = "pide" if m.cuenta.pide_cuenta else ("mia" if m.mia else "otro")
+            mias += m.mia
+        else:
+            m.mia = False
+            m.estado = "reservada" if m.asignado and m.asignado.pk != yo.pk else "libre"
+        zonas.setdefault(m.get_zona_display(), []).append(m)
+    barra = del_negocio(n, Cuenta).filter(estado=Cuenta.Estado.ABIERTA, mesa__isnull=True, mesero=yo)
+    return render(request, "nocturno/mis_mesas.html", {"hoy": hoy, "zonas": zonas, "barra": barra, "mias": mias,
+                                                       "hay_mesas": bool(todas)})
+
+
+@negocio_requerido
+@requiere_permiso("atender_mesas")
+@require_POST
+def tomar(request, mesa_id):
+    mesa = obtener_del_negocio(request.negocio, Mesa, pk=mesa_id)
+    try:
+        cuenta = s.tomar_mesa(request.negocio, request.user, mesa, personas=int(request.POST.get("personas") or 2))
+    except (s.ErrorNocturno, ValueError) as e:
+        messages.error(request, str(e))
+        return redirect("nocturno:mis_mesas")
+    return redirect("nocturno:cuenta", pk=cuenta.pk)
+
+
+@negocio_requerido
+@requiere_alguno("cobrar_cuentas", "atender_mesas")
+@require_POST
+def liberar(request, pk):
+    c = _cuenta_propia(request, pk)
+    try:
+        s.liberar_mesa(c, request.user)
+        messages.success(request, f"{c} quedó libre.")
+    except s.ErrorNocturno as e:
+        messages.error(request, str(e))
+        return redirect("nocturno:cuenta", pk=pk)
+    return redirect(_volver(request))
+
+
+@negocio_requerido
+@requiere_permiso("cobrar_cuentas")
+@require_POST
+def recibir_entrega(request, pk):
+    e = obtener_del_negocio(request.negocio, EntregaMesero.objects.select_related("mesero", "cuenta"), pk=pk)
+    s.recibir_entrega(e, request.user)
+    messages.success(request, f"Recibido: {_pesos(e.valor)} de {e.mesero.get_full_name() or e.mesero.username}.")
+    return redirect("nocturno:noche")
+
+
+def _pesos(valor) -> str:
+    return "$" + f"{valor:,.0f}".replace(",", ".")
 
 
 @negocio_requerido
@@ -197,7 +253,7 @@ def cuenta(request, pk):
         messages.error(request, str(e))
         r = s.resumen(c)
     return render(request, "nocturno/cuenta.html", {
-        "c": c, "r": r, "cobra": request.user.puede("cobrar_cuentas"), "volver": _volver(request),
+        "c": c, "r": r, "cobra": True, "es_caja": request.user.puede("cobrar_cuentas"), "volver": _volver(request),
         "fidelizacion": _fidelizacion(request),
         "cobrados": c.items.filter(venta__isnull=False).select_related("producto", "venta"),
         "conf": s.configuracion(request.negocio),
@@ -267,13 +323,13 @@ def asignar_cliente(request, pk):
 
 
 @negocio_requerido
-@requiere_permiso("cobrar_cuentas")
+@requiere_alguno("cobrar_cuentas", "atender_mesas")
 @require_POST
 def cobrar(request, pk):
     from apps.clientes.services import ErrorClientes
     from apps.inventario.services import ErrorInventario
 
-    c = obtener_del_negocio(request.negocio, Cuenta, pk=pk)
+    c = _cuenta_propia(request, pk)
     ids = [int(x) for x in request.POST.getlist("items") if x.isdigit()]
     try:
         venta = s.cobrar(c, request.user, items_ids=ids or None, medio_pago=request.POST.get("medio_pago", "EFECTIVO"),
@@ -282,9 +338,19 @@ def cobrar(request, pk):
         messages.error(request, str(e))
         return redirect("nocturno:cuenta", pk=pk)
     c.refresh_from_db()
+    paga_con = _dec(request.POST.get("paga_con"))
+    cobrado = venta.total - venta.pagado_con_credito + venta.propina
+    vueltas = max(Decimal("0"), paga_con - cobrado) if paga_con else Decimal("0")
+    texto = f"Cobrado {_pesos(cobrado)}" + (f" · vueltas {_pesos(vueltas)}" if vueltas else "")
+    if not request.user.puede("cobrar_cuentas"):  # mesero: la caja queda esperando la plata
+        if s.registrar_entrega(c, venta, request.user, paga_con):
+            texto += f". Entrega {_pesos(cobrado)} en la caja"
     if c.estado == Cuenta.Estado.ABIERTA:
-        messages.success(request, f"Se cobró una parte (venta #{venta.pk}). La cuenta sigue abierta.")
+        messages.success(request, f"{texto}. La cuenta sigue abierta con lo que falta.")
         return redirect("nocturno:cuenta", pk=pk)
+    messages.success(request, f"{texto}. {c} quedó libre.")
+    if not request.user.puede("cobrar_cuentas"):
+        return redirect("nocturno:mis_mesas")
     return redirect("ventas:detalle", pk=venta.pk)
 
 

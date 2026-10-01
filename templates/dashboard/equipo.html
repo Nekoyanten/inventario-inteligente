@@ -4,7 +4,7 @@
 <h1>Hola, {{ user.first_name|default:user.username }} 👋</h1>
 {% if resumen.caja and resumen.piden_cuenta %}<a class="mensaje warning" style="display:block" href="{% url 'nocturno:noche' %}">🔔 <b>{{ resumen.piden_cuenta }}</b> mesa{{ resumen.piden_cuenta|pluralize }} pide{{ resumen.piden_cuenta|pluralize:"n" }} la cuenta. Ir a cobrar →</a>{% endif %}
 <div class="atajos">
-  {% for a in atajos %}<a class="atajo{% if a.principal_inicio %} principal{% endif %}" href="{{ a.url }}"><span class="icono">{{ a.icono }}</span><b>{{ a.texto }}</b><small>{{ a.descripcion }}</small></a>{% endfor %}
+  {% for a in atajos %}<a class="atajo{% if a.principal_inicio %} principal{% endif %}" href="{{ a.url }}"><span class="atajo-icono">{% icono a.icono %}</span><b>{{ a.texto }}</b><small>{{ a.descripcion }}</small></a>{% endfor %}
 </div>
 <div class="rejilla">
   {% if resumen.vende %}<section class="tarjeta"><h2>Tus ventas de hoy</h2><p class="kpi">{{ resumen.hoy|moneda }}</p><p class="suave">{{ resumen.numero_hoy }} venta{{ resumen.numero_hoy|pluralize }}</p></section>{% endif %}

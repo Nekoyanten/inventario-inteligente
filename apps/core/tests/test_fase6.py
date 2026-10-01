@@ -47,7 +47,8 @@ def test_limite_de_usuarios(client, admin, negocio):
     client.force_login(admin)
     resp = client.post("/usuarios/nuevo/", {"username": "otro", "rol": "VENDEDOR", "password1": "ClaveSegura123!",
                                             "password2": "ClaveSegura123!"})
-    assert "permite 1 usuario" in resp.content.decode() and not Usuario.objects.filter(username="otro").exists()
+    assert "Ya usas todos los usuarios de tu plan" in resp.content.decode()
+    assert not Usuario.objects.filter(username="otro").exists()
 
 
 def test_api_requiere_plan_negocio(admin, negocio):

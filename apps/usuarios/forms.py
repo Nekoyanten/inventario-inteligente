@@ -87,6 +87,9 @@ class UsuarioCrearForm(AreasMixin, PinMixin, UserCreationForm):
 
 class UsuarioEditarForm(AreasMixin, PinMixin, forms.ModelForm):
     quitar_pin = forms.BooleanField(required=False, label="Quitar el PIN")
+    clave_nueva = forms.CharField(label="Nueva contraseña", required=False, min_length=8,
+                                  widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+                                  help_text="Solo si la olvidó. Déjala vacía para no cambiarla.")
 
     class Meta:
         model = Usuario
@@ -105,6 +108,8 @@ class UsuarioEditarForm(AreasMixin, PinMixin, forms.ModelForm):
         usuario = super().save(commit=False)
         self._guardar_pin(usuario)
         self._guardar_areas(usuario)
+        if self.cleaned_data.get("clave_nueva"):
+            usuario.set_password(self.cleaned_data["clave_nueva"])
         if commit:
             usuario.save()
         return usuario

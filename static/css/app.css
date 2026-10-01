@@ -279,3 +279,154 @@ a.mesa-tarjeta:hover { border-color:var(--marca); }
 .equipo li { display:flex; justify-content:space-between; align-items:center; gap:.8rem; padding:.75rem 0; border-bottom:1px solid var(--borde); }
 .equipo li:last-child { border-bottom:0; }
 .equipo li.inactivo { opacity:.6; }
+.cupo { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; color:var(--suave); }
+.barra-cupo { display:inline-block; width:120px; height:8px; border-radius:99px; background:var(--borde); overflow:hidden; }
+.barra-cupo span { display:block; height:100%; background:var(--marca); border-radius:99px; }
+.zona-peligro summary { color:var(--rojo); cursor:pointer; }
+/* Ingreso: elegir persona y escribir el PIN */
+.ingreso { max-width:460px; margin:2rem auto; }
+.personas { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:.5rem; margin:.5rem 0 1rem; }
+.persona { display:flex; align-items:center; gap:.6rem; padding:.6rem .7rem; border:1px solid var(--borde); border-radius:12px; background:var(--tarjeta); color:var(--texto); font:inherit; text-align:left; cursor:pointer; }
+.persona input { position:absolute; opacity:0; pointer-events:none; }
+.persona b { display:block; font-size:.95rem; } .persona small { color:var(--suave); font-size:.8rem; }
+.persona.elegida, .persona:has(input:checked) { border-color:var(--marca); box-shadow:0 0 0 3px var(--marca-foco); }
+.avatar { flex:0 0 auto; width:2.2rem; height:2.2rem; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; background:var(--marca-suave); color:var(--marca-texto, var(--marca)); font-weight:800; }
+/* Tablero de mesas del mesero */
+.tablero { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:.7rem; margin-bottom:1rem; }
+.mesa { position:relative; display:flex; flex-direction:column; gap:.35rem; min-height:150px; padding:.9rem; border-radius:18px; border:2px solid var(--borde); background:var(--tarjeta); color:var(--texto); text-decoration:none; margin:0; box-shadow:var(--sombra); }
+.mesa-num { font-size:1.6rem; font-weight:800; letter-spacing:-.02em; line-height:1; }
+.mesa-info { font-size:.85rem; color:var(--suave); }
+.mesa-total { font-size:1.15rem; font-weight:750; }
+.mesa-accion { margin-top:auto; display:flex; align-items:center; justify-content:center; min-height:44px; border-radius:12px; font-weight:700; border:0; font:inherit; font-weight:700; cursor:pointer; }
+.mesa.libre { border-color:color-mix(in srgb, var(--verde) 45%, var(--borde)); }
+.mesa.libre .mesa-accion { background:var(--verde); color:#fff; }
+.mesa.mia { border-color:var(--marca); background:color-mix(in srgb, var(--marca) 7%, var(--tarjeta)); }
+.mesa.mia .mesa-accion { background:var(--marca); color:var(--sobre-marca); }
+.mesa.pide { border-color:var(--rojo); background:color-mix(in srgb, var(--rojo) 9%, var(--tarjeta)); animation:latido 1.6s ease-in-out infinite; }
+.mesa.pide .mesa-accion { background:var(--rojo); color:#fff; }
+.mesa.otro, .mesa.reservada { opacity:.62; background:repeating-linear-gradient(135deg, var(--tarjeta) 0 10px, var(--fondo) 10px 20px); box-shadow:none; }
+.mesa-personas { display:flex; align-items:center; gap:.3rem; }
+.mesa-personas input { width:3.2rem; text-align:center; padding:.35rem; }
+.mesa-personas button { width:2.2rem; height:2.2rem; border-radius:50%; border:1px solid var(--borde); background:var(--fondo); color:var(--texto); font-size:1.1rem; cursor:pointer; }
+@keyframes latido { 50% { box-shadow:0 0 0 6px color-mix(in srgb, var(--rojo) 18%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .mesa.pide { animation:none; } }
+.punto { display:inline-block; width:.75rem; height:.75rem; border-radius:50%; margin:0 .2rem 0 .6rem; vertical-align:middle; }
+.punto.libre { background:var(--verde); } .punto.mia { background:var(--marca); } .punto.otro { background:var(--gris); } .punto.pide { background:var(--rojo); }
+.vueltas { display:block; margin-top:.4rem; font-size:1.25rem; font-weight:800; color:var(--verde); }
+.vueltas.falta { color:var(--rojo); }
+.boton-grande { min-height:52px; font-size:1.05rem; }
+/* Plata que deben entregar los meseros */
+.entregas { list-style:none; padding:0; margin:0; }
+.entregas li { display:flex; justify-content:space-between; align-items:center; gap:.8rem; padding:.7rem 0; border-bottom:1px solid var(--borde); }
+.entregas li:last-child { border-bottom:0; }
+.entregas .valor { font-size:1.2rem; font-weight:800; }
+.mas-detalle summary { font-size:.82rem; color:var(--suave); cursor:pointer; margin-top:.2rem; }
+.mas-detalle small { display:block; margin-top:.3rem; }
+.motivo { font-weight:600; }
+.texto-alerta { color:var(--rojo); font-weight:600; }
+
+/* =====================================================================================================
+   Fase 15 · Identidad visual «comanda»
+   Lienzo frío, tinta verde-negra, tipografía Figtree (lectura) + Bricolage Grotesque (números y títulos).
+   Firma: los totales y las mesas se leen como un tiquete de caja (número grande, borde perforado).
+   ===================================================================================================== */
+:root {
+  --fondo:#F2F4F1; --tarjeta:#FFFFFF; --texto:#15201A; --suave:#5E6B64; --borde:#E1E6E0; --linea-fuerte:#CBD3CB;
+  --verde:#1E9E5A; --amarillo:#C98A09; --rojo:#D9473F; --azul:#2F6FC0; --gris:#7A857F;
+  --radio:16px; --sombra:0 1px 0 #0f1a1408, 0 6px 18px -10px #0f1a1426;
+  --letra:"Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --titular:"Bricolage Grotesque", "Figtree", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) { --fondo:#0E1311; --tarjeta:#161D19; --texto:#E8EEEA; --suave:#9AA8A0; --borde:#26302B; --linea-fuerte:#34403A; --sombra:none; }
+}
+:root[data-tema="oscuro"] { --fondo:#0E1311; --tarjeta:#161D19; --texto:#E8EEEA; --suave:#9AA8A0; --borde:#26302B; --linea-fuerte:#34403A; --sombra:none; }
+
+body { font-family:var(--letra); font-size:16px; letter-spacing:.005em; -webkit-font-smoothing:antialiased; }
+h1, .kpi, .mesa-num, .mesa-nombre, .total, .vueltas, .entregas .valor { font-family:var(--titular); font-variant-numeric:tabular-nums; }
+h1 { font-size:clamp(1.55rem, 1.2rem + 1.4vw, 2.1rem); font-weight:750; letter-spacing:-.025em; line-height:1.1; }
+h2 { font-weight:700; letter-spacing:-.005em; }
+.kpi { font-weight:750; letter-spacing:-.03em; font-size:2rem; }
+.kpi.kpi-texto { font-size:1.4rem; letter-spacing:-.015em; }
+.num, .tabla td.num, .mesa-total, .ped-valor { font-variant-numeric:tabular-nums; }
+:focus-visible { outline:3px solid var(--marca-foco); outline-offset:2px; border-radius:8px; }
+
+/* Barra superior */
+.barra { padding:.55rem 1rem; background:color-mix(in srgb, var(--tarjeta) 88%, transparent); backdrop-filter:saturate(1.4) blur(10px); }
+.marca { font-family:var(--titular); font-size:1.05rem; letter-spacing:-.01em; }
+.barra-derecha { gap:.35rem; }
+.barra-enlace { font-weight:600; padding:.4rem .6rem; }
+.quien { display:none; align-items:center; gap:.5rem; padding-right:.4rem; }
+.quien-texto { display:flex; flex-direction:column; line-height:1.15; }
+.quien-texto b { font-size:.9rem; } .quien-texto small { font-size:.75rem; color:var(--suave); }
+.barra-icono { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:12px; border:0; background:transparent; color:var(--suave); cursor:pointer; }
+.barra-icono:hover { background:var(--fondo); color:var(--texto); }
+.barra-derecha form { margin:0; }
+@media (min-width:600px) { .quien { display:inline-flex; } }
+
+/* Íconos */
+.icono { width:1.35rem; height:1.35rem; flex:0 0 auto; }
+
+/* Menú: abajo en el celular (botones con ícono), a la izquierda en el computador */
+.menu-lateral { padding:.3rem .35rem calc(.3rem + env(safe-area-inset-bottom)); gap:.15rem; justify-content:space-around; box-shadow:0 -6px 20px -14px #0f1a1440; }
+.menu-lateral > a, .menu-mas > summary { flex:1 1 0; min-width:62px; padding:.35rem .25rem; border-radius:14px; font-size:.7rem; font-weight:600; gap:.15rem; }
+.menu-lateral > a.activo, .menu-mas[open] > summary { color:var(--marca-texto, var(--marca)); background:var(--marca-suave); }
+.menu-lateral > a .icono, .menu-mas > summary .icono { width:1.45rem; height:1.45rem; }
+.menu-mas { flex:1 1 0; display:flex; }
+.menu-mas > summary { width:100%; }
+.menu-hoja { bottom:calc(64px + env(safe-area-inset-bottom)); border-radius:20px 20px 0 0; padding:.8rem; }
+.menu-lateral .menu-hoja a { gap:.6rem; font-weight:600; }
+.menu-lateral .menu-hoja a .icono { color:var(--suave); }
+body.con-menu .contenedor { padding-bottom:6rem; }
+@media (min-width:900px) {
+  .menu-lateral { padding:1rem .7rem; gap:.15rem; box-shadow:none; justify-content:flex-start; width:220px; }
+  body.con-menu .contenedor { margin-left:220px; padding-bottom:2rem; }
+  .menu-lateral > a { flex:0 0 auto; min-width:0; flex-direction:row; font-size:.95rem; padding:.6rem .8rem; gap:.7rem; border-radius:12px; }
+  .menu-lateral > a.activo { border-right:0; }
+  .menu-lateral > a .icono { width:1.25rem; height:1.25rem; }
+  .menu-lateral a.secundario:not(.secundario ~ .secundario) { margin-top:.8rem; border-top:1px solid var(--borde); padding-top:.95rem; border-radius:0 0 12px 12px; }
+}
+
+/* Tarjetas */
+.tarjeta { border-radius:var(--radio); border-color:var(--borde); box-shadow:var(--sombra); padding:1.1rem 1.2rem; }
+.tarjeta > h2:first-child, .tarjeta > .encabezado h2 { color:var(--suave); font-size:.9rem; font-weight:650; letter-spacing:.01em; }
+.rejilla { gap:.8rem; }
+
+/* Botones: lleno para lo principal, tonal para lo secundario */
+.boton { border-radius:12px; font-weight:700; min-height:46px; letter-spacing:.005em; transition:background .15s, transform .1s; }
+.boton:active { transform:translateY(1px); }
+.boton-secundario { background:var(--marca-suave); border:0; color:var(--marca-texto, var(--marca)); }
+.boton-secundario:hover { background:color-mix(in srgb, var(--marca) 18%, transparent); }
+.boton-chico { min-height:36px; border-radius:10px; }
+
+/* Formularios */
+input, select, textarea { border-radius:12px; border-color:var(--linea-fuerte); background:var(--tarjeta); }
+input:focus, select:focus, textarea:focus { outline:3px solid var(--marca-foco); outline-offset:0; }
+.formulario label, .formulario-libre label { font-weight:650; }
+
+/* Mensajes */
+.mensaje { border-radius:14px; border:1px solid transparent; }
+
+/* Inicio de cada rol: atajos con ícono */
+.atajo { border-radius:18px; min-height:112px; gap:.45rem; }
+.atajo-icono { display:inline-flex; width:2.6rem; height:2.6rem; border-radius:12px; align-items:center; justify-content:center; background:var(--marca-suave); color:var(--marca-texto, var(--marca)); }
+.atajo.principal .atajo-icono { background:#ffffff26; color:inherit; }
+.atajo b { font-family:var(--titular); font-size:1.15rem; letter-spacing:-.01em; }
+
+/* Firma: el tiquete. El total de una cuenta y las mesas tienen borde perforado como una comanda. */
+.tiquete { position:relative; background:var(--tarjeta); border:1px solid var(--borde); border-radius:var(--radio) var(--radio) 0 0; padding:1.1rem 1.2rem 1.4rem; margin-bottom:1.6rem; box-shadow:var(--sombra); }
+.tiquete::after { content:""; position:absolute; left:-1px; right:-1px; bottom:-10px; height:10px;
+  background:radial-gradient(circle at 7px 0, transparent 6.5px, var(--tarjeta) 7px) 0 0 / 14px 10px repeat-x;
+  filter:drop-shadow(0 1px 0 var(--borde)); }
+.tiquete .total { font-size:2.4rem; font-weight:800; letter-spacing:-.035em; }
+.mesa { border-radius:18px 18px 6px 6px; }
+.mesa-num { font-size:2rem; }
+.mesa::after { content:""; position:absolute; left:14px; right:14px; bottom:-1px; border-bottom:2px dashed color-mix(in srgb, currentColor 14%, transparent); }
+.mesa.libre::after, .mesa.otro::after, .mesa.reservada::after { display:none; }
+@media (max-width:700px) {
+  .tabla td.fila-motivo { display:block; text-align:left; padding:.1rem 0 .4rem; }
+  .tabla td.fila-motivo .motivo { display:block; }
+  .tabla td[data-titulo]::before { font-size:.85rem; }
+}
+.boton .icono { width:1.15rem; height:1.15rem; }
+@media (min-width:900px) { .menu-lateral .menu-mas { display:none; } }

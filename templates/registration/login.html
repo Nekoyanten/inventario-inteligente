@@ -1,15 +1,30 @@
 {% extends "base.html" %}
 {% block titulo %}Ingresar{% endblock %}
 {% block contenido %}
-<section class="tarjeta formulario formulario-libre" style="max-width:420px;margin-top:2rem">
-  <h1>Ingresar</h1>
+<section class="tarjeta formulario formulario-libre ingreso">
+  <h1>{% if equipo %}{{ equipo }}{% else %}Ingresar{% endif %}</h1>
+  {% if personas %}
+  <p class="suave">¿Quién eres? Toca tu nombre y escribe tu PIN o contraseña.</p>
+  <div class="personas" role="list">{% for u in personas %}<button type="button" class="persona" data-usuario="{{ u.username }}" data-pin="{{ u.con_pin|yesno:'1,' }}" role="listitem"><span class="avatar">{{ u.first_name|default:u.username|slice:":1"|upper }}</span><span><b>{{ u.first_name|default:u.username }}</b><small>{{ u.get_rol_display }}</small></span></button>{% endfor %}</div>
+  {% endif %}
   <form method="post">{% csrf_token %}
     {{ form.non_field_errors }}
     <p><label for="id_username">Usuario</label>{{ form.username }}</p>
-    <p><label for="id_password">Contraseña</label>{{ form.password }}</p>
+    <p><label for="id_password" id="etiqueta-clave">Contraseña o PIN</label>{{ form.password }}</p>
     <button class="boton">Entrar</button>
   </form>
   <p><a href="{% url 'password_reset' %}">¿Olvidaste tu contraseña?</a></p>
-  <p class="suave">¿No tienes cuenta? <a href="{% url 'registro:paso1' %}">Pruébalo gratis</a></p>
+  {% if not equipo %}<p class="suave">¿No tienes cuenta? <a href="{% url 'registro:paso1' %}">Pruébalo gratis</a></p>{% endif %}
 </section>
 {% endblock %}
+{% block scripts %}<script>
+document.querySelectorAll(".persona").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll(".persona").forEach((x) => x.classList.remove("elegida"));
+  b.classList.add("elegida");
+  document.getElementById("id_username").value = b.dataset.usuario;
+  const clave = document.getElementById("id_password");
+  document.getElementById("etiqueta-clave").textContent = b.dataset.pin ? "PIN" : "Contraseña";
+  clave.inputMode = b.dataset.pin ? "numeric" : "text";
+  clave.value = ""; clave.focus();
+}));
+</script>{% endblock %}

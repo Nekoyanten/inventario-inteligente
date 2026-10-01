@@ -1,7 +1,7 @@
 {% extends "base.html" %}{% load ui %}
 {% block titulo %}Ventas{% endblock %}
 {% block contenido %}
-<div class="encabezado"><h1>Ventas</h1><a class="boton boton-auto boton-chico" href="{% url 'ventas:pos' %}">+ Nueva venta</a></div>
+<div class="encabezado"><h1>{% if solo_mias %}Tus ventas{% else %}Ventas{% endif %}</h1><a class="boton boton-auto boton-chico" href="{% url 'ventas:pos' %}">+ Nueva venta</a></div>
 <form method="get" class="filtros tarjeta">
   <input type="date" name="desde" value="{{ request.GET.desde }}" aria-label="Desde">
   <input type="date" name="hasta" value="{{ request.GET.hasta }}" aria-label="Hasta">

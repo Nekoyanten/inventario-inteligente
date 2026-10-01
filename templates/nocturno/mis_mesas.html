@@ -1,33 +1,46 @@
 {% extends "base.html" %}{% load ui %}
-{% block titulo %}Mis mesas{% endblock %}
+{% block titulo %}Mesas{% endblock %}
 {% block contenido %}
-<div class="encabezado"><div><h1>Mis mesas</h1><p class="suave" style="margin:0">{{ hoy|date:"l d/m" }}</p></div></div>
-{% if not mesas and not otras %}
-  <section class="tarjeta vacio-grande"><p style="font-size:2rem;margin:0">🍽️</p><p><b>Todavía no tienes mesas asignadas esta noche.</b></p><p class="suave">Pídele al encargado que te asigne. Cuando lo haga, aparecen aquí.</p><a class="boton boton-auto boton-secundario" href="{% url 'nocturno:mis_mesas' %}">↻ Revisar de nuevo</a></section>
-{% else %}
-<p class="leyenda suave">🟢 Libre · 🟠 Atendiendo · 🔔 Ya pidió la cuenta</p>
-<div class="mapa-mesas grande">
-{% for m in mesas %}
-  {% if m.cuenta %}
-  <a class="mesa-tarjeta {% if m.cuenta.pide_cuenta %}pide{% else %}ocupada{% endif %}" href="{% url 'nocturno:cuenta' m.cuenta.pk %}">
-    <p class="mesa-nombre">{{ m }}</p>
-    <p class="mesa-estado">{% if m.cuenta.pide_cuenta %}🔔 Esperando pago{% else %}🟠 {{ m.cuenta.personas }} persona{{ m.cuenta.personas|pluralize }}{% endif %}</p>
-    <p class="mesa-total">{{ m.cuenta.r.total|moneda }}</p>
-    <span class="boton boton-chico">Tomar pedido</span>
-  </a>
-  {% else %}
-  <form class="mesa-tarjeta libre" method="post" action="{% url 'nocturno:abrir' %}">{% csrf_token %}
-    <input type="hidden" name="mesa" value="{{ m.pk }}">
-    <p class="mesa-nombre">{{ m }}</p>
-    <p class="mesa-estado">🟢 Libre · {{ m.get_zona_display }}</p>
-    <label class="en-linea">Personas <input name="personas" type="number" min="1" max="{{ m.capacidad|add:10 }}" value="2" inputmode="numeric" style="max-width:4.5rem"></label>
-    <button class="boton boton-chico">Abrir mesa</button>
-  </form>
-  {% endif %}
+<div class="encabezado"><div><h1>Mesas</h1><p class="suave" style="margin:0">{{ hoy|date:"l d/m" }} · {% if mias %}Atiendes {{ mias }} mesa{{ mias|pluralize }}{% else %}Toca una mesa libre para atenderla{% endif %}</p></div>
+  <a class="boton boton-auto boton-chico boton-secundario" href="{% url 'nocturno:mis_mesas' %}" aria-label="Actualizar">↻ Actualizar</a></div>
+<p class="leyenda"><span class="punto libre"></span> Libre <span class="punto mia"></span> Tuya <span class="punto otro"></span> Otro mesero <span class="punto pide"></span> Pide la cuenta</p>
+{% if not hay_mesas %}<section class="tarjeta vacio-grande"><p>El negocio todavía no tiene mesas creadas.</p></section>{% endif %}
+{% for zona, lista in zonas.items %}
+  {% if zonas|length > 1 %}<h2 class="titulo-zona">{{ zona }}</h2>{% endif %}
+  <div class="tablero">
+  {% for m in lista %}
+    {% if m.estado == "libre" %}
+    <form class="mesa libre" method="post" action="{% url 'nocturno:tomar' m.pk %}">{% csrf_token %}
+      <span class="mesa-num">{{ m }}</span>
+      <span class="mesa-info">{{ m.capacidad }} puestos</span>
+      <span class="mesa-personas"><button type="button" class="menos" aria-label="Menos personas">−</button><input name="personas" type="number" min="1" max="40" value="2" inputmode="numeric" aria-label="Personas"><button type="button" class="mas" aria-label="Más personas">+</button></span>
+      <button class="mesa-accion">Tomar mesa</button>
+    </form>
+    {% elif m.mia %}
+    <a class="mesa {{ m.estado }}" href="{% url 'nocturno:cuenta' m.cuenta.pk %}">
+      <span class="mesa-num">{{ m }}</span>
+      <span class="mesa-info">{% if m.estado == "pide" %}🔔 Pidió la cuenta{% else %}Tuya · {{ m.cuenta.personas }} pers. · desde {{ m.cuenta.creado|time:"H:i" }}{% endif %}</span>
+      <span class="mesa-total">{{ m.cuenta.r.total|moneda }}</span>
+      <span class="mesa-accion">{% if m.estado == "pide" %}Cobrar{% else %}Pedido / cobrar{% endif %}</span>
+    </a>
+    {% else %}
+    <div class="mesa {% if m.estado == 'reservada' %}reservada{% else %}otro{% endif %}" aria-disabled="true">
+      <span class="mesa-num">{{ m }}</span>
+      <span class="mesa-info">{% if m.cuenta %}Atiende {{ m.cuenta.mesero.first_name|default:m.cuenta.mesero.username|default:"otra persona" }}{% else %}Asignada a {{ m.asignado.first_name|default:m.asignado.username }}{% endif %}</span>
+      {% if m.cuenta %}<span class="mesa-info">desde {{ m.cuenta.creado|time:"H:i" }}</span>{% endif %}
+    </div>
+    {% endif %}
+  {% endfor %}
+  </div>
 {% endfor %}
-{% for c in otras %}
-  <a class="mesa-tarjeta ocupada" href="{% url 'nocturno:cuenta' c.pk %}"><p class="mesa-nombre">{{ c }}</p><p class="mesa-estado">{% if c.pide_cuenta %}🔔 Esperando pago{% else %}🟠 Barra{% endif %}</p><span class="boton boton-chico">Tomar pedido</span></a>
-{% endfor %}
-</div>
-{% endif %}
+{% if barra %}<h2 class="titulo-zona">Barra</h2><div class="tablero">{% for c in barra %}<a class="mesa mia" href="{% url 'nocturno:cuenta' c.pk %}"><span class="mesa-num">{{ c }}</span><span class="mesa-accion">Pedido / cobrar</span></a>{% endfor %}</div>{% endif %}
 {% endblock %}
+{% block scripts %}<script>
+document.querySelectorAll(".mesa-personas").forEach((g) => {
+  const i = g.querySelector("input");
+  g.querySelector(".menos").addEventListener("click", () => { i.value = Math.max(1, Number(i.value) - 1); });
+  g.querySelector(".mas").addEventListener("click", () => { i.value = Number(i.value) + 1; });
+});
+// Se actualiza solo cada 30 s para ver qué mesas toman los demás (si no estás escribiendo)
+setInterval(() => { if (!document.activeElement || document.activeElement.tagName !== "INPUT") location.reload(); }, 30000);
+</script>{% endblock %}

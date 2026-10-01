@@ -16,6 +16,13 @@
   </form>
   <p><a href="{% url 'usuarios:lista' %}">← Volver</a></p>
 </section>
+{% if object and object.pk != user.pk %}
+<details class="tarjeta zona-peligro">
+  <summary><b>Eliminar a {{ object.get_full_name|default:object.username }}</b></summary>
+  <p class="suave">Ya no podrá entrar. Si tiene ventas o movimientos a su nombre, se desactiva en lugar de borrarse: el historial se conserva y deja libre su cupo.</p>
+  <form method="post" action="{% url 'usuarios:eliminar' object.pk %}">{% csrf_token %}<button class="boton boton-auto boton-peligro">Eliminar del equipo</button></form>
+</details>
+{% endif %}
 {{ form.defecto_por_rol|json_script:"defecto-rol" }}
 {% endblock %}
 {% block scripts %}<script>

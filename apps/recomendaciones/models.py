@@ -22,6 +22,19 @@ class RecomendacionCompra(ModeloBase):
     motivo_descarte = models.CharField(max_length=200, blank=True)
     temporada = models.CharField(max_length=80, blank=True, help_text="Temporada considerada en el cálculo")
 
+    @property
+    def motivo_corto(self) -> str:
+        """El porqué en una línea: «Alcanza ~2 días · el proveedor tarda 3»."""
+        from decimal import Decimal
+
+        tarda = f"el proveedor tarda {self.tiempo_entrega:.0f} día{'s' if self.tiempo_entrega != 1 else ''}"
+        if self.stock_al_calcular <= 0:
+            return f"Agotado · {tarda}"
+        if self.demanda_diaria and self.demanda_diaria > 0:
+            dias = (Decimal(self.stock_al_calcular) / Decimal(self.demanda_diaria)).quantize(Decimal("1"))
+            return f"Alcanza ~{dias} día{'s' if dias != 1 else ''} · {tarda}"
+        return f"Queda poco · {tarda}"
+
     class Meta:
         ordering = ["-creado"]
 

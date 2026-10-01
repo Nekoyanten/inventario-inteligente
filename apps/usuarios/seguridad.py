@@ -15,7 +15,7 @@ def _clave(request, username):
 class FormularioIngreso(AuthenticationForm):
     error_messages = {
         **AuthenticationForm.error_messages,
-        "invalid_login": "Usuario o contraseña incorrectos.",
+        "invalid_login": "Usuario, contraseña o PIN incorrectos.",
         "bloqueado": "Demasiados intentos fallidos. Espera %(minutos)s minutos e inténtalo de nuevo.",
     }
 
@@ -34,6 +34,41 @@ class FormularioIngreso(AuthenticationForm):
         return datos
 
 
+COOKIE_EQUIPO = "equipo_negocio"
+
+
+def negocio_del_equipo(request):
+    """El negocio con el que se entró la última vez en este celular o computador (para mostrar quién trabaja ahí)."""
+    from apps.core.models import Negocio
+
+    try:
+        pk = request.get_signed_cookie(COOKIE_EQUIPO, salt="equipo")
+    except Exception:  # noqa: BLE001 — sin cookie o alterada
+        return None
+    return Negocio.objects.filter(pk=pk).first()
+
+
 class Ingreso(LoginView):
     form_class = FormularioIngreso
     redirect_authenticated_user = True
+
+    def get_context_data(self, **kwargs):
+        from .models import Rol, Usuario
+
+        ctx = super().get_context_data(**kwargs)
+        n = negocio_del_equipo(self.request)
+        if n is not None:  # botones con los nombres de quienes trabajan aquí: tocar el nombre y escribir el PIN
+            ctx["equipo"] = n
+            ctx["personas"] = (Usuario.objects.filter(negocio=n, is_active=True).exclude(is_superuser=True)
+                               .order_by("-rol", "first_name"))
+            for u in ctx["personas"]:
+                u.con_pin = bool(u.pin) and u.rol != Rol.ADMIN
+        return ctx
+
+    def form_valid(self, form):
+        respuesta = super().form_valid(form)
+        u = form.get_user()
+        if u.negocio_id:
+            respuesta.set_signed_cookie(COOKIE_EQUIPO, u.negocio_id, salt="equipo", max_age=400 * 24 * 3600,
+                                        httponly=True, samesite="Lax", secure=self.request.is_secure())
+        return respuesta

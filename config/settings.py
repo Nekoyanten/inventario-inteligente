@@ -181,6 +181,7 @@ SILENCED_SYSTEM_CHECKS = ["security.W021"]
 
 # Límite de intentos de ingreso (por usuario + IP)
 INTENTOS_LOGIN_MAX = 5
+AUTHENTICATION_BACKENDS = ["django.contrib.auth.backends.ModelBackend", "apps.usuarios.backends.PinBackend"]
 BLOQUEO_LOGIN_MINUTOS = 15
 
 CACHES = {"default": env.cache("CACHE_URL", default="locmemcache://")}

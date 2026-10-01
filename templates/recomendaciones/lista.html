@@ -15,8 +15,8 @@
       <tbody>
       {% for r in recomendaciones %}
         <tr><td><input type="checkbox" name="seleccion" value="{{ r.pk }}" checked aria-label="Incluir {{ r.producto.nombre }}"></td>
-          <td><a href="{% url 'catalogo:detalle' r.producto_id %}">{{ r.producto.nombre }}</a><br><small class="suave">Stock {{ r.stock_al_calcular|cantidad }} · {{ r.demanda_diaria|floatformat:1 }}/día{% if r.temporada %} · 🎄 {{ r.temporada }}{% endif %}</small></td>
-          <td data-titulo="Por qué"><small>{{ r.explicacion }}</small></td>
+          <td><a href="{% url 'catalogo:detalle' r.producto_id %}">{{ r.producto.nombre }}</a>{% if r.temporada %}<br><small class="suave">🎄 {{ r.temporada }}</small>{% endif %}</td>
+          <td class="fila-motivo"><b class="motivo">{{ r.motivo_corto }}</b><details class="mas-detalle"><summary>Ver cálculo</summary><small>{{ r.explicacion }}</small></details></td>
           <td data-titulo="Pedir"><input type="number" name="cantidad-{{ r.pk }}" value="{{ r.cantidad_sugerida }}" min="0" style="width:6.5rem" aria-label="Cantidad a pedir de {{ r.producto.nombre }}"></td>
           <td data-titulo="Proveedor">{% if r.proveedor %}{{ r.proveedor }}{% else %}<select name="proveedor-{{ r.pk }}" aria-label="Proveedor"><option value="">Elige…</option>{% for p in proveedores %}<option value="{{ p.pk }}">{{ p }}</option>{% endfor %}</select>{% endif %}</td>
           {% if ver_costos %}<td class="num" data-titulo="Costo aprox.">{% widthratio r.cantidad_sugerida 1 r.producto.precio_compra as c %}{{ c|moneda }}</td>{% endif %}</tr>

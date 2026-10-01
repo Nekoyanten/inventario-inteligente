@@ -4,6 +4,14 @@
 <div class="encabezado"><h1>La noche · {{ hoy|date:"l d/m" }}</h1></div>
 {% include "nocturno/_pestanas.html" %}
 {% if sin_asignar and "asignar_mesas" in permisos %}<p class="mensaje info">Hoy todavía no asignas mesas a los meseros. <a href="{% url 'nocturno:mesas' %}">Asignar mesas →</a></p>{% endif %}
+{% if entregas %}<section class="tarjeta destacada">
+  <div class="encabezado" style="margin-bottom:.3rem"><h2 style="margin:0">💵 Plata que deben entregar los meseros</h2></div>
+  <ul class="entregas">{% for e in entregas %}<li>
+    <div><span class="valor">{{ e.valor|moneda }}</span> · <b>{{ e.mesero.first_name|default:e.mesero.username }}</b> · {{ e.cuenta }}<br>
+      <small class="suave">{{ e.creado|time:"H:i" }} · el cliente pagó con {{ e.paga_con|moneda }}{% if e.vueltas %} · vueltas {{ e.vueltas|moneda }}{% endif %}</small></div>
+    <form method="post" action="{% url 'nocturno:recibir_entrega' e.pk %}">{% csrf_token %}<button class="boton boton-auto boton-chico">✓ Recibido</button></form>
+  </li>{% endfor %}</ul>
+</section>{% endif %}
 <section class="tarjeta">
   <div class="encabezado" style="margin-bottom:.6rem"><h2 style="margin:0">Cuentas abiertas ({{ cuentas|length }})</h2><span class="suave">{{ abierto_total|moneda }} por cobrar</span></div>
   {% if por_cobrar %}<p class="mensaje warning" style="margin-top:0">🔔 {{ por_cobrar }} cuenta{{ por_cobrar|pluralize }} espera{{ por_cobrar|pluralize:"n" }} pago. Están primero.</p>{% endif %}

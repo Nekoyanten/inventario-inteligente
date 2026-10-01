@@ -129,7 +129,8 @@ def lista(request):
         qs = qs.filter(medio_pago=request.GET["medio"])
     resumen = qs.filter(estado=Venta.Estado.COMPLETADA).aggregate(total=Sum("total"), cantidad=Count("id"))
     pagina = Paginator(qs, 40).get_page(request.GET.get("pagina"))
-    return render(request, "ventas/lista.html", {"pagina": pagina, "resumen": resumen, "medios": Venta.MedioPago.choices})
+    return render(request, "ventas/lista.html", {"pagina": pagina, "resumen": resumen, "medios": Venta.MedioPago.choices,
+                                                 "solo_mias": not request.user.puede("ver_reportes")})
 
 
 @negocio_requerido

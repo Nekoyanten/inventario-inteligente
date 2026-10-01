@@ -3,8 +3,10 @@
 {% block contenido %}
 <div class="encabezado">
   <div><h1>Tu equipo</h1><p class="suave" style="margin:0">Cada persona ve solo lo que necesita para su trabajo.</p></div>
-  <a class="boton boton-auto" href="{% url 'usuarios:crear' %}">+ Agregar persona</a>
+  {% if not lleno %}<a class="boton boton-auto" href="{% url 'usuarios:crear' %}">+ Agregar persona</a>{% endif %}
 </div>
+<p class="cupo"><span class="barra-cupo"><span style="width:{% widthratio activos cupo 100 %}%"></span></span> Usas <b>{{ activos }} de {{ cupo }}</b> usuario{{ cupo|pluralize }} de tu plan.
+  {% if lleno %}Para agregar a alguien, desactiva o elimina a quien ya no trabaje contigo{% if contacto %}, o <a href="https://wa.me/{{ contacto }}?text={{ 'Hola, necesito más usuarios para '|urlencode }}{{ negocio.nombre|urlencode }}" target="_blank" rel="noopener">pide más usuarios</a>{% endif %}.{% endif %}</p>
 <section class="tarjeta">
   <ul class="equipo">
   {% for u in usuarios %}

@@ -130,3 +130,12 @@ def ayuda(texto, etiqueta="¿Qué es esto?"):
     """Botoncito «?» que abre una explicación corta:  {% ayuda "Lo que ganas después de pagar la mercancía." %}"""
     return format_html('<details class="ayuda"><summary aria-label="{}" title="{}">?</summary><div>{}</div></details>',
                        etiqueta, etiqueta, texto)
+
+
+@register.simple_tag
+def icono(nombre, clase="icono"):
+    """Ícono de línea (Lucide) desde el sprite:  {% icono "house" %}"""
+    from django.templatetags.static import static
+
+    return format_html('<svg class="{}" aria-hidden="true" focusable="false"><use href="{}#i-{}"></use></svg>', clase,
+                       static("img/iconos.svg"), nombre)
