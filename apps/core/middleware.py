@@ -55,6 +55,9 @@ class ModulosMiddleware:
                 from django.conf import settings
                 from django.shortcuts import render
 
+                from .modulos import datos_guardados
+
                 return render(request, "negocio/modulo_apagado.html", {
-                    "modulo": MODULOS[clave][0], "contacto": settings.CONTACTO_VENTAS}, status=403)
+                    "modulo": MODULOS[clave][0], "contacto": settings.CONTACTO_VENTAS,
+                    "guardados": datos_guardados(s.negocio, clave)}, status=403)
         return self.get_response(request)

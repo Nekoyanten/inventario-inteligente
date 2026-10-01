@@ -6,8 +6,10 @@ from django.db import models
 
 class Rol(models.TextChoices):
     ADMIN = "ADMIN", "Administrador"
+    CAJERO = "CAJERO", "Cajero"
+    MESERO = "MESERO", "Mesero"
     VENDEDOR = "VENDEDOR", "Vendedor"
-    INVENTARIO = "INVENTARIO", "Encargado de inventario"
+    INVENTARIO = "INVENTARIO", "Bodega / inventario"
 
 
 class Usuario(AbstractUser):
@@ -16,6 +18,7 @@ class Usuario(AbstractUser):
     )
     rol = models.CharField(max_length=12, choices=Rol.choices, default=Rol.VENDEDOR)
     telefono = models.CharField(max_length=30, blank=True)
+    areas = models.JSONField(null=True, blank=True, help_text="Qué partes del sistema ve. Vacío = las de su rol")
     pin = models.CharField(max_length=128, blank=True, help_text="PIN cifrado para cambiar de usuario en un equipo compartido")
 
     def fijar_pin(self, pin: str | None):
@@ -32,7 +35,19 @@ class Usuario(AbstractUser):
     def es_admin(self):
         return self.rol == Rol.ADMIN or self.is_superuser
 
-    def puede(self, accion: str) -> bool:
-        from .permisos import PERMISOS_POR_ROL
+    @property
+    def areas_efectivas(self) -> list[str]:
+        if self.areas is not None:
+            return list(self.areas)
+        from .permisos import areas_por_defecto
 
-        return self.is_superuser or accion in PERMISOS_POR_ROL.get(self.rol, set())
+        return areas_por_defecto(self.rol, getattr(self.negocio, "giro", "") if self.negocio_id else "")
+
+    @property
+    def permisos(self) -> set[str]:
+        from .permisos import permisos_de
+
+        return permisos_de(self)
+
+    def puede(self, accion: str) -> bool:
+        return self.is_superuser or accion in self.permisos

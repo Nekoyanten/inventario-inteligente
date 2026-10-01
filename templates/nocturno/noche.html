@@ -3,8 +3,20 @@
 {% block contenido %}
 <div class="encabezado"><h1>La noche · {{ hoy|date:"l d/m" }}</h1></div>
 {% include "nocturno/_pestanas.html" %}
+{% if sin_asignar and "asignar_mesas" in permisos %}<p class="mensaje info">Hoy todavía no asignas mesas a los meseros. <a href="{% url 'nocturno:mesas' %}">Asignar mesas →</a></p>{% endif %}
+<section class="tarjeta">
+  <div class="encabezado" style="margin-bottom:.6rem"><h2 style="margin:0">Cuentas abiertas ({{ cuentas|length }})</h2><span class="suave">{{ abierto_total|moneda }} por cobrar</span></div>
+  {% if por_cobrar %}<p class="mensaje warning" style="margin-top:0">🔔 {{ por_cobrar }} cuenta{{ por_cobrar|pluralize }} espera{{ por_cobrar|pluralize:"n" }} pago. Están primero.</p>{% endif %}
+  <div class="mapa-mesas">
+  {% for c in cuentas %}<a class="mesa-tarjeta {% if c.pide_cuenta %}pide{% else %}ocupada{% endif %}" href="{% url 'nocturno:cuenta' c.pk %}">
+    <p class="mesa-nombre">{{ c }}</p>
+    <p class="mesa-estado">{% if c.pide_cuenta %}🔔 Pide la cuenta{% else %}Abierta {{ c.creado|time:"H:i" }}{% endif %} · {{ c.personas }} pers.</p>
+    <p class="mesa-total">{{ c.r.total|moneda }}</p>
+    <p class="mesa-estado">{% if c.mesero %}🧑‍🍳 {{ c.mesero.get_full_name|default:c.mesero.username }}{% endif %}{% if c.cliente %} · 👤 {{ c.cliente }}{% endif %}{% if c.credito_disponible %} · saldo {{ c.credito_disponible|moneda }}{% endif %}</p>
+  </a>{% empty %}<p class="suave">No hay cuentas abiertas.</p>{% endfor %}
+  </div>
+</section>
 <div class="rejilla">
-  <section class="tarjeta"><h2>Cuentas abiertas</h2><p class="kpi">{{ cuentas|length }}</p><p class="suave">{{ abierto_total|moneda }} por cobrar</p></section>
   <section class="tarjeta"><h2>Personas que entraron</h2><p class="kpi">{{ presentes }}{% if conf.aforo %} <small>/ {{ conf.aforo }}</small>{% endif %}</p>{% if conf.aforo %}<p class="suave">{% widthratio presentes conf.aforo 100 %} % del aforo</p>{% endif %}</section>
   <section class="tarjeta"><h2>Precios especiales ahora</h2>{% for p in especiales %}<p><b>{{ p.nombre }}</b> <small class="suave">{{ p.get_tipo_display }}{% if p.tipo == 'PORCENTAJE' %} {{ p.valor|floatformat:0 }} %{% endif %} hasta {{ p.hora_fin|time:"H:i" }}</small></p>{% empty %}<p class="suave">Ninguno en este momento.</p>{% endfor %}</section>
 </div>
@@ -30,14 +42,6 @@
   </section>
   {% endif %}
 </div>
-<section class="tarjeta">
-  <h2>Cuentas abiertas</h2>
-  <table class="tabla"><thead><tr><th>Cuenta</th><th class="num">Personas</th><th class="num">Consumo</th><th class="num">Saldo a favor</th><th>Abierta</th></tr></thead><tbody>
-  {% for c in cuentas %}<tr><td><a href="{% url 'nocturno:cuenta' c.pk %}">{{ c }}</a>{% if c.cliente %}<br><small class="suave">👤 {{ c.cliente }}</small>{% endif %}</td>
-    <td class="num" data-titulo="Personas">{{ c.personas }}</td><td class="num" data-titulo="Consumo">{{ c.r.total|moneda }}</td>
-    <td class="num" data-titulo="Saldo">{{ c.credito_disponible|moneda }}</td><td data-titulo="Abierta">{{ c.creado|time:"H:i" }}</td></tr>
-  {% empty %}<tr><td colspan="5" class="vacio">No hay cuentas abiertas.</td></tr>{% endfor %}</tbody></table>
-</section>
 {% if reservas %}<section class="tarjeta"><h2>Reservas de esta noche</h2>
   <table class="tabla compacta"><tbody>{% for r in reservas %}<tr><td><a href="{% url 'nocturno:reserva' r.pk %}">{{ r.nombre }}</a> · {{ r.get_tipo_display }} · {{ r.personas }} personas{% if r.mesa %} · {{ r.mesa }}{% endif %}</td><td>{{ r.hora|time:"H:i"|default:"" }}</td><td>{{ r.get_estado_display }}</td></tr>{% endfor %}</tbody></table>
 </section>{% endif %}

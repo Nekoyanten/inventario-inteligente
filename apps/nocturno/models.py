@@ -88,6 +88,19 @@ class Mesa(models.Model):
         return self.nombre
 
 
+class AsignacionMesa(models.Model):
+    """Qué mesero atiende cada mesa en una noche (o turno). La arma el dueño o el encargado."""
+
+    negocio = models.ForeignKey("core.Negocio", on_delete=models.CASCADE, related_name="asignaciones_mesa")
+    noche = models.DateField(db_index=True)
+    mesa = models.ForeignKey(Mesa, on_delete=models.CASCADE, related_name="asignaciones")
+    mesero = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="mesas_asignadas")
+
+    class Meta:
+        unique_together = ("mesa", "noche")
+        ordering = ["mesa__zona", "mesa__nombre"]
+
+
 class Reserva(ModeloBase):
     class Tipo(models.TextChoices):
         MESA = "MESA", "Mesa"
@@ -193,6 +206,9 @@ class Cuenta(ModeloBase):
     personas = models.PositiveSmallIntegerField(default=1)
     estado = models.CharField(max_length=10, choices=Estado.choices, default=Estado.ABIERTA, db_index=True)
     abierta_por = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL, related_name="+")
+    mesero = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL,
+                               related_name="cuentas_atendidas", help_text="Quién atiende la mesa")
+    pide_cuenta = models.DateTimeField(null=True, blank=True, help_text="Cuándo el mesero avisó que quieren pagar")
     noche = models.DateField(db_index=True)
     credito = models.DecimalField(max_digits=12, decimal_places=2, default=0,
                                   help_text="Cover consumible y anticipos: se descuentan al cobrar")

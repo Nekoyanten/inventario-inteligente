@@ -5,6 +5,9 @@ from . import views
 app_name = "nocturno"
 urlpatterns = [
     path("", views.noche, name="noche"),
+    path("mesas/", views.mesas, name="mesas"),
+    path("mis-mesas/", views.mis_mesas, name="mis_mesas"),
+    path("cuentas/<int:pk>/pedir-cuenta/", views.pedir_cuenta, name="pedir_cuenta"),
     path("cuentas/abrir/", views.abrir, name="abrir"),
     path("cuentas/<int:pk>/", views.cuenta, name="cuenta"),
     path("cuentas/<int:pk>/pedir/", views.pedir, name="pedir"),

@@ -13,7 +13,18 @@ from django.utils import timezone
 from apps.catalogo.models import Categoria, Producto, TipoProducto, UnidadMedida
 from apps.core.auditoria import auditar
 
-from .models import BotellaGuardada, ConfiguracionNocturna, Cuenta, Ingreso, Invitado, ItemCuenta, Mesa, Reserva, noche_de
+from .models import (
+    AsignacionMesa,
+    BotellaGuardada,
+    ConfiguracionNocturna,
+    Cuenta,
+    Ingreso,
+    Invitado,
+    ItemCuenta,
+    Mesa,
+    Reserva,
+    noche_de,
+)
 
 
 class ErrorNocturno(Exception):
@@ -39,14 +50,19 @@ def _producto_sistema(negocio, sku, nombre, precio=0) -> Producto:
 # ---------------------------------------------------------------- cuentas
 @transaction.atomic
 def abrir_cuenta(negocio, usuario, *, mesa: Mesa | None = None, nombre="", cliente=None, personas=1, reserva=None,
-                 momento=None) -> Cuenta:
+                 momento=None, mesero=None) -> Cuenta:
     momento = momento or timezone.now()
     if mesa is not None and Cuenta.objects.filter(mesa=mesa, estado=Cuenta.Estado.ABIERTA).exists():
         raise ErrorNocturno(f"La mesa {mesa} ya tiene una cuenta abierta.")
     conf = configuracion(negocio)
+    noche = noche_de(momento, negocio)
+    if mesero is None:
+        mesero = mesero_de(mesa, noche) if mesa is not None else None
+        if mesero is None and getattr(usuario, "rol", "") == "MESERO":
+            mesero = usuario
     cuenta = Cuenta.objects.create(
         negocio=negocio, mesa=mesa, nombre=nombre[:80], cliente=cliente or (reserva.cliente if reserva else None),
-        personas=max(1, int(personas or 1)), reserva=reserva, abierta_por=usuario, noche=noche_de(momento, negocio),
+        personas=max(1, int(personas or 1)), reserva=reserva, abierta_por=usuario, noche=noche, mesero=mesero,
         consumo_minimo=(reserva.consumo_minimo if reserva and reserva.consumo_minimo else (mesa.consumo_minimo if mesa
                                                                                           else 0)),
         credito=reserva.anticipo if reserva else 0,
@@ -55,6 +71,88 @@ def abrir_cuenta(negocio, usuario, *, mesa: Mesa | None = None, nombre="", clien
     Cuenta.objects.filter(pk=cuenta.pk).update(creado=momento)
     auditar(negocio, usuario, "abrir_cuenta", cuenta, mesa=getattr(mesa, "pk", None))
     return cuenta
+
+
+# ---------------------------------------------------------------- mesas y meseros
+def orden_natural(mesas):
+    """M1, M2 … M10 (no M1, M10, M2): por zona y luego por el número del nombre."""
+    import re
+
+    def clave(m):
+        return (m.zona, [int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", m.nombre)])
+
+    return sorted(mesas, key=clave)
+
+
+def mesero_de(mesa: Mesa, noche):
+    a = AsignacionMesa.objects.filter(mesa=mesa, noche=noche).select_related("mesero").first()
+    return a.mesero if a else None
+
+
+def mesas_de(negocio, mesero, noche):
+    return Mesa.objects.filter(negocio=negocio, activa=True, asignaciones__noche=noche, asignaciones__mesero=mesero)
+
+
+def asignar_mesas(negocio, noche, asignacion: dict, usuario) -> int:
+    """asignacion: {mesa_id: mesero (Usuario) o None}. Devuelve cuántas mesas quedaron con mesero."""
+    with transaction.atomic():
+        for mesa_id, mesero in asignacion.items():
+            if mesero is None:
+                AsignacionMesa.objects.filter(negocio=negocio, noche=noche, mesa_id=mesa_id).delete()
+            else:
+                AsignacionMesa.objects.update_or_create(negocio=negocio, noche=noche, mesa_id=mesa_id,
+                                                        defaults={"mesero": mesero})
+        # las cuentas abiertas de esas mesas pasan al nuevo mesero
+        for a in AsignacionMesa.objects.filter(negocio=negocio, noche=noche):
+            Cuenta.objects.filter(mesa_id=a.mesa_id, estado=Cuenta.Estado.ABIERTA).exclude(
+                mesero=a.mesero).update(mesero=a.mesero)
+    total = AsignacionMesa.objects.filter(negocio=negocio, noche=noche).count()
+    auditar(negocio, usuario, "asignar_mesas", negocio, noche=str(noche), mesas=total)
+    return total
+
+
+def copiar_asignacion(negocio, noche, usuario) -> int:
+    """Repite la asignación de la última noche que tuvo (solo meseros que siguen activos)."""
+    anterior = (AsignacionMesa.objects.filter(negocio=negocio, noche__lt=noche).order_by("-noche")
+                .values_list("noche", flat=True).first())
+    if anterior is None:
+        raise ErrorNocturno("Todavía no hay una noche anterior con mesas asignadas.")
+    previas = AsignacionMesa.objects.filter(negocio=negocio, noche=anterior, mesero__is_active=True,
+                                            mesa__activa=True).select_related("mesero")
+    return asignar_mesas(negocio, noche, {a.mesa_id: a.mesero for a in previas}, usuario)
+
+
+def repartir_mesas(negocio, noche, meseros, usuario) -> int:
+    """Reparte las mesas activas entre los meseros, por zonas seguidas (cada uno queda con mesas vecinas)."""
+    meseros = list(meseros)
+    if not meseros:
+        raise ErrorNocturno("Primero crea usuarios con el rol Mesero (en Equipo).")
+    mesas = orden_natural(Mesa.objects.filter(negocio=negocio, activa=True))
+    if not mesas:
+        raise ErrorNocturno("Primero crea las mesas.")
+    por_mesero = -(-len(mesas) // len(meseros))  # redondeo hacia arriba
+    return asignar_mesas(negocio, noche, {m.pk: meseros[i // por_mesero] for i, m in enumerate(mesas)}, usuario)
+
+
+def puede_atender(usuario, cuenta: Cuenta) -> bool:
+    """El cajero y el dueño ven todas las cuentas; el mesero, solo las de sus mesas."""
+    if usuario.puede("cobrar_cuentas") or usuario.puede("asignar_mesas"):
+        return True
+    if not usuario.puede("atender_mesas"):
+        return False
+    if cuenta.mesero_id == usuario.pk or (cuenta.mesero_id is None and cuenta.abierta_por_id == usuario.pk):
+        return True
+    return bool(cuenta.mesa_id and AsignacionMesa.objects.filter(mesa_id=cuenta.mesa_id, noche=cuenta.noche,
+                                                                 mesero=usuario).exists())
+
+
+def pedir_la_cuenta(cuenta: Cuenta, usuario):
+    _validar_abierta(cuenta)
+    if not cuenta.items.filter(venta__isnull=True).exists():
+        raise ErrorNocturno("La cuenta no tiene pedidos por cobrar.")
+    cuenta.pide_cuenta = timezone.now()
+    cuenta.save(update_fields=["pide_cuenta", "actualizado"])
+    auditar(cuenta.negocio, usuario, "pedir_cuenta", cuenta)
 
 
 def _validar_abierta(cuenta: Cuenta):
@@ -168,6 +266,7 @@ def cobrar(cuenta: Cuenta, usuario, *, items_ids=None, medio_pago="EFECTIVO", pr
             cuenta.credito_usado += sobrante
         cuenta.estado, cuenta.cerrada = Cuenta.Estado.COBRADA, fecha
         _bono_grupo(cuenta, usuario, venta)
+    cuenta.pide_cuenta = None
     cuenta.save()
     auditar(cuenta.negocio, usuario, "cobrar_cuenta", cuenta, venta=venta.pk, total=str(venta.total),
             completa=ultimo)

@@ -33,8 +33,14 @@
   {% if user.is_authenticated and negocio %}
   <nav class="menu-lateral" aria-label="Menú principal">
     {% for item in menu %}
-      <a href="{{ item.url }}" class="{% if item.activo %}activo{% endif %}">{{ item.icono }} <span>{{ item.texto }}</span>{% if item.contador %}<b class="contador">{{ item.contador }}</b>{% endif %}</a>
+      <a href="{{ item.url }}" class="{% if item.activo %}activo{% endif %}{% if not item.principal %} secundario{% endif %}">{{ item.icono }} <span>{{ item.texto }}</span>{% if item.contador %}<b class="contador">{{ item.contador }}</b>{% endif %}</a>
     {% endfor %}
+    {% if menu|length > 5 %}
+    <details class="menu-mas">
+      <summary>☰ <span>Más</span></summary>
+      <div class="menu-hoja">{% for item in menu %}{% if not item.principal %}<a href="{{ item.url }}" class="{% if item.activo %}activo{% endif %}">{{ item.icono }} {{ item.texto }}{% if item.contador %} <b class="contador">{{ item.contador }}</b>{% endif %}</a>{% endif %}{% endfor %}</div>
+    </details>
+    {% endif %}
   </nav>
   {% endif %}
 

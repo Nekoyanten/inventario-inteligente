@@ -123,3 +123,10 @@ def num_input(valor):
     if n is None:
         return ""
     return format(n.normalize(), "f")
+
+
+@register.simple_tag
+def ayuda(texto, etiqueta="¿Qué es esto?"):
+    """Botoncito «?» que abre una explicación corta:  {% ayuda "Lo que ganas después de pagar la mercancía." %}"""
+    return format_html('<details class="ayuda"><summary aria-label="{}" title="{}">?</summary><div>{}</div></details>',
+                       etiqueta, etiqueta, texto)

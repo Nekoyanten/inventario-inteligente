@@ -17,20 +17,20 @@
 {% endif %}
 <div class="rejilla">
   <section class="tarjeta">
-    <h2>Ventas del mes</h2>
+    <h2>Ventas del mes {% ayuda "Todo lo que has cobrado desde el día 1 de este mes. La flecha compara con los mismos días del mes pasado." %}</h2>
     <p class="kpi">{{ resumen.ventas.mes|moneda }}</p>
     <p>{% if resumen.ventas.variacion_pct is not None %}<span class="insignia {% if resumen.ventas.variacion_pct >= 0 %}verde{% else %}rojo{% endif %}">{% if resumen.ventas.variacion_pct >= 0 %}▲ +{% else %}▼ {% endif %}{{ resumen.ventas.variacion_pct|floatformat:0 }} %</span> vs. mismo período del mes anterior{% else %}<span class="suave">Sin datos del mes anterior</span>{% endif %}</p>
     <p class="suave">Hoy: {{ resumen.ventas.hoy|moneda }} en {{ resumen.ventas.numero_hoy }} ventas</p>
   </section>
   {% if "ver_reportes_financieros" in permisos %}
   <section class="tarjeta">
-    <h2>Utilidad estimada del mes</h2>
+    <h2>Lo que te queda (estimado) {% ayuda "Ventas del mes menos lo que te costó la mercancía que vendiste. No incluye arriendo, sueldos ni servicios." %}</h2>
     <p class="kpi">{{ resumen.ventas.utilidad_mes|moneda }}</p>
-    <p class="suave">Ticket promedio {{ resumen.ventas.ticket_promedio|moneda }} · {{ resumen.ventas.numero_mes }} ventas</p>
+    <p class="suave">Cada cliente gasta en promedio {{ resumen.ventas.ticket_promedio|moneda }} · {{ resumen.ventas.numero_mes }} ventas</p>
   </section>
   {% endif %}
   <section class="tarjeta">
-    <h2>Inventario</h2>
+    <h2>Tu mercancía {% ayuda "Cuántos productos tienes. «Stock bajo» son los que están por acabarse según el mínimo que definiste." %}</h2>
     <p class="kpi">{{ resumen.inventario.productos }} <small>productos</small></p>
     <ul class="lista-simple">
       <li><a href="{% url 'catalogo:lista' %}?estado=BAJO">🟡 {{ resumen.inventario.stock_bajo }} con stock bajo</a></li>
@@ -40,13 +40,13 @@
     </ul>
   </section>
   <section class="tarjeta">
-    <h2>Alertas</h2>
+    <h2>Alertas {% ayuda "El sistema revisa tu inventario y ventas y te avisa: 🔴 para actuar ya, 🟡 para revisar cuando puedas." %}</h2>
     <ul class="lista-simple">
       <li><a href="{% url 'alertas:lista' %}">🔴 {{ resumen.alertas.actuar }} para actuar</a></li>
       <li><a href="{% url 'alertas:lista' %}">🟡 {{ resumen.alertas.revisar }} para revisar</a></li>
       {% if config_negocio.usa_vencimientos %}<li>⚠️ {{ resumen.alertas.vencimientos }} de vencimiento</li>{% endif %}
     </ul>
-    {% if "ver_precios_compra" in permisos and resumen.inmovilizado %}<p class="suave">Inventario inmovilizado: <strong>{{ resumen.inmovilizado|moneda }}</strong> en productos de baja rotación</p>{% endif %}
+    {% if "ver_precios_compra" in permisos and resumen.inmovilizado %}<p class="suave">Plata quieta en mercancía que casi no se vende: <strong>{{ resumen.inmovilizado|moneda }}</strong> en productos de baja rotación</p>{% endif %}
   </section>
 </div>
 <div class="rejilla-2">
@@ -62,7 +62,7 @@
     </tbody></table>
   </section>
   <section class="tarjeta ancho">
-    <div class="encabezado"><h2>Qué atender primero</h2><a href="{% url 'alertas:lista' %}">Ver todas →</a></div>
+    <div class="encabezado"><h2>Qué atender primero {% ayuda "Las alertas más importantes, con el botón para resolverlas." %}</h2><a href="{% url 'alertas:lista' %}">Ver todas →</a></div>
     {% for a in resumen.alertas.ultimas %}
       <p class="alerta s{{ a.severidad }}">{{ a.mensaje }} {% if a.enlace_accion %}<a href="{{ a.enlace_accion }}">{{ a.accion_sugerida|default:"Ver" }} →</a>{% else %}<em>{{ a.accion_sugerida }}</em>{% endif %}</p>
     {% empty %}<p>🟢 Todo en orden.</p>{% endfor %}

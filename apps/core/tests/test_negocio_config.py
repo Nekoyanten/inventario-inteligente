@@ -52,7 +52,7 @@ def test_bitacora_filtra_por_accion(client, admin, negocio):
 def test_menu_segun_rol(client, admin, vendedor):
     client.force_login(vendedor)
     textos = [i["texto"] for i in client.get("/").context["menu"]]
-    assert "Usuarios" not in textos and "Ajustes" not in textos
+    assert "Equipo" not in textos and "Ajustes" not in textos
     client.force_login(admin)
     textos = [i["texto"] for i in client.get("/").context["menu"]]
-    assert "Usuarios" in textos and "Ajustes" in textos
+    assert "Equipo" in textos and "Ajustes" in textos

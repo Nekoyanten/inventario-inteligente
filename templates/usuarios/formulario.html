@@ -3,11 +3,32 @@
 {% block contenido %}
 <section class="tarjeta formulario formulario-libre">
   <h1>{{ titulo }}</h1>
-  <form method="post">{% csrf_token %}
+  <form method="post" id="form-usuario">{% csrf_token %}
     {{ form.non_field_errors }}
-    {{ form.as_p }}
+    {% for campo in form %}{% if campo.name != "areas_elegidas" %}<p>{{ campo.errors }}{{ campo.label_tag }} {{ campo }}{% if campo.help_text %}<span class="helptext">{{ campo.help_text|safe }}</span>{% endif %}</p>{% endif %}{% endfor %}
+    <fieldset class="areas" id="areas">
+      <legend>{{ form.areas_elegidas.label }}</legend>
+      {{ form.areas_elegidas.errors }}
+      <p class="suave" id="areas-admin" hidden>El administrador ve y maneja todo.</p>
+      <div id="areas-lista">{{ form.areas_elegidas }}</div>
+    </fieldset>
     <button class="boton">Guardar</button>
   </form>
   <p><a href="{% url 'usuarios:lista' %}">← Volver</a></p>
 </section>
+{{ form.defecto_por_rol|json_script:"defecto-rol" }}
 {% endblock %}
+{% block scripts %}<script>
+(() => {
+  const rol = document.getElementById("id_rol"), defecto = JSON.parse(document.getElementById("defecto-rol").textContent);
+  if (!rol) return;
+  const pintar = (marcar) => {
+    const admin = rol.value === "ADMIN";
+    document.getElementById("areas-admin").hidden = !admin;
+    document.getElementById("areas-lista").hidden = admin;
+    if (marcar) document.querySelectorAll("#areas-lista input").forEach((i) => { i.checked = (defecto[rol.value] || []).includes(i.value); });
+  };
+  rol.addEventListener("change", () => pintar(true));
+  pintar(false);
+})();
+</script>{% endblock %}

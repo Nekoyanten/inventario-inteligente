@@ -18,7 +18,7 @@ python manage.py cargar_demo_negocios --borrar     # elimina los 5 negocios de d
 | `ropa.denim` | Denim Store Pasto (Unicentro) | Ropa | **Emprendedor** | Levi's (501, 505, 511, 541, 721, 724, Ribcage, Trucker, Housemark, Batwing…) por talla y color | 101 / 500 | 3 / 3 |
 | `vape.nube` | Nube Vape Shop | Vapeadores (nuevo) | **Gratis** | Vaporesso (XROS 4, XROS 4 Mini, XROS 5 Mini, XROS Pro, LUXE XR Max, cartuchos XROS, resistencias GTX) y líquidos Nasty Juice | 28 / 50 | 1 / 1 |
 
-Los meseros y vendedores de cada negocio también entran con `Demo2026!` (por ejemplo `bar.lacuadra-mesero1`, `ropa.denim-vendedor1`).
+Los meseros y vendedores de cada negocio también entran con `Demo2026!` (por ejemplo `bar.lacuadra-mesero1`, `ropa.denim-vendedor1`). Los meseros tienen el rol **Mesero**: solo ven *Mis mesas* (el dueño se las asigna en *La noche → Mesas y meseros*).
 
 ## Cómo se ve cada plan (entra a *Mi plan* en cada usuario)
 

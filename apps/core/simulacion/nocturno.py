@@ -136,7 +136,7 @@ class SimuladorNocturno:
                                                      last_name=" ".join(ap), negocio=self.negocio, rol=Rol.ADMIN)
             self.meseros = [self.dueno] + [Usuario.objects.create_user(
                 f"{p.get('usuario', p['clave'])}-mesero{i}", password=clave if "clave_acceso" in p else "x" * 12,
-                negocio=self.negocio, rol=Rol.VENDEDOR) for i in range(1, p.get("meseros", 3) + 1)]
+                negocio=self.negocio, rol=Rol.MESERO) for i in range(1, p.get("meseros", 3) + 1)]
             # proveedores: uno para todo, o uno por categoría ({"Cervezas": ("Bavaria", 2), "_": (...)})
             provs = p.get("proveedores") or {"_": ("Distribuidora de Licores del Sur", 2)}
             self.proveedores = {cat: Proveedor.objects.create(negocio=self.negocio, nombre=nom, tiempo_entrega_dias=dias)

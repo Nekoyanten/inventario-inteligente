@@ -1,10 +1,11 @@
 {% with n=request.resolver_match.url_name %}
-<nav class="acciones" style="margin-bottom:1rem" aria-label="La noche">
+<nav class="pestanas" aria-label="La noche">
   <a class="boton boton-auto boton-chico {% if n != 'noche' %}boton-secundario{% endif %}" href="{% url 'nocturno:noche' %}">Cuentas y puerta</a>
+  {% if "asignar_mesas" in permisos %}<a class="boton boton-auto boton-chico {% if n != 'mesas' %}boton-secundario{% endif %}" href="{% url 'nocturno:mesas' %}">Mesas y meseros</a>{% endif %}
   <a class="boton boton-auto boton-chico {% if 'reserva' not in n %}boton-secundario{% endif %}" href="{% url 'nocturno:reservas' %}">Reservas y grupos</a>
   <a class="boton boton-auto boton-chico {% if n != 'botellas' %}boton-secundario{% endif %}" href="{% url 'nocturno:botellas' %}">Botellas guardadas</a>
   {% if "ver_reportes" in permisos %}<a class="boton boton-auto boton-chico {% if n != 'analisis' %}boton-secundario{% endif %}" href="{% url 'nocturno:analisis' %}">Análisis</a>{% endif %}
   {% if "configurar_negocio" in permisos %}<a class="boton boton-auto boton-chico {% if 'precio' not in n %}boton-secundario{% endif %}" href="{% url 'nocturno:precios' %}">Happy hour</a>
-  <a class="boton boton-auto boton-chico {% if n != 'ajustes' %}boton-secundario{% endif %}" href="{% url 'nocturno:ajustes' %}">Mesas y ajustes</a>{% endif %}
+  <a class="boton boton-auto boton-chico {% if n != 'ajustes' %}boton-secundario{% endif %}" href="{% url 'nocturno:ajustes' %}">Crear mesas y ajustes</a>{% endif %}
 </nav>
 {% endwith %}

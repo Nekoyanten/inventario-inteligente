@@ -24,6 +24,15 @@ class UsuarioListaView(NegocioRequeridoMixin, ListView):
     context_object_name = "usuarios"
     ordering = ["-is_active", "first_name", "username"]
 
+    def get_context_data(self, **kwargs):
+        from .permisos import AREAS, ROLES_INFO
+
+        ctx = super().get_context_data(**kwargs)
+        for u in ctx["usuarios"]:
+            u.areas_texto = "Todo" if u.es_admin else " · ".join(AREAS[a][0] for a in u.areas_efectivas if a in AREAS)
+        ctx["roles"] = [(valor, nombre, ROLES_INFO.get(valor, "")) for valor, nombre in Rol.choices]
+        return ctx
+
 
 class UsuarioCrearView(NegocioRequeridoMixin, CreateView):
     model = Usuario
@@ -32,6 +41,13 @@ class UsuarioCrearView(NegocioRequeridoMixin, CreateView):
     template_name = "usuarios/formulario.html"
     success_url = reverse_lazy("usuarios:lista")
     extra_context = {"titulo": "Nuevo usuario"}
+
+    def get_form_kwargs(self):
+        return {**super().get_form_kwargs(), "negocio": self.request.negocio}
+
+    def get_initial(self):
+        rol = self.request.GET.get("rol")
+        return {"rol": rol} if rol in Rol.values else {}
 
     def form_valid(self, form):
         try:
@@ -54,7 +70,7 @@ class UsuarioEditarView(NegocioRequeridoMixin, UpdateView):
     extra_context = {"titulo": "Editar usuario"}
 
     def get_form_kwargs(self):
-        return {**super().get_form_kwargs(), "editor": self.request.user}
+        return {**super().get_form_kwargs(), "editor": self.request.user, "negocio": self.request.negocio}
 
     def form_valid(self, form):
         respuesta = super().form_valid(form)

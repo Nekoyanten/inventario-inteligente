@@ -101,7 +101,7 @@ def test_demo_se_retoma_si_se_corto_y_no_duplica_lo_completo():
 
     from apps.core.models import Negocio
 
-    nulo = open("/dev/null", "w")
+    nulo = io.StringIO()
     call_command("cargar_demo_negocios", dias=3, solo=["vape.nube"], stdout=nulo)
     completo = Negocio.objects.get(nombre="Nube Vape Shop")
     # otra corrida (p. ej. el servidor se reinició): lo completo no se toca

@@ -1,0 +1,236 @@
+"""Fase 14: roles con áreas por persona, mesas asignadas a meseros, módulos que guardan datos en segundo plano y un
+sistema más fácil de entender (menú corto, inicio por rol, ayudas)."""
+
+from decimal import Decimal
+
+import pytest
+from django.template import Context, Template
+from django.utils import timezone
+
+from apps.catalogo.models import Categoria, Producto
+from apps.clientes.models import Cliente
+from apps.clientes.services import cotizar
+from apps.core.models import Negocio
+from apps.inventario.models import TipoMovimiento
+from apps.inventario.services import registrar_movimiento
+from apps.nocturno import services as s
+from apps.nocturno.models import AsignacionMesa, Cuenta, Mesa, noche_de
+from apps.usuarios.models import Rol, Usuario
+from apps.usuarios.permisos import AREAS
+
+pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture
+def bar(db):
+    n = Negocio.objects.create(nombre="Bar La Pola", giro="BAR")
+    dueno = Usuario.objects.create_user("dueno", password="x", negocio=n, rol=Rol.ADMIN)
+    ana = Usuario.objects.create_user("ana", password="x", first_name="Ana", negocio=n, rol=Rol.MESERO)
+    luis = Usuario.objects.create_user("luis", password="x", first_name="Luis", negocio=n, rol=Rol.MESERO)
+    caja = Usuario.objects.create_user("caja", password="x", negocio=n, rol=Rol.CAJERO)
+    cerveza = Producto.objects.create(negocio=n, sku="CER", nombre="Cerveza", precio_compra=2500, precio_venta=6000,
+                                      categoria=Categoria.objects.filter(negocio=n).first())
+    registrar_movimiento(producto=cerveza, tipo=TipoMovimiento.ENTRADA_INICIAL, cantidad=100, usuario=dueno)
+    mesas = [Mesa.objects.create(negocio=n, nombre=f"M{i}") for i in range(1, 5)]
+    return {"n": n, "dueno": dueno, "ana": ana, "luis": luis, "caja": caja, "cerveza": cerveza, "mesas": mesas}
+
+
+def _hoy(n):
+    return noche_de(timezone.now(), n)
+
+
+# ---------------------------------------------------------------- roles y áreas
+def test_cada_rol_solo_lo_suyo(bar):
+    ana, caja, dueno = bar["ana"], bar["caja"], bar["dueno"]
+    assert ana.puede("atender_mesas") and not ana.puede("cobrar_cuentas") and not ana.puede("registrar_venta")
+    assert caja.puede("cobrar_cuentas") and caja.puede("registrar_venta") and not caja.puede("gestionar_productos")
+    assert dueno.puede("asignar_mesas") and dueno.puede("configurar_negocio")
+    ana.areas = ["mesas", "inventario"]  # el dueño le suma inventario
+    assert ana.puede("registrar_movimiento") and not ana.puede("gestionar_compras")
+
+
+def test_el_dueno_ajusta_lo_que_ve_cada_persona(client, bar):
+    client.force_login(bar["dueno"])
+    r = client.post("/usuarios/nuevo/", {"username": "pedro", "rol": "MESERO", "password1": "ClaveSegura123!",
+                                        "password2": "ClaveSegura123!", "areas_elegidas": ["mesas", "productos"]})
+    assert r.status_code == 302
+    pedro = Usuario.objects.get(username="pedro")
+    assert pedro.areas == ["mesas", "productos"] and pedro.puede("gestionar_productos")
+    # si deja exactamente lo del rol, se guarda como «lo de su rol» (sigue los cambios futuros del rol)
+    r = client.post(f"/usuarios/{pedro.pk}/", {"rol": "MESERO", "is_active": "on", "areas_elegidas": ["mesas"]})
+    pedro.refresh_from_db()
+    assert r.status_code == 302 and pedro.areas is None
+    pagina = client.get("/usuarios/").content.decode()
+    assert "Tu equipo" in pagina and "Atender mesas" in pagina and "¿Qué hace cada rol?" in pagina
+
+
+def test_el_formulario_no_ofrece_mesas_en_una_tienda(client, admin):
+    client.force_login(admin)
+    html = client.get("/usuarios/nuevo/").content.decode()
+    assert AREAS["vender"][0] in html and AREAS["mesas"][0] not in html
+
+
+def test_menu_por_rol(client, bar):
+    client.force_login(bar["ana"])
+    textos = [i["texto"] for i in client.get("/noche/mis-mesas/").context["menu"]]
+    assert "Mis mesas" in textos and "La noche" not in textos and "Vender" not in textos and "Equipo" not in textos
+    client.force_login(bar["caja"])
+    textos = [i["texto"] for i in client.get("/").context["menu"]]
+    assert "La noche" in textos and "Mis mesas" not in textos
+    client.force_login(bar["dueno"])
+    menu = client.get("/").context["menu"]
+    assert len(menu) > 5 and sum(i["principal"] for i in menu) == 4  # en el celular: 4 botones y «Más»
+
+
+def test_inicio_segun_rol(client, bar):
+    client.force_login(bar["ana"])
+    assert client.get("/").url == "/noche/mis-mesas/"  # el mesero va directo a sus mesas
+    client.force_login(bar["caja"])
+    html = client.get("/").content.decode()
+    assert "Cobrar cuentas, puerta y reservas" in html and "Tus ventas de hoy" in html
+    assert "¿Cómo está mi negocio?" not in html
+
+
+def test_meseros_de_la_demo_pasan_a_rol_mesero(bar):
+    from importlib import import_module
+
+    from django.apps import apps as registro
+
+    u = Usuario.objects.create_user("bar.x-mesero1", password="x", negocio=bar["n"], rol=Rol.VENDEDOR)
+    import_module("apps.usuarios.migrations.0003_roles_y_areas").meseros(registro, None)
+    u.refresh_from_db()
+    assert u.rol == Rol.MESERO
+
+
+# ---------------------------------------------------------------- mesas
+def test_repartir_y_repetir_asignacion(bar):
+    n, ana, luis = bar["n"], bar["ana"], bar["luis"]
+    hoy = _hoy(n)
+    assert s.repartir_mesas(n, hoy, [ana, luis], bar["dueno"]) == 4
+    assert list(s.mesas_de(n, ana, hoy).values_list("nombre", flat=True)) == ["M1", "M2"]
+    manana = hoy + timezone.timedelta(days=1)
+    assert s.copiar_asignacion(n, manana, bar["dueno"]) == 4
+    assert s.mesas_de(n, luis, manana).count() == 2
+
+
+def test_pantalla_de_asignar_mesas(client, bar):
+    n, m1 = bar["n"], bar["mesas"][0]
+    client.force_login(bar["dueno"])
+    html = client.get("/noche/mesas/").content.decode()
+    assert "Mesas de esta noche" in html and "Repartir automático" in html
+    r = client.post("/noche/mesas/", {"accion": "guardar", f"mesa-{m1.pk}": bar["luis"].pk})
+    assert r.status_code == 302 and s.mesero_de(m1, _hoy(n)) == bar["luis"]
+    client.force_login(bar["ana"])
+    assert client.get("/noche/mesas/").status_code == 403  # solo el dueño asigna
+
+
+def test_el_mesero_solo_atiende_sus_mesas(client, bar):
+    n, ana, luis, m1, m2 = bar["n"], bar["ana"], bar["luis"], *bar["mesas"][:2]
+    hoy = _hoy(n)
+    s.asignar_mesas(n, hoy, {m1.pk: ana, m2.pk: luis}, bar["dueno"])
+    client.force_login(ana)
+    html = client.get("/noche/mis-mesas/").content.decode()
+    assert "M1" in html and "M2" not in html
+    # abre su mesa: queda como mesero de la cuenta
+    r = client.post("/noche/cuentas/abrir/", {"mesa": m1.pk, "personas": 3})
+    cuenta = Cuenta.objects.get(mesa=m1)
+    assert r.url == f"/noche/cuentas/{cuenta.pk}/" and cuenta.mesero == ana
+    # no puede abrir la de Luis ni ver sus cuentas
+    client.post("/noche/cuentas/abrir/", {"mesa": m2.pk})
+    assert not Cuenta.objects.filter(mesa=m2).exists()
+    ajena = s.abrir_cuenta(n, luis, mesa=m2)
+    assert ajena.mesero == luis
+    assert client.get(f"/noche/cuentas/{ajena.pk}/").status_code == 403
+    # toma el pedido y pide la cuenta, pero no puede cobrar
+    client.post(f"/noche/cuentas/{cuenta.pk}/pedir/", {"producto": bar["cerveza"].pk, "cantidad": 2})
+    html = client.get(f"/noche/cuentas/{cuenta.pk}/").content.decode()
+    assert "Pedir la cuenta" in html and "Cobrar todo" not in html
+    assert client.post(f"/noche/cuentas/{cuenta.pk}/cobrar/").status_code == 403
+    client.post(f"/noche/cuentas/{cuenta.pk}/pedir-cuenta/")
+    cuenta.refresh_from_db()
+    assert cuenta.pide_cuenta is not None
+
+
+def test_la_caja_ve_primero_las_que_piden_la_cuenta_y_cobra(client, bar):
+    n, ana, m1, m2 = bar["n"], bar["ana"], *bar["mesas"][:2]
+    s.asignar_mesas(n, _hoy(n), {m1.pk: ana, m2.pk: ana}, bar["dueno"])
+    c1 = s.abrir_cuenta(n, ana, mesa=m1)
+    c2 = s.abrir_cuenta(n, ana, mesa=m2)
+    for c in (c1, c2):
+        s.agregar_item(c, bar["cerveza"], 1, ana)
+    s.pedir_la_cuenta(c2, ana)
+    client.force_login(bar["caja"])
+    r = client.get("/noche/")
+    assert [c.pk for c in r.context["cuentas"]][:1] == [c2.pk] and r.context["por_cobrar"] == 1
+    assert "Pide la cuenta" in r.content.decode()
+    client.post(f"/noche/cuentas/{c2.pk}/cobrar/", {"medio_pago": "EFECTIVO"})
+    c2.refresh_from_db()
+    assert c2.estado == Cuenta.Estado.COBRADA and c2.pide_cuenta is None
+
+
+def test_reasignar_mueve_la_cuenta_abierta(bar):
+    n, ana, luis, m1 = bar["n"], bar["ana"], bar["luis"], bar["mesas"][0]
+    hoy = _hoy(n)
+    s.asignar_mesas(n, hoy, {m1.pk: ana}, bar["dueno"])
+    c = s.abrir_cuenta(n, ana, mesa=m1)
+    s.asignar_mesas(n, hoy, {m1.pk: luis}, bar["dueno"])  # Ana se fue: Luis sigue con la mesa
+    c.refresh_from_db()
+    assert c.mesero == luis and AsignacionMesa.objects.get(mesa=m1, noche=hoy).mesero == luis
+
+
+def test_mesero_sin_mesas_ve_que_hacer(client, bar):
+    client.force_login(bar["luis"])
+    assert "Todavía no tienes mesas asignadas" in client.get("/noche/mis-mesas/").content.decode()
+
+
+# ---------------------------------------------------------------- módulos en segundo plano
+def test_sin_fidelizacion_los_clientes_se_siguen_guardando(client, admin, negocio):
+    s_ = negocio.suscripcion
+    s_.modulos_apagados = ["clientes"]
+    s_.save()
+    client.force_login(admin)
+    r = client.post("/clientes/nuevo.json", {"nombre": "Marta Díaz", "telefono": "3001234567",
+                                             "acepta_datos": "1"})
+    assert r.status_code == 200 and Cliente.objects.filter(negocio=negocio, nombre="Marta Díaz").exists()
+    assert client.get("/clientes/buscar.json?q=Marta").status_code == 200
+    apagado = client.get("/clientes/")
+    assert apagado.status_code == 403 and "No pierdes nada" in apagado.content.decode()
+    assert "1 cliente registrados" in apagado.content.decode()
+
+
+def test_sin_fidelizacion_no_hay_canje_ni_ofertas(negocio, producto):
+    cliente = Cliente.objects.create(negocio=negocio, nombre="Juan", puntos=500)
+    s_ = negocio.suscripcion
+    s_.modulos_apagados = ["clientes"]
+    s_.save()
+    negocio.refresh_from_db()
+    producto.refresh_from_db()
+    c = cotizar(negocio, [{"producto": producto, "cantidad": 1}], cliente, puntos_canjear=100)
+    assert c["puntos_canjeados"] == 0 and c["descuento_puntos"] == Decimal("0")
+
+
+# ---------------------------------------------------------------- ayudas
+def test_ayuda_explica_en_una_linea():
+    html = Template('{% load ui %}{% ayuda "Lo que ganas." %}').render(Context())
+    assert 'class="ayuda"' in html and "Lo que ganas." in html
+
+
+def test_el_tablero_del_dueno_explica_sus_datos(client, admin):
+    client.force_login(admin)
+    html = client.get("/").content.decode()
+    assert "Lo que te queda (estimado)" in html and 'class="ayuda"' in html
+
+
+def test_mesas_en_orden_natural(bar):
+    n = bar["n"]
+    Mesa.objects.create(negocio=n, nombre="M10")
+    assert [m.nombre for m in s.orden_natural(Mesa.objects.filter(negocio=n))] == ["M1", "M2", "M3", "M4", "M10"]
+
+
+def test_pedir_sin_elegir_producto_explica(client, bar):
+    n, ana, m1 = bar["n"], bar["ana"], bar["mesas"][0]
+    s.asignar_mesas(n, _hoy(n), {m1.pk: ana}, bar["dueno"])
+    c = s.abrir_cuenta(n, ana, mesa=m1)
+    client.force_login(ana)
+    r = client.post(f"/noche/cuentas/{c.pk}/pedir/", {"producto": "", "cantidad": 1}, follow=True)
+    assert "Elige el producto de la lista" in r.content.decode()

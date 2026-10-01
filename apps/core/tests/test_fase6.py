@@ -84,7 +84,7 @@ MATRIZ = [
     ("/ventas/vender/", 200, 403),
     ("/inventario/", 403, 200),
     ("/compras/", 403, 200),
-    ("/proveedores/", 403, 403),
+    ("/proveedores/", 403, 200),  # bodega: compras y proveedores van juntos
     ("/usuarios/", 403, 403),
     ("/negocio/configuracion/", 403, 403),
     ("/reportes/utilidad/", 403, 403),

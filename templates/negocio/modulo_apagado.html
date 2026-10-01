@@ -4,6 +4,7 @@
 <section class="tarjeta vacio-grande">
   <h1>{{ modulo }}</h1>
   <p>Este módulo no está activo en tu plan. Tu plan es a la medida: si lo necesitas, te lo activamos.</p>
+  <p class="mensaje info" style="text-align:left">✅ <b>No pierdes nada:</b> el sistema sigue guardando esta información mientras trabajas. El día que lo actives, ya tendrás todo tu historial listo, sin volver a registrar nada.{% if guardados %}<br>Hoy ya tienes: {{ guardados|join:"; " }}.{% endif %}</p>
   {% if contacto %}<p><a class="boton boton-auto" href="https://wa.me/{{ contacto }}?text={{ 'Hola, quiero activar '|urlencode }}{{ modulo|urlencode }}{{ ' para '|urlencode }}{{ negocio.nombre|urlencode }}" target="_blank" rel="noopener">Pedirlo por WhatsApp</a></p>{% endif %}
   <p><a href="{% url 'dashboard:inicio' %}">Volver al inicio</a>{% if user.is_superuser %} · <a href="{% url 'plataforma:negocio' negocio.pk %}">Activarlo (administrador de la plataforma)</a>{% endif %}</p>
 </section>

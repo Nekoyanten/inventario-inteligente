@@ -120,3 +120,31 @@ def resumen_vendedor(negocio, usuario, hoy=None) -> dict:
     hoy = hoy or timezone.localdate()
     mias = _ventas(negocio, hoy, hoy + timedelta(days=1)).filter(vendedor=usuario).aggregate(t=Sum("total"), n=Count("id"))
     return {"hoy": mias["t"] or Decimal("0"), "numero_hoy": mias["n"]}
+
+
+def resumen_equipo(negocio, usuario, hoy=None) -> dict:
+    """Solo lo que le sirve a cada persona del equipo según lo que hace."""
+    r = {}
+    if usuario.puede("registrar_venta"):
+        r.update(resumen_vendedor(negocio, usuario, hoy))
+        r["vende"] = True
+    if usuario.puede("cobrar_cuentas"):
+        from apps.nocturno.models import Cuenta
+
+        abiertas = Cuenta.objects.filter(negocio=negocio, estado=Cuenta.Estado.ABIERTA)
+        r["cuentas_abiertas"] = abiertas.count()
+        r["piden_cuenta"] = abiertas.filter(pide_cuenta__isnull=False).count()
+        r["caja"] = True
+    if usuario.puede("registrar_movimiento"):
+        from apps.catalogo.models import Producto
+
+        productos = Producto.objects.filter(negocio=negocio, activo=True, es_agrupador=False).exclude(tipo="PREPARADO")
+        r["stock_bajo"] = productos.filter(stock_actual__gt=0, stock_actual__lte=F("stock_minimo")).count()
+        r["agotados"] = productos.filter(stock_actual__lte=0).count()
+        r["bodega"] = True
+    if usuario.puede("ver_reportes"):
+        from apps.alertas.models import Alerta
+
+        r["alertas"] = Alerta.objects.filter(negocio=negocio, estado=Alerta.Estado.ABIERTA,
+                                             severidad=Alerta.Severidad.ACTUAR).count()
+    return r

@@ -1,0 +1,33 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Mis mesas{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><h1>Mis mesas</h1><p class="suave" style="margin:0">{{ hoy|date:"l d/m" }}</p></div></div>
+{% if not mesas and not otras %}
+  <section class="tarjeta vacio-grande"><p style="font-size:2rem;margin:0">🍽️</p><p><b>Todavía no tienes mesas asignadas esta noche.</b></p><p class="suave">Pídele al encargado que te asigne. Cuando lo haga, aparecen aquí.</p><a class="boton boton-auto boton-secundario" href="{% url 'nocturno:mis_mesas' %}">↻ Revisar de nuevo</a></section>
+{% else %}
+<p class="leyenda suave">🟢 Libre · 🟠 Atendiendo · 🔔 Ya pidió la cuenta</p>
+<div class="mapa-mesas grande">
+{% for m in mesas %}
+  {% if m.cuenta %}
+  <a class="mesa-tarjeta {% if m.cuenta.pide_cuenta %}pide{% else %}ocupada{% endif %}" href="{% url 'nocturno:cuenta' m.cuenta.pk %}">
+    <p class="mesa-nombre">{{ m }}</p>
+    <p class="mesa-estado">{% if m.cuenta.pide_cuenta %}🔔 Esperando pago{% else %}🟠 {{ m.cuenta.personas }} persona{{ m.cuenta.personas|pluralize }}{% endif %}</p>
+    <p class="mesa-total">{{ m.cuenta.r.total|moneda }}</p>
+    <span class="boton boton-chico">Tomar pedido</span>
+  </a>
+  {% else %}
+  <form class="mesa-tarjeta libre" method="post" action="{% url 'nocturno:abrir' %}">{% csrf_token %}
+    <input type="hidden" name="mesa" value="{{ m.pk }}">
+    <p class="mesa-nombre">{{ m }}</p>
+    <p class="mesa-estado">🟢 Libre · {{ m.get_zona_display }}</p>
+    <label class="en-linea">Personas <input name="personas" type="number" min="1" max="{{ m.capacidad|add:10 }}" value="2" inputmode="numeric" style="max-width:4.5rem"></label>
+    <button class="boton boton-chico">Abrir mesa</button>
+  </form>
+  {% endif %}
+{% endfor %}
+{% for c in otras %}
+  <a class="mesa-tarjeta ocupada" href="{% url 'nocturno:cuenta' c.pk %}"><p class="mesa-nombre">{{ c }}</p><p class="mesa-estado">{% if c.pide_cuenta %}🔔 Esperando pago{% else %}🟠 Barra{% endif %}</p><span class="boton boton-chico">Tomar pedido</span></a>
+{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

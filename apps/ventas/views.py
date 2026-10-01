@@ -24,11 +24,13 @@ from .services import anular_venta, cantidades_inusuales, registrar_venta
 @negocio_requerido
 @requiere_permiso("registrar_venta")
 def pos(request):
+    from apps.core.modulos import activo
+
     config = getattr(request.negocio, "config", None)
     return render(request, "ventas/pos.html", {
         "medios": Venta.MedioPago.choices,
         "sin_stock": bool(config and config.permite_venta_sin_stock),
-        "fidelizacion": bool(config and config.fidelizacion_activa),
+        "fidelizacion": bool(config and config.fidelizacion_activa) and activo(request.negocio, "clientes"),
         "puede_clientes": request.user.puede("registrar_cliente"),
         "nocturno": request.negocio.giro in ("BAR", "DISCOTECA", "BAR_DISCOTECA"),
         "solo_adultos": solo_adultos(request.negocio),

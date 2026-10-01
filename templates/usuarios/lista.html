@@ -1,24 +1,24 @@
 {% extends "base.html" %}
-{% block titulo %}Usuarios{% endblock %}
+{% block titulo %}Equipo{% endblock %}
 {% block contenido %}
 <div class="encabezado">
-  <h1>Usuarios</h1>
-  <a class="boton boton-auto" href="{% url 'usuarios:crear' %}">+ Nuevo usuario</a>
+  <div><h1>Tu equipo</h1><p class="suave" style="margin:0">Cada persona ve solo lo que necesita para su trabajo.</p></div>
+  <a class="boton boton-auto" href="{% url 'usuarios:crear' %}">+ Agregar persona</a>
 </div>
 <section class="tarjeta">
-  <table class="tabla">
-    <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Estado</th><th></th></tr></thead>
-    <tbody>
-    {% for u in usuarios %}
-      <tr>
-        <td data-titulo="Usuario">{{ u.username }}</td>
-        <td data-titulo="Nombre">{{ u.get_full_name|default:"—" }}</td>
-        <td data-titulo="Rol">{{ u.get_rol_display }}</td>
-        <td data-titulo="Estado">{% if u.is_active %}🟢 Activo{% else %}⚫ Inactivo{% endif %}</td>
-        <td><a href="{% url 'usuarios:editar' u.pk %}">Editar</a></td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
+  <ul class="equipo">
+  {% for u in usuarios %}
+    <li{% if not u.is_active %} class="inactivo"{% endif %}>
+      <div><b>{{ u.get_full_name|default:u.username }}</b> <span class="insignia {% if u.es_admin %}verde{% else %}gris{% endif %}">{{ u.get_rol_display }}</span>{% if not u.is_active %} <span class="insignia gris">Inactivo</span>{% endif %}
+        <br><small class="suave">Entra como <b>{{ u.username }}</b> · ve: {{ u.areas_texto }}</small></div>
+      <a class="boton boton-auto boton-chico boton-secundario" href="{% url 'usuarios:editar' u.pk %}">Editar</a>
+    </li>
+  {% endfor %}
+  </ul>
 </section>
+<details class="tarjeta">
+  <summary><b>¿Qué hace cada rol?</b></summary>
+  <ul class="lista-simple">{% for valor, nombre, info in roles %}<li><b>{{ nombre }}</b>: {{ info }} <a href="{% url 'usuarios:crear' %}?rol={{ valor }}">Agregar {{ nombre|lower }}</a></li>{% endfor %}</ul>
+  <p class="suave">A cada persona le puedes marcar o quitar lo que ve al crearla o editarla.</p>
+</details>
 {% endblock %}

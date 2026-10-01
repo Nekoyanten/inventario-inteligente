@@ -200,11 +200,15 @@ def cotizar(negocio, lineas, cliente: Cliente | None = None, puntos_canjear: int
     Por línea se aplica UNA sola promoción, en este orden: cortesía → precio especial por horario (happy hour,
     2×1, noche temática) → la mejor entre las ofertas del cliente y el descuento general (p. ej. de grupo).
     Las ofertas y el descuento general nunca dejan el precio por debajo del costo."""
+    from apps.core.modulos import activo
     from apps.nocturno.precios import precios_especiales
 
     momento = momento or timezone.now()
     especiales = precios_especiales(negocio, lineas, momento)
-    ofertas = [o for o in ofertas_vigentes(negocio, hoy) if cliente_en_segmento(cliente, o, hoy)]
+    fidelizacion = activo(negocio, "clientes")  # sin el módulo: el cliente gana puntos, pero no hay ofertas ni canje
+    if not fidelizacion:
+        puntos_canjear = 0
+    ofertas = [o for o in ofertas_vigentes(negocio, hoy) if cliente_en_segmento(cliente, o, hoy)] if fidelizacion else []
     general = Decimal(str(descuento_general_pct or 0))
     resultado, subtotal = [], Decimal("0")
     for linea, especial in zip(lineas, especiales, strict=True):

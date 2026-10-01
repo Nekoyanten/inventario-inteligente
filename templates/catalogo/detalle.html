@@ -41,13 +41,13 @@
   </section>
   {% else %}
   <section class="tarjeta">
-    <h2>Stock{% if producto.es_insumo %} del insumo{% endif %}</h2>
+    <h2>Cuánto hay{% if producto.es_insumo %} del insumo{% endif %} {% ayuda "Lo que debería haber en la bodega según lo que se ha vendido y recibido. Si al contar hay otra cantidad, corrígelo en Inventario → Conteo." %}</h2>
     <p class="kpi kpi-texto">{{ producto.stock_actual|clara:producto.unidad }}</p>
     <p>{{ analisis.estado|insignia }} · avisa cuando queden {{ producto.stock_minimo|clara:producto.unidad }}</p>
   </section>
   {% endif %}
   <section class="tarjeta">
-    <h2>¿Cuánto se vende?</h2>
+    <h2>¿Cuánto se vende? {% ayuda "Promedio de las últimas semanas. Sirve para saber cuántos días te alcanza lo que tienes." %}</h2>
     <p class="kpi kpi-texto">{{ analisis.demanda_diaria|ritmo:producto.unidad }}</p>
     <p>{% if analisis.stock <= 0 and not producto.es_preparado %}Agotado: se está perdiendo venta por falta de producto{% elif analisis.cobertura_dias is not None and analisis.demanda_diaria > 0 %}Lo que hay alcanza para unos {{ analisis.cobertura_dias|floatformat:0 }} días{% else %}Sin ventas en los últimos días{% endif %}</p>
   </section>
@@ -57,7 +57,7 @@
     {% if ver_costos %}<p>Costo {{ producto.precio_compra|moneda }} · margen {{ producto.margen|floatformat:0 }} %</p>{% endif %}
   </section>
   {% if not producto.es_preparado %}<section class="tarjeta">
-    <h2>Rotación y reposición</h2>
+    <h2>Cuándo pedir más {% ayuda "El sistema calcula cuándo pedir para no quedarte sin mercancía, según lo que vendes y lo que tarda el proveedor en traerla." %}</h2>
     <p>{{ analisis.rotacion|insignia }} rotación</p>
     <p class="suave">Proveedor: {{ producto.proveedor_principal|default:"sin asignar" }} · tarda unos {{ analisis.tiempo_entrega|floatformat:0 }} días en traerlo<br>
     Pide más cuando queden <b>{{ analisis.punto_reorden|clara:producto.unidad }}</b> (incluye {{ analisis.stock_seguridad|clara:producto.unidad }} de reserva para imprevistos).</p>

@@ -25,7 +25,6 @@ S = Alerta.Severidad
 
 
 @dataclass
-
 class Hallazgo:
     tipo: str
     severidad: int

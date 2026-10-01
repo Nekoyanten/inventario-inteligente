@@ -1,6 +1,6 @@
 from django.shortcuts import redirect, render
 
-from .selectors import resumen_negocio, resumen_vendedor
+from .selectors import resumen_equipo, resumen_negocio
 
 
 def inicio(request):
@@ -13,11 +13,18 @@ def inicio(request):
         if request.user.is_superuser:  # el administrador de la plataforma empieza en su panel
             return redirect("plataforma:panel")
         return render(request, "dashboard/sin_negocio.html")
-    if request.user.puede("ver_reportes"):
+    u = request.user
+    if u.puede("configurar_negocio"):  # el dueño: cómo va todo el negocio
         from apps.core.arranque import progreso_arranque
 
         return render(request, "dashboard/inicio.html", {"resumen": resumen_negocio(request.negocio),
                                                          "arranque": progreso_arranque(request.negocio)})
-    if request.user.puede("registrar_venta"):
-        return render(request, "dashboard/vendedor.html", {"resumen": resumen_vendedor(request.negocio, request.user)})
-    return redirect("catalogo:lista")
+    if u.puede("atender_mesas") and not u.puede("cobrar_cuentas") and not u.puede("registrar_venta"):
+        return redirect("nocturno:mis_mesas")  # el mesero va directo a sus mesas
+    # El resto del equipo: botones grandes con lo suyo y un resumen corto de lo que le toca
+    from apps.core.context_processors import negocio as contexto
+
+    atajos = [i for i in contexto(request)["menu"] if i["nombre"] != "dashboard:inicio"]
+    if atajos:
+        atajos[0]["principal_inicio"] = True
+    return render(request, "dashboard/equipo.html", {"atajos": atajos, "resumen": resumen_equipo(request.negocio, u)})

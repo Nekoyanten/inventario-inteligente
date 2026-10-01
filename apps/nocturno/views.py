@@ -3,6 +3,7 @@
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -11,13 +12,24 @@ from apps.catalogo.models import Producto
 from apps.clientes.models import Cliente
 from apps.core.auditoria import auditar
 from apps.core.negocio import del_negocio, negocio_requerido, obtener_del_negocio
-from apps.usuarios.permisos import requiere_permiso
+from apps.usuarios.permisos import requiere_alguno, requiere_permiso
 
 from . import analisis
 from . import services as s
 from .fidelizacion import recordatorios
 from .forms import ConfiguracionNocturnaForm, MesaForm, PrecioEspecialForm, ReservaForm
-from .models import BotellaGuardada, Cuenta, Ingreso, Invitado, ItemCuenta, Mesa, PrecioEspecial, Reserva, noche_de
+from .models import (
+    AsignacionMesa,
+    BotellaGuardada,
+    Cuenta,
+    Ingreso,
+    Invitado,
+    ItemCuenta,
+    Mesa,
+    PrecioEspecial,
+    Reserva,
+    noche_de,
+)
 
 
 def _dec(valor, defecto="0"):
@@ -27,6 +39,25 @@ def _dec(valor, defecto="0"):
         return Decimal(defecto)
 
 
+def _cuenta_propia(request, pk, qs=Cuenta.objects):
+    """La cuenta, si quien la pide puede atenderla (el mesero solo ve las de sus mesas)."""
+    c = obtener_del_negocio(request.negocio, qs, pk=pk)
+    if not s.puede_atender(request.user, c):
+        raise PermissionDenied
+    return c
+
+
+def _volver(request):
+    return "nocturno:noche" if request.user.puede("cobrar_cuentas") else "nocturno:mis_mesas"
+
+
+def _fidelizacion(request) -> bool:
+    from apps.core.modulos import activo
+
+    config = getattr(request.negocio, "config", None)
+    return bool(config and config.fidelizacion_activa) and activo(request.negocio, "clientes")
+
+
 def _cliente(request):
     cid = request.POST.get("cliente_id") or request.POST.get("cliente")
     return obtener_del_negocio(request.negocio, Cliente, pk=cid) if cid else None
@@ -34,14 +65,16 @@ def _cliente(request):
 
 # ---------------------------------------------------------------- la noche
 @negocio_requerido
-@requiere_permiso("registrar_venta")
+@requiere_permiso("cobrar_cuentas")
 def noche(request):
     n = request.negocio
     conf = s.configuracion(n)
     hoy = noche_de(timezone.now(), n)
-    abiertas = list(del_negocio(n, Cuenta).filter(estado=Cuenta.Estado.ABIERTA).select_related("mesa", "cliente"))
+    abiertas = list(del_negocio(n, Cuenta).filter(estado=Cuenta.Estado.ABIERTA).select_related("mesa", "cliente",
+                                                                                               "mesero"))
     for c in abiertas:
         c.r = s.resumen(c)
+    abiertas.sort(key=lambda c: (c.pide_cuenta is None, c.pide_cuenta or c.creado))  # primero las que piden pagar
     especiales = [p for p in del_negocio(n, PrecioEspecial).filter(activa=True) if p.vigente_en(timezone.now())]
     return render(request, "nocturno/noche.html", {
         "conf": conf, "hoy": hoy, "cuentas": abiertas, "presentes": s.presentes(n, hoy),
@@ -50,45 +83,151 @@ def noche(request):
         "especiales": especiales, "abierto_total": sum(c.r["total"] for c in abiertas),
         "recordatorios": recordatorios(n) if request.user.puede("gestionar_clientes") else [],
         "ingresos": del_negocio(n, Ingreso).filter(noche=hoy)[:10],
+        "por_cobrar": sum(1 for c in abiertas if c.pide_cuenta),
+        "sin_asignar": del_negocio(n, Mesa).filter(activa=True).exists()
+        and not del_negocio(n, AsignacionMesa).filter(noche=hoy).exists(),
     })
 
 
+# ---------------------------------------------------------------- mesas y meseros
+def _meseros(negocio):
+    from apps.usuarios.models import Usuario
+
+    return [u for u in Usuario.objects.filter(negocio=negocio, is_active=True).order_by("first_name", "username")
+            if u.puede("atender_mesas") and not u.puede("cobrar_cuentas")]
+
+
 @negocio_requerido
-@requiere_permiso("registrar_venta")
+@requiere_permiso("asignar_mesas")
+def mesas(request):
+    """Mapa de mesas de esta noche: quién atiende cada una y cómo va."""
+    n = request.negocio
+    hoy = noche_de(timezone.now(), n)
+    meseros = _meseros(n)
+    todas = s.orden_natural(del_negocio(n, Mesa).filter(activa=True))
+    if request.method == "POST":
+        accion = request.POST.get("accion")
+        try:
+            if accion == "copiar":
+                total = s.copiar_asignacion(n, hoy, request.user)
+                messages.success(request, f"Listo: se repitió la asignación de la noche anterior ({total} mesas).")
+            elif accion == "repartir":
+                total = s.repartir_mesas(n, hoy, meseros, request.user)
+                messages.success(request, f"Listo: {total} mesas repartidas entre {len(meseros)} meseros.")
+            else:
+                por_id = {str(u.pk): u for u in meseros}
+                s.asignar_mesas(n, hoy, {m.pk: por_id.get(request.POST.get(f"mesa-{m.pk}", "")) for m in todas},
+                                request.user)
+                messages.success(request, "Asignación guardada. Cada mesero ya ve sus mesas.")
+        except s.ErrorNocturno as e:
+            messages.error(request, str(e))
+        return redirect("nocturno:mesas")
+    asignadas = {a.mesa_id: a.mesero for a in del_negocio(n, AsignacionMesa).filter(noche=hoy).select_related("mesero")}
+    abiertas = {c.mesa_id: c for c in del_negocio(n, Cuenta).filter(estado=Cuenta.Estado.ABIERTA, mesa__isnull=False)}
+    zonas = {}
+    for m in todas:
+        m.mesero = asignadas.get(m.pk)
+        m.cuenta = abiertas.get(m.pk)
+        if m.cuenta:
+            m.cuenta.r = s.resumen(m.cuenta)
+        zonas.setdefault(m.get_zona_display(), []).append(m)
+    carga = {u.pk: sum(1 for m in todas if m.mesero and m.mesero.pk == u.pk) for u in meseros}
+    for u in meseros:
+        u.num_mesas = carga[u.pk]
+    return render(request, "nocturno/mesas.html", {"hoy": hoy, "zonas": zonas, "meseros": meseros,
+                                                   "hay_mesas": bool(todas), "asignadas": len(asignadas)})
+
+
+@negocio_requerido
+@requiere_permiso("atender_mesas")
+def mis_mesas(request):
+    """Lo único que necesita el mesero: sus mesas de esta noche."""
+    n = request.negocio
+    hoy = noche_de(timezone.now(), n)
+    mias = s.orden_natural(s.mesas_de(n, request.user, hoy))
+    abiertas = {c.mesa_id: c for c in del_negocio(n, Cuenta).filter(estado=Cuenta.Estado.ABIERTA, mesa__in=mias)}
+    for m in mias:
+        m.cuenta = abiertas.get(m.pk)
+        if m.cuenta:
+            m.cuenta.r = s.resumen(m.cuenta)
+    otras = del_negocio(n, Cuenta).filter(estado=Cuenta.Estado.ABIERTA, mesa__isnull=True, mesero=request.user)
+    return render(request, "nocturno/mis_mesas.html", {"hoy": hoy, "mesas": mias, "otras": otras})
+
+
+@negocio_requerido
+@requiere_alguno("cobrar_cuentas", "atender_mesas")
+@require_POST
+def pedir_cuenta(request, pk):
+    c = _cuenta_propia(request, pk)
+    try:
+        s.pedir_la_cuenta(c, request.user)
+        messages.success(request, f"Listo: la caja ya sabe que {c} quiere pagar.")
+    except s.ErrorNocturno as e:
+        messages.error(request, str(e))
+        return redirect("nocturno:cuenta", pk=pk)
+    return redirect(_volver(request))
+
+
+@negocio_requerido
+@requiere_alguno("cobrar_cuentas", "atender_mesas")
 @require_POST
 def abrir(request):
     mesa = obtener_del_negocio(request.negocio, Mesa, pk=request.POST["mesa"]) if request.POST.get("mesa") else None
+    if not request.user.puede("cobrar_cuentas"):  # mesero: solo sus mesas
+        hoy = noche_de(timezone.now(), request.negocio)
+        if mesa is None or not s.mesas_de(request.negocio, request.user, hoy).filter(pk=mesa.pk).exists():
+            messages.error(request, "Esa mesa no está asignada a ti esta noche.")
+            return redirect("nocturno:mis_mesas")
     try:
         cuenta = s.abrir_cuenta(request.negocio, request.user, mesa=mesa, nombre=request.POST.get("nombre", ""),
                                 cliente=_cliente(request), personas=int(request.POST.get("personas") or 1))
     except (s.ErrorNocturno, ValueError) as e:
         messages.error(request, str(e))
-        return redirect("nocturno:noche")
+        return redirect(_volver(request))
     return redirect("nocturno:cuenta", pk=cuenta.pk)
 
 
 @negocio_requerido
-@requiere_permiso("registrar_venta")
+@requiere_alguno("cobrar_cuentas", "atender_mesas")
 def cuenta(request, pk):
-    c = obtener_del_negocio(request.negocio, Cuenta.objects.select_related("mesa", "cliente", "reserva"), pk=pk)
+    c = _cuenta_propia(request, pk, Cuenta.objects.select_related("mesa", "cliente", "reserva", "mesero"))
     try:
         r = s.resumen(c, puntos=int(request.GET.get("puntos") or 0))
     except Exception as e:  # puntos inválidos: se muestra sin canje
         messages.error(request, str(e))
         r = s.resumen(c)
     return render(request, "nocturno/cuenta.html", {
-        "c": c, "r": r, "cobrados": c.items.filter(venta__isnull=False).select_related("producto", "venta"),
+        "c": c, "r": r, "cobra": request.user.puede("cobrar_cuentas"), "volver": _volver(request),
+        "fidelizacion": _fidelizacion(request),
+        "cobrados": c.items.filter(venta__isnull=False).select_related("producto", "venta"),
         "conf": s.configuracion(request.negocio),
         "guardadas": c.cliente.botellas_guardadas.filter(estado=BotellaGuardada.Estado.GUARDADA) if c.cliente else [],
+        "rapidos": _mas_pedidos(request.negocio) if c.estado == Cuenta.Estado.ABIERTA else [],
     })
 
 
+def _mas_pedidos(negocio, limite=8):
+    """Botones de un toque para lo que más se pide (últimos 30 días): el mesero no tiene que escribir."""
+    from datetime import timedelta
+
+    from django.db.models import Sum
+
+    desde = timezone.now() - timedelta(days=30)
+    ids = list(ItemCuenta.objects.filter(cuenta__negocio=negocio, agregado__gte=desde, cortesia=False)
+               .values("producto").annotate(n=Sum("cantidad")).order_by("-n").values_list("producto", flat=True)[:limite])
+    por_id = {p.pk: p for p in Producto.objects.filter(pk__in=ids, activo=True)}
+    return [por_id[i] for i in ids if i in por_id]
+
+
 @negocio_requerido
-@requiere_permiso("registrar_venta")
+@requiere_alguno("cobrar_cuentas", "atender_mesas")
 @require_POST
 def pedir(request, pk):
-    c = obtener_del_negocio(request.negocio, Cuenta, pk=pk)
-    producto = obtener_del_negocio(request.negocio, Producto, pk=request.POST.get("producto") or 0)
+    c = _cuenta_propia(request, pk)
+    if not str(request.POST.get("producto", "")).isdigit():
+        messages.error(request, "Elige el producto de la lista (escribe y toca el que quieres).")
+        return redirect("nocturno:cuenta", pk=pk)
+    producto = obtener_del_negocio(request.negocio, Producto, pk=request.POST["producto"])
     cortesia = bool(request.POST.get("cortesia")) and request.user.puede("configurar_negocio")
     try:
         s.agregar_item(c, producto, _dec(request.POST.get("cantidad"), "1"), request.user, cortesia=cortesia,
@@ -99,11 +238,14 @@ def pedir(request, pk):
 
 
 @negocio_requerido
-@requiere_permiso("registrar_venta")
+@requiere_alguno("cobrar_cuentas", "atender_mesas")
 @require_POST
 def quitar(request, pk, item_id):
-    c = obtener_del_negocio(request.negocio, Cuenta, pk=pk)
+    c = _cuenta_propia(request, pk)
     item = obtener_del_negocio(request.negocio, ItemCuenta.objects.filter(cuenta=c), pk=item_id)
+    if not request.user.puede("cobrar_cuentas") and item.agregado_por_id != request.user.pk:
+        messages.error(request, "Solo puedes quitar lo que tú agregaste. Pídeselo al cajero.")
+        return redirect("nocturno:cuenta", pk=pk)
     try:
         s.quitar_item(item, request.user, request.POST.get("motivo", ""))
     except s.ErrorNocturno as e:
@@ -112,10 +254,10 @@ def quitar(request, pk, item_id):
 
 
 @negocio_requerido
-@requiere_permiso("registrar_venta")
+@requiere_alguno("cobrar_cuentas", "atender_mesas")
 @require_POST
 def asignar_cliente(request, pk):
-    c = obtener_del_negocio(request.negocio, Cuenta, pk=pk)
+    c = _cuenta_propia(request, pk)
     s._validar_abierta(c)
     c.cliente = _cliente(request)
     if request.POST.get("personas"):
@@ -125,7 +267,7 @@ def asignar_cliente(request, pk):
 
 
 @negocio_requerido
-@requiere_permiso("registrar_venta")
+@requiere_permiso("cobrar_cuentas")
 @require_POST
 def cobrar(request, pk):
     from apps.clientes.services import ErrorClientes
@@ -161,7 +303,7 @@ def anular(request, pk):
 
 # ---------------------------------------------------------------- puerta
 @negocio_requerido
-@requiere_permiso("registrar_venta")
+@requiere_permiso("cobrar_cuentas")
 @require_POST
 def entrada(request):
     reserva = obtener_del_negocio(request.negocio, Reserva, pk=request.POST["reserva"]) \
@@ -187,7 +329,7 @@ def entrada(request):
 
 # ---------------------------------------------------------------- reservas
 @negocio_requerido
-@requiere_permiso("registrar_venta")
+@requiere_permiso("cobrar_cuentas")
 def reservas(request):
     n = request.negocio
     hoy = noche_de(timezone.now(), n)
@@ -209,7 +351,7 @@ def reservas(request):
 
 
 @negocio_requerido
-@requiere_permiso("registrar_venta")
+@requiere_permiso("cobrar_cuentas")
 def reserva(request, pk):
     r = obtener_del_negocio(request.negocio, Reserva.objects.select_related("cliente", "mesa"), pk=pk)
     if request.method == "POST":
@@ -241,7 +383,7 @@ def reserva(request, pk):
 
 # ---------------------------------------------------------------- botellas
 @negocio_requerido
-@requiere_permiso("registrar_venta")
+@requiere_permiso("cobrar_cuentas")
 def botellas(request):
     s.vencer_botellas(request.negocio)
     return render(request, "nocturno/botellas.html", {
@@ -250,7 +392,7 @@ def botellas(request):
 
 
 @negocio_requerido
-@requiere_permiso("registrar_venta")
+@requiere_permiso("cobrar_cuentas")
 @require_POST
 def guardar_botella(request, pk):
     c = obtener_del_negocio(request.negocio, Cuenta, pk=pk)
@@ -268,7 +410,7 @@ def guardar_botella(request, pk):
 
 
 @negocio_requerido
-@requiere_permiso("registrar_venta")
+@requiere_permiso("cobrar_cuentas")
 @require_POST
 def retirar_botella(request, pk):
     b = obtener_del_negocio(request.negocio, BotellaGuardada, pk=pk)
