@@ -68,7 +68,7 @@
 {% for a in alertas %}<p class="alerta s{{ a.severidad }}">{{ a.mensaje }} <em>{{ a.accion_sugerida }}</em></p>{% endfor %}
 
 {% if not producto.es_insumo %}
-{% if producto.es_preparado or receta %}<section class="tarjeta">{% else %}<details class="tarjeta receta-plegada"><summary>🧪 ¿Lo elaboras tú (pan, jabones, postres…)? Agrega su receta</summary>{% endif %}
+{% if producto.es_preparado or receta %}<section class="tarjeta">{% else %}<details class="tarjeta receta-plegada"><summary>¿Lo elaboras tú (pan, jabones, postres…)? Agrega su receta</summary>{% endif %}
   <div class="encabezado"><h2>Receta {% if producto.es_preparado %}(se descuenta al vender){% else %}(para producción propia){% endif %}</h2>
     {% if costo_receta is not None and ver_costos %}<span>Costo por unidad: <b>{{ costo_receta|moneda }}</b>{% if margen_receta is not None %} · margen {{ margen_receta|floatformat:0 }} %{% endif %}</span>{% endif %}</div>
   {% if receta %}
@@ -100,7 +100,7 @@
 {% if producto.es_preparado or receta %}</section>{% else %}</details>{% endif %}
 {% endif %}
 {% if nocturno and not producto.es_preparado and "gestionar_productos" in permisos %}
-<details class="tarjeta"><summary><b>🥃 Vender por tragos</b> · crea el trago y descuenta la botella en fracciones</summary>
+<details class="tarjeta"><summary><b>Vender por tragos</b> · crea el trago y descuenta la botella en fracciones</summary>
   <form method="post" action="{% url 'nocturno:crear_trago' producto.pk %}" class="formulario-libre rejilla-2">{% csrf_token %}
     <p><label for="t-ml-b">Mililitros de la botella</label><input id="t-ml-b" name="ml_botella" type="number" min="50" value="750" required></p>
     <p><label for="t-ml-t">Mililitros por trago</label><input id="t-ml-t" name="ml_trago" type="number" min="5" value="30" required></p>
@@ -115,11 +115,12 @@
 </section>
 {% endif %}
 
+<details class="plegado"><summary>Historial, ventas por mes y más detalles</summary>
 <div class="rejilla-2">
   <section class="tarjeta">
     <h2>Ventas por mes y próximos 30 días</h2>
     {% grafico_barras ventas_mensuales pronostico %}
-    {% if pronostico.valor %}<p class="explicacion">Según el historial, en los próximos 30 días se venderían entre <strong>{{ pronostico.minimo|floatformat:0 }}</strong> y <strong>{{ pronostico.maximo|floatformat:0 }}</strong> unidades (≈ {{ pronostico.valor|floatformat:0 }}). Es una estimación, no una certeza.</p>{% endif %}
+    {% if pronostico.valor %}<p class="explicacion">Próximos 30 días: entre <strong>{{ pronostico.minimo|floatformat:0 }}</strong> y <strong>{{ pronostico.maximo|floatformat:0 }}</strong> (estimado).</p>{% endif %}
   </section>
   <section class="tarjeta">
     <div class="encabezado"><h2>Qué ha pasado últimamente</h2><a href="{% url 'inventario:kardex' producto.pk %}">Ver todo →</a></div>
@@ -141,6 +142,7 @@
   </section>
   {% endif %}
 </div>
+</details>
 {% endif %}
 {% endblock %}
 {% block scripts %}{% load static %}<script src="{% static 'js/app.js' %}"></script>

@@ -6,7 +6,7 @@
 {% if aviso_legal %}<p class="mensaje warning">⚖️ {{ aviso_legal }}</p>{% endif %}
 {% if sugerencias %}
 <section class="tarjeta destacado">
-  <h2>💡 Sugeridas por el sistema</h2>
+  <h2>Sugeridas por el sistema</h2>
   {% for s in sugerencias %}<div class="alerta s2"><div class="encabezado" style="margin:0"><div><b>{{ s.titulo }}</b> · {{ s.descuento_pct|floatformat:0 }} %<em>{{ s.razon }}</em></div>
     <form method="post" action="{% url 'clientes:crear_sugerida' %}">{% csrf_token %}<input type="hidden" name="clave" value="{{ s.clave }}"><button class="boton boton-auto boton-chico">Crear</button></form></div></div>{% endfor %}
 </section>

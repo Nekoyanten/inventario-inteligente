@@ -7,7 +7,7 @@
     {% if not vigente %}<span class="insignia gris">no vigente</span>{% endif %}</span></div>
   <div class="acciones"><a class="boton boton-auto boton-chico boton-secundario" href="{% url 'clientes:oferta_editar' oferta.pk %}">Editar</a></div>
 </div>
-{% if oferta.razon %}<p class="explicacion">💡 {{ oferta.razon }}</p>{% endif %}
+{% if oferta.razon %}<p class="explicacion">{{ oferta.razon }}</p>{% endif %}
 <div class="rejilla">
   <section class="tarjeta"><h2>Enviada a</h2><p class="kpi">{{ efectividad.enviados }}</p></section>
   <section class="tarjeta"><h2>Volvieron a comprar</h2><p class="kpi">{% if efectividad.retorno_pct is not None %}{{ efectividad.retorno_pct }} %{% else %}—{% endif %}</p><p class="suave">{{ efectividad.volvieron }} de los contactados, mientras estuvo vigente</p></section>

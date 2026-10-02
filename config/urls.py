@@ -5,13 +5,14 @@ from django.contrib.auth import views as auth_views
 from django.urls import include, path
 
 from apps.clientes.views import encuesta
-from apps.usuarios.seguridad import Ingreso  # noqa: E402
+from apps.usuarios.seguridad import Ingreso, entrar_equipo  # noqa: E402
 
 admin.site.site_header = "Inventario Inteligente"
 
 urlpatterns = [
     path(settings.ADMIN_URL, admin.site.urls),
     path("ingresar/", Ingreso.as_view(), name="login"),
+    path("equipo/<str:token>/", entrar_equipo, name="equipo"),
     path("clave/recuperar/", auth_views.PasswordResetView.as_view(), name="password_reset"),
     path("clave/recuperar/enviado/", auth_views.PasswordResetDoneView.as_view(), name="password_reset_done"),
     path("clave/nueva/<uidb64>/<token>/", auth_views.PasswordResetConfirmView.as_view(), name="password_reset_confirm"),

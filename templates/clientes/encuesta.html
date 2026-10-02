@@ -4,7 +4,7 @@
 <section class="tarjeta formulario formulario-libre" style="max-width:480px;margin:1rem auto">
   <h1>{{ enc.negocio.nombre }}</h1>
   {% if gracias %}
-    <p class="kpi">¡Gracias! 💛</p><p>Tu opinión nos ayuda a mejorar.</p>
+    <p class="kpi">¡Gracias! </p><p>Tu opinión nos ayuda a mejorar.</p>
   {% else %}
     <p>¿Cómo te atendimos en tu compra del {{ enc.venta.fecha|date:"d/m/Y" }}?</p>
     {% if error %}<p class="mensaje error">{{ error }}</p>{% endif %}

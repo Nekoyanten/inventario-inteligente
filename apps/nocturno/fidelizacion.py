@@ -79,7 +79,7 @@ def recordatorios(negocio, hoy=None) -> list[dict]:
         c = b.cliente
         if c.telefono and c.acepta_ofertas:
             texto = (f"Hola {c.primer_nombre}, en {negocio.nombre} te estamos guardando tu {b.producto.nombre} "
-                     f"({b.restante_pct} %). Te esperamos antes del {b.vence:%d/%m}. 🍾")
+                     f"({b.restante_pct} %). Te esperamos antes del {b.vence:%d/%m}. ")
             salida.append({"tipo": "Botella guardada", "cliente": c, "texto": texto,
                            "url": url_whatsapp(c.telefono, texto)})
     for c, n in proximos_a_bono(negocio):

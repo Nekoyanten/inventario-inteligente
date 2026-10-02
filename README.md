@@ -70,7 +70,7 @@ python manage.py cargar_demo_negocios       # 5 negocios de demostración (clave
 ### Pruebas
 
 ```bash
-pytest                                  # 348 pruebas
+pytest                                  # 352 pruebas
 ruff check .
 DATABASE_URL=postgres://... pytest      # también contra PostgreSQL (como en CI)
 ```

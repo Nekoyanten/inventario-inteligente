@@ -50,9 +50,12 @@ def construir_menu(request, permisos, contadores=None):
     suscripcion = getattr(request, "suscripcion", None)
     from .modulos import modulo_de_menu
 
+    solo_mesero = "atender_mesas" in permisos and not ({"cobrar_cuentas", "registrar_venta"} & set(permisos))
     for permiso, nombre, icono, texto, activa in MENU:
         if permiso and permiso not in permisos:
             continue
+        if nombre == "dashboard:inicio" and solo_mesero and nocturno:
+            continue  # su inicio son las mesas
         modulo = modulo_de_menu(nombre)
         if modulo and suscripcion is not None and not suscripcion.tiene_modulo(modulo):
             continue  # no está en su plan

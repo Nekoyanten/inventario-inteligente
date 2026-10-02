@@ -9,7 +9,7 @@
 
 <div class="rejilla">
   <section class="tarjeta"><h2>Plan</h2><p class="kpi kpi-texto">{{ s.limites.nombre }}</p>
-    <p class="suave">{% if s.en_prueba %}Prueba con todo hasta el {{ s.prueba_hasta|date:"d/m/Y" }}{% elif s.vencido %}⚠️ Venció el {{ s.pagado_hasta|date:"d/m/Y" }}: está con límites de Gratis{% elif s.pagado_hasta %}Activo hasta el {{ s.pagado_hasta|date:"d/m/Y" }}{% else %}Sin fecha de vencimiento{% endif %}</p></section>
+    <p class="suave">{% if s.en_prueba %}Prueba con todo hasta el {{ s.prueba_hasta|date:"d/m/Y" }}{% elif s.vencido %}Venció el {{ s.pagado_hasta|date:"d/m/Y" }}: está con límites de Gratis{% elif s.pagado_hasta %}Activo hasta el {{ s.pagado_hasta|date:"d/m/Y" }}{% else %}Sin fecha de vencimiento{% endif %}</p></section>
   <section class="tarjeta"><h2>Productos</h2><p class="kpi">{{ uso.productos }} <small>de {{ s.limites.productos }}</small></p></section>
   <section class="tarjeta"><h2>Usuarios</h2><p class="kpi">{{ uso.usuarios }} <small>de {{ s.limites.usuarios }}</small></p></section>
 </div>

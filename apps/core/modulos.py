@@ -2,10 +2,10 @@
 
 MODULOS = {
     # clave: (nombre, rutas que abre, entradas del menú)
-    "clientes": ("💛 Clientes y fidelización", ("/clientes/",), ("clientes:panel",)),
-    "nocturno": ("🍸 La noche (cuentas, puerta, reservas, botellas)", ("/noche/",), ("nocturno:noche",)),
-    "compras": ("🛒 Compras y proveedores", ("/compras/", "/proveedores/"), ("recomendaciones:lista", "proveedores:lista")),
-    "reportes": ("📊 Reportes", ("/reportes/",), ("reportes:inicio",)),
+    "clientes": ("Clientes y fidelización", ("/clientes/",), ("clientes:panel",)),
+    "nocturno": ("La noche (cuentas, puerta, reservas, botellas)", ("/noche/",), ("nocturno:noche",)),
+    "compras": ("Compras y proveedores", ("/compras/", "/proveedores/"), ("recomendaciones:lista", "proveedores:lista")),
+    "reportes": ("Reportes", ("/reportes/",), ("reportes:inicio",)),
 }
 
 

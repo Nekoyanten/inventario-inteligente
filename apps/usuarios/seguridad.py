@@ -56,7 +56,7 @@ class Ingreso(LoginView):
         from .models import Rol, Usuario
 
         ctx = super().get_context_data(**kwargs)
-        n = negocio_del_equipo(self.request)
+        n = None if self.request.GET.get("otro") else negocio_del_equipo(self.request)
         if n is not None:  # botones con los nombres de quienes trabajan aquí: tocar el nombre y escribir el PIN
             ctx["equipo"] = n
             ctx["personas"] = (Usuario.objects.filter(negocio=n, is_active=True).exclude(is_superuser=True)
@@ -72,3 +72,30 @@ class Ingreso(LoginView):
             respuesta.set_signed_cookie(COOKIE_EQUIPO, u.negocio_id, salt="equipo", max_age=400 * 24 * 3600,
                                         httponly=True, samesite="Lax", secure=self.request.is_secure())
         return respuesta
+
+
+def enlace_equipo(request, negocio) -> str:
+    """Enlace para abrir en el celular de cada persona: deja listo el ingreso con los nombres del equipo."""
+    from django.core import signing
+    from django.urls import reverse
+
+    return request.build_absolute_uri(reverse("equipo", args=[signing.dumps(negocio.pk, salt="enlace-equipo")]))
+
+
+def entrar_equipo(request, token):
+    from django.core import signing
+    from django.http import Http404
+    from django.shortcuts import redirect
+
+    from apps.core.models import Negocio
+
+    try:
+        pk = signing.loads(token, salt="enlace-equipo")
+    except signing.BadSignature as e:
+        raise Http404 from e
+    if not Negocio.objects.filter(pk=pk).exists():
+        raise Http404
+    respuesta = redirect("login")
+    respuesta.set_signed_cookie(COOKIE_EQUIPO, pk, salt="equipo", max_age=400 * 24 * 3600, httponly=True,
+                                samesite="Lax", secure=request.is_secure())
+    return respuesta

@@ -16,6 +16,7 @@
   {% block cabeza %}{% endblock %}
 </head>
 <body class="{% if user.is_authenticated and negocio %}con-menu{% endif %}">
+  {% if request.soporte %}<form method="post" action="{% url 'plataforma:salir' %}" class="franja-soporte">{% csrf_token %}<span>Modo soporte · estás viendo <b>{{ negocio }}</b></span><button>Volver a tus negocios</button></form>{% endif %}
   <header class="barra">
     <a class="marca" href="{% if user.is_authenticated %}{% url 'dashboard:inicio' %}{% else %}/{% endif %}">
       {% if apariencia.logo %}<img src="{{ apariencia.logo.url }}" alt="" class="logo-negocio">{% else %}<img src="{% static 'img/icono.svg' %}" alt="" width="26" height="26">{% endif %}
@@ -48,7 +49,7 @@
   {% endif %}
 
   <main class="contenedor">
-    {% if request.soporte %}<form method="post" action="{% url 'plataforma:salir' %}" class="mensaje info">{% csrf_token %}🛡️ Estás dentro de <strong>{{ negocio }}</strong> como administrador de la plataforma; todo lo que hagas queda en su bitácora. <button class="enlace">Volver a la plataforma</button></form>{% endif %}
+
     {% if request.suscripcion and user.is_authenticated %}{% with s=request.suscripcion %}
       {% if s.en_prueba and s.dias_restantes <= 3 %}<p class="mensaje warning">Tu prueba gratis termina en {{ s.dias_restantes }} día{{ s.dias_restantes|pluralize }}. <a href="{% url 'negocio:plan' %}">Elige un plan</a> para seguir con todas las funciones.</p>
       {% elif not s.en_prueba and not s.al_dia and s.plan != 'GRATIS' %}<p class="mensaje warning">Tu plan venció: aplican los límites del plan Gratis. <a href="{% url 'negocio:plan' %}">Renovar</a></p>{% endif %}

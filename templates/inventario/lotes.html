@@ -16,7 +16,7 @@
         <td class="num" data-titulo="Cantidad">{{ f.lote.cantidad|cantidad }}</td>
         <td class="num" data-titulo="Valor">{{ f.valor|moneda }}</td>
         <td>{% if f.dias < 0 %}<form method="post" action="{% url 'inventario:retirar_lote' f.lote.pk %}" onsubmit="return confirm('¿Registrar salida por vencimiento?')">{% csrf_token %}<button class="enlace">Retirar</button></form>{% endif %}</td></tr>
-    {% empty %}<tr><td colspan="6" class="vacio">🟢 No hay productos con fecha de vencimiento en riesgo.</td></tr>{% endfor %}
+    {% empty %}<tr><td colspan="6" class="vacio"><span class="punto libre"></span>No hay productos con fecha de vencimiento en riesgo.</td></tr>{% endfor %}
     </tbody>
   </table>
 </section>

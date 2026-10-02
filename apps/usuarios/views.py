@@ -32,10 +32,13 @@ class UsuarioListaView(NegocioRequeridoMixin, ListView):
         ctx = super().get_context_data(**kwargs)
         lim = suscripcion(self.request.negocio).limites
         activos = sum(1 for u in ctx["usuarios"] if u.is_active)
+        from .seguridad import enlace_equipo
+
+        ctx["enlace_equipo"] = enlace_equipo(self.request, self.request.negocio)
         ctx.update({"cupo": lim["usuarios"], "activos": activos, "lleno": activos >= lim["usuarios"],
                     "contacto": settings.CONTACTO_VENTAS})
         for u in ctx["usuarios"]:
-            nombres = (AREAS[a][0].split(" ", 1)[-1] for a in u.areas_efectivas if a in AREAS)  # sin el emoji
+            nombres = (AREAS[a][0] for a in u.areas_efectivas if a in AREAS)
             u.areas_texto = "Todo" if u.es_admin else " · ".join(nombres)
         ctx["roles"] = [(valor, nombre, ROLES_INFO.get(valor, "")) for valor, nombre in Rol.choices]
         return ctx

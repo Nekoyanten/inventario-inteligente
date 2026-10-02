@@ -13,7 +13,7 @@
     <thead><tr><th>Fecha</th><th>Producto</th><th>Qué pasó</th><th class="num">Cantidad</th><th class="num">Quedaron</th><th>Quién</th><th>Por qué</th></tr></thead>
     <tbody>
     {% for m in pagina %}
-      <tr><td>{{ m.fecha|date:"d/m/Y H:i" }}{% if m.marcado_anomalo %} ⚠️{% endif %}</td>
+      <tr><td>{{ m.fecha|date:"d/m/Y H:i" }}{% if m.marcado_anomalo %} {% endif %}</td>
         <td data-titulo="Producto"><a href="{% url 'inventario:kardex' m.producto_id %}">{{ m.producto.nombre }}</a></td>
         <td data-titulo="Qué pasó">{{ m.get_tipo_display }}</td>
         <td class="num" data-titulo="Cantidad">{% if m.es_entrada %}+{% else %}−{% endif %} {{ m.cantidad|clara:m.producto.unidad }}</td>

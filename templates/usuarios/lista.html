@@ -18,9 +18,21 @@
   {% endfor %}
   </ul>
 </section>
+<section class="tarjeta">
+  <h2>Enlace para tu equipo</h2>
+  <p class="suave" style="margin-top:0">Ábrelo una vez en cada celular. Desde ahí cada persona toca su nombre y entra con su PIN.</p>
+  <div class="campo-linea"><input id="enlace-equipo" value="{{ enlace_equipo }}" readonly aria-label="Enlace para el equipo"><button type="button" class="boton boton-auto boton-secundario" id="copiar-enlace">Copiar</button></div>
+</section>
 <details class="tarjeta">
   <summary><b>¿Qué hace cada rol?</b></summary>
   <ul class="lista-simple">{% for valor, nombre, info in roles %}<li><b>{{ nombre }}</b>: {{ info }} <a href="{% url 'usuarios:crear' %}?rol={{ valor }}">Agregar {{ nombre|lower }}</a></li>{% endfor %}</ul>
   <p class="suave">A cada persona le puedes marcar o quitar lo que ve al crearla o editarla.</p>
 </details>
 {% endblock %}
+{% block scripts %}<script>
+document.getElementById("copiar-enlace").addEventListener("click", async (e) => {
+  const campo = document.getElementById("enlace-equipo");
+  try { await navigator.clipboard.writeText(campo.value); } catch (_) { campo.select(); document.execCommand("copy"); }
+  e.target.textContent = "Copiado";
+});
+</script>{% endblock %}

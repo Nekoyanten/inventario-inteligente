@@ -130,7 +130,7 @@ def test_el_mesero_solo_atiende_sus_mesas(client, bar):
     s.asignar_mesas(n, hoy, {m1.pk: ana, m2.pk: luis}, bar["dueno"])
     client.force_login(ana)
     html = client.get("/noche/mis-mesas/").content.decode()
-    assert "Tomar mesa" in html and "Asignada a Luis" in html
+    assert "Tomar la mesa M1" in html and "ficha otro" in html and "Luis" in html
     # abre su mesa: queda como mesero de la cuenta
     r = client.post(f"/noche/mesas/{m1.pk}/tomar/", {"personas": 3})
     cuenta = Cuenta.objects.get(mesa=m1)
@@ -141,11 +141,11 @@ def test_el_mesero_solo_atiende_sus_mesas(client, bar):
     ajena = s.abrir_cuenta(n, luis, mesa=m2)
     assert ajena.mesero == luis
     assert client.get(f"/noche/cuentas/{ajena.pk}/").status_code == 403
-    assert "Atiende Luis" in client.get("/noche/mis-mesas/").content.decode()
+    assert "ficha otro" in client.get("/noche/mis-mesas/").content.decode()
     # toma el pedido y puede pedirle a la caja que cobre
     client.post(f"/noche/cuentas/{cuenta.pk}/pedir/", {"producto": bar["cerveza"].pk, "cantidad": 2})
     html = client.get(f"/noche/cuentas/{cuenta.pk}/").content.decode()
-    assert "Cobrar y terminar mesa" in html and "Que cobre la caja" in html
+    assert "dejar la mesa libre" in html and "Que cobre la caja" in html and "datos-carta" in html
     client.post(f"/noche/cuentas/{cuenta.pk}/pedir-cuenta/")
     cuenta.refresh_from_db()
     assert cuenta.pide_cuenta is not None
@@ -196,7 +196,7 @@ def test_liberar_mesa_sin_pedidos(client, bar):
     c = Cuenta.objects.get(mesa=m1, estado=Cuenta.Estado.ABIERTA)
     client.post(f"/noche/cuentas/{c.pk}/liberar/")
     c.refresh_from_db()
-    assert c.estado == Cuenta.Estado.ANULADA and "Tomar mesa" in client.get("/noche/mis-mesas/").content.decode()
+    assert c.estado == Cuenta.Estado.ANULADA and "Tomar la mesa" in client.get("/noche/mis-mesas/").content.decode()
 
 
 def test_la_caja_ve_primero_las_que_piden_la_cuenta_y_cobra(client, bar):
@@ -228,7 +228,7 @@ def test_reasignar_mueve_la_cuenta_abierta(bar):
 
 def test_mesero_sin_mesas_ve_que_hacer(client, bar):
     client.force_login(bar["luis"])
-    assert "Toca una mesa libre para atenderla" in client.get("/noche/mis-mesas/").content.decode()
+    assert "Tomar la mesa" in client.get("/noche/mis-mesas/").content.decode()
 
 
 # ---------------------------------------------------------------- módulos en segundo plano
@@ -266,7 +266,7 @@ def test_ayuda_explica_en_una_linea():
 def test_el_tablero_del_dueno_explica_sus_datos(client, admin):
     client.force_login(admin)
     html = client.get("/").content.decode()
-    assert "Lo que te queda (estimado)" in html and 'class="ayuda"' in html
+    assert "Te queda este mes" in html and "Para hacer hoy" in html and 'class="ayuda"' in html
 
 
 def test_mesas_en_orden_natural(bar):
@@ -358,3 +358,56 @@ def test_porque_corto_en_compras(bar):
 
     r = RecomendacionCompra(stock_al_calcular=4, demanda_diaria=2, tiempo_entrega=3)
     assert r.motivo_corto == "Alcanza ~2 días · el proveedor tarda 3 días"
+
+
+# ---------------------------------------------------------------- Fase 16: rápido y simple
+def test_pedido_de_un_toque_sin_recargar(client, bar):
+    ana, m1, cer = bar["ana"], bar["mesas"][0], bar["cerveza"]
+    client.force_login(ana)
+    client.post(f"/noche/mesas/{m1.pk}/tomar/")
+    c = Cuenta.objects.get(mesa=m1, estado=Cuenta.Estado.ABIERTA)
+    h = {"HTTP_X_REQUESTED_WITH": "fetch"}
+    for _ in range(3):
+        r = client.post(f"/noche/cuentas/{c.pk}/pedir/", {"producto": cer.pk, "cantidad": 1}, **h)
+    j = r.json()
+    assert j["unidades"] == 3 and j["total"] == 18000 and j["por_producto"][str(cer.pk)] == 3
+    j = client.post(f"/noche/cuentas/{c.pk}/menos/", {"producto": cer.pk}, **h).json()
+    assert j["unidades"] == 2 and j["a_pagar"] == 12000
+    # no puede quitar lo que agregó otra persona
+    s.agregar_item(c, cer, 1, bar["dueno"])
+    client.post(f"/noche/cuentas/{c.pk}/menos/", {"producto": cer.pk}, **h)
+    client.post(f"/noche/cuentas/{c.pk}/menos/", {"producto": cer.pk}, **h)
+    r = client.post(f"/noche/cuentas/{c.pk}/menos/", {"producto": cer.pk}, **h)
+    assert r.status_code == 400 and c.items.count() == 1
+
+
+def test_superusuario_es_de_la_plataforma_no_de_una_tienda(client, bar):
+    neko = Usuario.objects.create_superuser("neko", "n@example.com", "clave-larga-123", negocio=bar["n"])
+    client.force_login(neko)
+    r = client.get("/", follow=True)
+    html = r.content.decode()
+    assert r.redirect_chain[-1][0].endswith("/plataforma/") and "Tus negocios" in html and "Superusuario" in html
+    # solo ve una tienda en modo soporte, con la franja que lo dice
+    html = client.post(f"/plataforma/negocios/{bar['n'].pk}/entrar/", follow=True).content.decode()
+    assert "Modo soporte" in html and "Volver a tus negocios" in html
+
+
+def test_enlace_del_equipo_deja_listo_el_ingreso(client, bar):
+    client.force_login(bar["dueno"])
+    html = client.get("/usuarios/").content.decode()
+    enlace = html.split('id="enlace-equipo" value="')[1].split('"')[0]
+    client.logout()
+    r = client.get(enlace.replace("http://testserver", ""))
+    assert r.status_code == 302 and "equipo_negocio" in r.cookies
+    html = client.get("/ingresar/").content.decode()
+    assert "¿Quién eres?" in html and 'id="teclado"' in html and "Ana" in html
+    assert client.get("/equipo/no-vale/").status_code == 404
+
+
+def test_sin_emojis_en_las_pantallas_de_trabajo(client, bar):
+    import re
+
+    emoji = re.compile("[\U0001F300-\U0001FAFF]")
+    client.force_login(bar["dueno"])
+    for url in ("/", "/noche/", "/noche/mesas/", "/usuarios/", "/productos/", "/alertas/", "/ventas/"):
+        assert not emoji.search(client.get(url).content.decode()), url

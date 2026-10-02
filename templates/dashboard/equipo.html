@@ -1,8 +1,8 @@
 {% extends "base.html" %}{% load ui %}
 {% block titulo %}Inicio{% endblock %}
 {% block contenido %}
-<h1>Hola, {{ user.first_name|default:user.username }} 👋</h1>
-{% if resumen.caja and resumen.piden_cuenta %}<a class="mensaje warning" style="display:block" href="{% url 'nocturno:noche' %}">🔔 <b>{{ resumen.piden_cuenta }}</b> mesa{{ resumen.piden_cuenta|pluralize }} pide{{ resumen.piden_cuenta|pluralize:"n" }} la cuenta. Ir a cobrar →</a>{% endif %}
+<h1>Hola, {{ user.first_name|default:user.username }} </h1>
+{% if resumen.caja and resumen.piden_cuenta %}<a class="mensaje warning" style="display:block" href="{% url 'nocturno:noche' %}"><b>{{ resumen.piden_cuenta }}</b> mesa{{ resumen.piden_cuenta|pluralize }} pide{{ resumen.piden_cuenta|pluralize:"n" }} la cuenta. Ir a cobrar →</a>{% endif %}
 <div class="atajos">
   {% for a in atajos %}<a class="atajo{% if a.principal_inicio %} principal{% endif %}" href="{{ a.url }}"><span class="atajo-icono">{% icono a.icono %}</span><b>{{ a.texto }}</b><small>{{ a.descripcion }}</small></a>{% endfor %}
 </div>
@@ -10,7 +10,7 @@
   {% if resumen.vende %}<section class="tarjeta"><h2>Tus ventas de hoy</h2><p class="kpi">{{ resumen.hoy|moneda }}</p><p class="suave">{{ resumen.numero_hoy }} venta{{ resumen.numero_hoy|pluralize }}</p></section>{% endif %}
   {% if resumen.caja %}<section class="tarjeta"><h2>Cuentas abiertas</h2><p class="kpi">{{ resumen.cuentas_abiertas }}</p><p class="suave">{{ resumen.piden_cuenta }} esperando pago</p></section>{% endif %}
   {% if resumen.bodega %}<section class="tarjeta"><h2>Para revisar en bodega</h2>
-    <ul class="lista-simple"><li><a href="{% url 'catalogo:lista' %}?estado=AGOTADO">⚫ {{ resumen.agotados }} agotado{{ resumen.agotados|pluralize }}</a></li><li><a href="{% url 'catalogo:lista' %}?estado=BAJO">🟡 {{ resumen.stock_bajo }} por acabarse</a></li></ul></section>{% endif %}
+    <ul class="lista-simple"><li><a href="{% url 'catalogo:lista' %}?estado=AGOTADO"><span class="punto otro"></span>{{ resumen.agotados }} agotado{{ resumen.agotados|pluralize }}</a></li><li><a href="{% url 'catalogo:lista' %}?estado=BAJO"><span class="punto aviso"></span>{{ resumen.stock_bajo }} por acabarse</a></li></ul></section>{% endif %}
   {% if resumen.alertas %}<section class="tarjeta"><h2>Alertas para actuar</h2><p class="kpi">{{ resumen.alertas }}</p><a href="{% url 'alertas:lista' %}">Ver alertas →</a></section>{% endif %}
 </div>
 {% endblock %}

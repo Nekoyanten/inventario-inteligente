@@ -1,63 +1,55 @@
 {% extends "base.html" %}{% load ui %}
 {% block titulo %}Plataforma{% endblock %}
 {% block contenido %}
-<div class="encabezado"><h1>Panel de la plataforma</h1>
-  <div class="acciones"><a class="boton boton-auto boton-chico" href="{% url 'plataforma:crear_negocio' %}">+ Crear negocio</a><a class="boton boton-auto boton-chico boton-secundario" href="?formato=csv">Métricas CSV</a><a class="boton boton-auto boton-chico boton-secundario" href="/{{ admin_url }}">Admin</a></div></div>
+<div class="encabezado"><div><p class="sobretitulo">Superusuario</p><h1>Tus negocios</h1></div>
+  <a class="boton boton-auto" href="{% url 'plataforma:crear_negocio' %}">{% icono "plus" %} Crear negocio</a></div>
 
-<div class="rejilla">
-  <section class="tarjeta"><h2>Negocios</h2><p class="kpi">{{ filas|length }}</p></section>
-  <section class="tarjeta"><h2>Usándolo a diario</h2><p class="kpi">{{ activos }}</p><p class="suave">15+ días con ventas en los últimos 21</p></section>
-  <section class="tarjeta"><h2>Comentarios por atender</h2><p class="kpi">{{ comentarios|length }}</p></section>
-  <section class="tarjeta"><h2>Estado</h2><p class="kpi">{% if salud.ok %}🟢 OK{% else %}🔴 Revisar{% endif %}</p></section>
+<div class="cifras">
+  <div><b>{{ filas|length }}</b><span>negocios</span></div>
+  <div><b>{{ activos }}</b><span>lo usan a diario</span></div>
+  <div><b>{{ comentarios|length }}</b><span>comentarios por atender</span></div>
+  <div><b class="{% if salud.ok %}bien{% else %}mal{% endif %}">{% if salud.ok %}Bien{% else %}Revisar{% endif %}</b><span>estado del sistema</span></div>
 </div>
 
-<div class="rejilla-2">
-  <section class="tarjeta">
-    <h2>Salud del sistema</h2>
-    <table class="tabla compacta"><tbody>
-    {% for nombre, r in salud.items %}{% if nombre != "ok" %}<tr><td>{% if r.ok %}🟢{% else %}🔴{% endif %} {{ r.nombre }}</td><td><small>{{ r.detalle }}</small></td><td class="num">{{ r.ms }} ms</td></tr>{% endif %}{% endfor %}
-    </tbody></table>
-  </section>
-  <section class="tarjeta">
-    <h2>Puesta en producción</h2>
-    <ul class="lista-simple">{% for c in config %}<li>{% if c.ok %}✅{% else %}⚠️{% endif %} {{ c.nombre }}{% if not c.ok and c.ayuda %}<br><small class="suave">{{ c.ayuda }}</small>{% endif %}</li>{% endfor %}</ul>
-  </section>
-</div>
+<input type="search" id="buscar-negocio" class="buscador" placeholder="Buscar negocio…" aria-label="Buscar negocio">
+<ul class="negocios" id="negocios">
+{% for f in filas %}
+  <li data-nombre="{{ f.negocio.nombre|lower }}">
+    <div class="negocio-info"><b>{{ f.negocio.nombre }}</b>
+      <small>{{ f.giro }} · {{ f.plan }}{% if f.dias_restantes is not None %} · {{ f.dias_restantes }} días{% endif %}</small>
+      <small>{{ f.usuarios }} usuario{{ f.usuarios|pluralize }} · {{ f.productos }} productos · {{ f.ventas_7d }} ventas esta semana{% if f.comentarios_pendientes %} · <b>{{ f.comentarios_pendientes }} comentario{{ f.comentarios_pendientes|pluralize }}</b>{% endif %}</small></div>
+    <span class="insignia {% if f.dias_activos >= 15 %}verde{% elif f.dias_activos >= 7 %}amarillo{% else %}gris{% endif %}" title="Días con ventas en los últimos {{ f.dias_piloto }}">{{ f.dias_activos }}/{{ f.dias_piloto }} días</span>
+    <div class="acciones-fila">
+      <a class="boton boton-auto boton-chico" href="{% url 'plataforma:negocio' f.negocio.pk %}">Plan y módulos</a>
+      <form method="post" action="{% url 'plataforma:entrar' f.negocio.pk %}">{% csrf_token %}<button class="boton boton-auto boton-chico boton-secundario">Entrar a ver</button></form></div>
+  </li>
+{% empty %}<li class="suave">Aún no hay negocios. Crea el primero.</li>{% endfor %}
+</ul>
 
-<section class="tarjeta tabla-scroll">
-  <h2>Negocios</h2>
-  <table class="tabla">
-    <thead><tr><th>Negocio</th><th>Acciones</th><th>Plan</th><th class="num">Productos</th><th class="num">Usuarios</th><th>Último ingreso</th><th class="num">Ventas 7 días</th><th class="num">Días con ventas</th><th class="num">Arranque</th><th class="num">Comentarios</th></tr></thead>
-    <tbody>
-    {% for f in filas %}
-      <tr><td><strong>{{ f.negocio.nombre }}</strong><br><small class="suave">{{ f.giro }} · desde {{ f.creado|date:"d/m/Y" }}</small></td>
-        <td data-titulo="Acciones"><div class="acciones-fila">
-          <a class="boton boton-auto boton-chico" href="{% url 'plataforma:negocio' f.negocio.pk %}">Administrar</a>
-          <form method="post" action="{% url 'plataforma:entrar' f.negocio.pk %}">{% csrf_token %}<button class="boton boton-auto boton-chico boton-secundario">Entrar</button></form></div></td>
-        <td data-titulo="Plan">{{ f.plan }}{% if f.dias_restantes is not None %}<br><small class="suave">{{ f.dias_restantes }} días</small>{% endif %}</td>
-        <td class="num" data-titulo="Productos">{{ f.productos }}</td><td class="num" data-titulo="Usuarios">{{ f.usuarios }}</td>
-        <td data-titulo="Último ingreso">{{ f.ultimo_ingreso|timesince|default:"nunca" }}</td>
-        <td class="num" data-titulo="Ventas 7 días">{{ f.ventas_7d }}</td>
-        <td class="num" data-titulo="Días con ventas"><span class="insignia {% if f.dias_activos >= 15 %}verde{% elif f.dias_activos >= 7 %}amarillo{% else %}rojo{% endif %}">{{ f.dias_activos }}/{{ f.dias_piloto }}</span></td>
-        <td class="num" data-titulo="Arranque">{{ f.arranque }} %</td>
-        <td class="num" data-titulo="Comentarios">{{ f.comentarios_pendientes }}{% if f.calificacion %} · ⭐ {{ f.calificacion|floatformat:1 }}{% endif %}</td></tr>
-    {% empty %}<tr><td colspan="10" class="vacio">Aún no hay negocios.</td></tr>{% endfor %}
-    </tbody>
-  </table>
-</section>
+{% if comentarios %}<section class="tarjeta">
+  <h2>Comentarios por atender</h2>
+  {% for c in comentarios %}<p class="alerta s{% if c.tipo == 'ERROR' %}3{% else %}2{% endif %}">{{ c.texto|truncatechars:160 }}<em>{{ c.negocio|default:"—" }} · {{ c.get_tipo_display }} · {{ c.creado|date:"d/m H:i" }}</em></p>{% endfor %}
+</section>{% endif %}
 
-<div class="rejilla-2">
-  <section class="tarjeta">
-    <h2>Tareas programadas</h2>
-    <table class="tabla compacta"><tbody>
-    {% for t in tareas %}<tr><td>{% if t.ok %}🟢{% else %}🔴{% endif %} {{ t.nombre }}</td><td>{{ t.inicio|date:"d/m H:i" }}</td><td class="num">{{ t.duracion_s|default:"…" }} s</td></tr>
-    {% empty %}<tr><td class="vacio">Sin ejecuciones. Programa el cron de analizar_inventario.</td></tr>{% endfor %}
-    </tbody></table>
-  </section>
-  <section class="tarjeta">
-    <h2>Comentarios por atender</h2>
-    {% for c in comentarios %}<p class="alerta s{% if c.tipo == 'ERROR' %}3{% else %}2{% endif %}">{{ c.texto|truncatechars:160 }}<em>{{ c.negocio|default:"—" }} · {{ c.usuario|default:"" }} · {{ c.get_tipo_display }} · {{ c.creado|date:"d/m H:i" }}{% if c.pagina %} · {{ c.pagina }}{% endif %}</em></p>
-    {% empty %}<p class="suave">Nada pendiente.</p>{% endfor %}
-  </section>
-</div>
+<details class="tarjeta">
+  <summary><b>Estado técnico</b> <span class="suave">· salud, tareas y configuración</span></summary>
+  <h2 style="margin-top:1rem">Salud del sistema</h2>
+  <table class="tabla compacta"><tbody>
+  {% for nombre, r in salud.items %}{% if nombre != "ok" %}<tr><td><span class="punto {% if r.ok %}libre{% else %}pide{% endif %}"></span> {{ r.nombre }}</td><td><small>{{ r.detalle }}</small></td><td class="num">{{ r.ms }} ms</td></tr>{% endif %}{% endfor %}
+  </tbody></table>
+  <h2 style="margin-top:1rem">Puesta en producción</h2>
+  <ul class="lista-simple">{% for c in config %}<li><span class="punto {% if c.ok %}libre{% else %}pide{% endif %}"></span> {{ c.nombre }}{% if not c.ok and c.ayuda %}<br><small class="suave">{{ c.ayuda }}</small>{% endif %}</li>{% endfor %}</ul>
+  <h2 style="margin-top:1rem">Tareas programadas</h2>
+  <table class="tabla compacta"><tbody>
+  {% for t in tareas %}<tr><td><span class="punto {% if t.ok %}libre{% else %}pide{% endif %}"></span> {{ t.nombre }}</td><td>{{ t.inicio|date:"d/m H:i" }}</td><td class="num">{{ t.duracion_s|default:"…" }} s</td></tr>
+  {% empty %}<tr><td class="suave">Sin ejecuciones todavía.</td></tr>{% endfor %}
+  </tbody></table>
+  <p class="acciones" style="margin-top:1rem"><a class="boton boton-auto boton-chico boton-secundario" href="?formato=csv">Descargar métricas</a><a class="boton boton-auto boton-chico boton-secundario" href="/{{ admin_url }}">Administración avanzada</a></p>
+</details>
 {% endblock %}
+{% block scripts %}<script>
+document.getElementById("buscar-negocio").addEventListener("input", (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  document.querySelectorAll("#negocios li[data-nombre]").forEach((li) => { li.hidden = q && !li.dataset.nombre.includes(q); });
+});
+</script>{% endblock %}

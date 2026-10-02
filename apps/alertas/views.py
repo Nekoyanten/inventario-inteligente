@@ -26,9 +26,9 @@ def lista(request):
         qs = qs.filter(tipo=request.GET["tipo"])
     alertas = list(qs[:300])
     grupos = [
-        ("🔴 Actuar", [a for a in alertas if a.severidad == Alerta.Severidad.ACTUAR]),
-        ("🟡 Revisar", [a for a in alertas if a.severidad == Alerta.Severidad.REVISAR]),
-        ("🔵 Para tener en cuenta", [a for a in alertas if a.severidad == Alerta.Severidad.INFO]),
+        ("Actuar", [a for a in alertas if a.severidad == Alerta.Severidad.ACTUAR]),
+        ("Revisar", [a for a in alertas if a.severidad == Alerta.Severidad.REVISAR]),
+        ("Para tener en cuenta", [a for a in alertas if a.severidad == Alerta.Severidad.INFO]),
     ]
     # Al abrir la bandeja, las nuevas pasan a "vistas"
     if estado == "abiertas":

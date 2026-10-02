@@ -82,7 +82,6 @@ def entrar(request, pk):
     negocio = get_object_or_404(Negocio, pk=pk)
     request.session[SESION_SOPORTE] = negocio.pk
     auditar(negocio, request.user, "soporte_entrar", negocio)
-    messages.info(request, f"Estás dentro de «{negocio.nombre}» como administrador de la plataforma.")
     return redirect("dashboard:inicio")
 
 

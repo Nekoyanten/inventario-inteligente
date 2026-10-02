@@ -4,6 +4,7 @@ from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
+from django.http import JsonResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
@@ -252,14 +253,50 @@ def cuenta(request, pk):
     except Exception as e:  # puntos inválidos: se muestra sin canje
         messages.error(request, str(e))
         r = s.resumen(c)
+    carta, categorias = _carta(request.negocio) if c.estado == Cuenta.Estado.ABIERTA else ([], [])
     return render(request, "nocturno/cuenta.html", {
         "c": c, "r": r, "cobra": True, "es_caja": request.user.puede("cobrar_cuentas"), "volver": _volver(request),
         "fidelizacion": _fidelizacion(request),
         "cobrados": c.items.filter(venta__isnull=False).select_related("producto", "venta"),
         "conf": s.configuracion(request.negocio),
         "guardadas": c.cliente.botellas_guardadas.filter(estado=BotellaGuardada.Estado.GUARDADA) if c.cliente else [],
-        "rapidos": _mas_pedidos(request.negocio) if c.estado == Cuenta.Estado.ABIERTA else [],
+        "carta": carta, "categorias": categorias, "estado": _estado_json(c),
     })
+
+
+def _estado_json(c):
+    """Lo que la pantalla de pedido necesita para pintarse sin recargar."""
+    r = s.resumen(c)
+    por_producto = {}
+    for linea in r["lineas"]:
+        pid = linea["producto"].pk
+        por_producto[pid] = por_producto.get(pid, 0) + float(linea["cantidad"])
+    return {"total": float(r["total"]), "a_pagar": float(r["a_pagar"]), "unidades": sum(por_producto.values()),
+            "por_producto": por_producto,
+            "lineas": [{"item": linea["item_id"], "producto": linea["producto"].pk, "nombre": linea["producto"].nombre,
+                        "cantidad": float(linea["cantidad"]), "valor": float(linea["neto"]),
+                        "promocion": linea.get("promocion") or ""} for linea in r["lineas"]]}
+
+
+def _es_fetch(request) -> bool:
+    return request.headers.get("X-Requested-With") == "fetch"
+
+
+def _carta(negocio, limite=240):
+    """Productos que se pueden pedir, agrupados por categoría y con lo más pedido primero."""
+    from apps.catalogo.models import TipoProducto
+
+    populares = {p.pk: i for i, p in enumerate(_mas_pedidos(negocio, 40))}
+    qs = (Producto.objects.filter(negocio=negocio, activo=True, es_agrupador=False)
+          .exclude(tipo=TipoProducto.INSUMO).exclude(sku__in=("COVER", "CONSUMO-MIN"))
+          .select_related("categoria").order_by("categoria__nombre", "nombre")[:limite])
+    carta = [{"id": p.pk, "n": p.nombre, "p": float(p.precio_venta), "c": p.categoria.nombre if p.categoria_id else "Otros",
+              "pop": populares.get(p.pk, 999)} for p in qs]
+    categorias = []
+    for item in carta:
+        if item["c"] not in categorias:
+            categorias.append(item["c"])
+    return carta, categorias
 
 
 def _mas_pedidos(negocio, limite=8):
@@ -289,8 +326,35 @@ def pedir(request, pk):
         s.agregar_item(c, producto, _dec(request.POST.get("cantidad"), "1"), request.user, cortesia=cortesia,
                        nota=request.POST.get("nota", ""))
     except s.ErrorNocturno as e:
+        if _es_fetch(request):
+            return JsonResponse({"error": str(e)}, status=400)
         messages.error(request, str(e))
+    if _es_fetch(request):
+        return JsonResponse(_estado_json(c))
     return redirect("nocturno:cuenta", pk=pk)
+
+
+@negocio_requerido
+@requiere_alguno("cobrar_cuentas", "atender_mesas")
+@require_POST
+def menos(request, pk):
+    """Quita una unidad del producto (el último que se agregó): corregir un toque de más no pide explicación."""
+    c = _cuenta_propia(request, pk)
+    items = c.items.filter(venta__isnull=True, producto_id=request.POST.get("producto") or 0)
+    if not request.user.puede("cobrar_cuentas"):
+        items = items.filter(agregado_por=request.user)
+    item = items.order_by("-agregado", "-id").first()
+    if item is None:
+        return JsonResponse({"error": "Eso lo agregó otra persona: pídele a la caja que lo quite."}, status=400)
+    try:
+        if item.cantidad > 1:
+            item.cantidad -= 1
+            item.save(update_fields=["cantidad"])
+        else:
+            s.quitar_item(item, request.user, "Corrección al tomar el pedido")
+    except s.ErrorNocturno as e:
+        return JsonResponse({"error": str(e)}, status=400)
+    return JsonResponse(_estado_json(c))
 
 
 @negocio_requerido

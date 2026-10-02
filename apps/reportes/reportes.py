@@ -137,7 +137,7 @@ def historial_ajustes(negocio, f):
     ).select_related("producto", "usuario")
     filas = [[m.fecha, m.producto.nombre, m.get_tipo_display(), m.cantidad if m.es_entrada else -m.cantidad,
               (m.cantidad if m.es_entrada else -m.cantidad) * m.costo_unitario, str(m.usuario or ""), m.motivo,
-              "⚠️" if m.marcado_anomalo else ""] for m in qs.order_by("-fecha")]
+              "" if m.marcado_anomalo else ""] for m in qs.order_by("-fecha")]
     t = Tabla(["Fecha", "Producto", "Tipo", "Cantidad", "Valor", "Usuario", "Motivo", "Inusual"], filas,
               ["fecha", "texto", "texto", "numero", "moneda", "texto", "texto", "texto"])
     t.totales = ["Total", "", "", "", _suma_columna(filas, 4), "", "", ""]

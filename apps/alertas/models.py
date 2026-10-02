@@ -17,9 +17,9 @@ class Alerta(ModeloBase):
         VENTA_SIN_STOCK = "VENTA_SIN_STOCK", "Venta sin stock registrado"
 
     class Severidad(models.IntegerChoices):
-        INFO = 1, "🔵 Información"
-        REVISAR = 2, "🟡 Revisar"
-        ACTUAR = 3, "🔴 Actuar"
+        INFO = 1, "Información"
+        REVISAR = 2, "Revisar"
+        ACTUAR = 3, "Actuar"
 
     class Estado(models.TextChoices):
         ABIERTA = "ABIERTA", "Abierta"

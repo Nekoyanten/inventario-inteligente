@@ -62,11 +62,11 @@ class UnidadMedida(models.Model):
 
 
 class EstadoStock(models.TextChoices):
-    AGOTADO = "AGOTADO", "⚫ Agotado"
-    CRITICO = "CRITICO", "🔴 Crítico"
-    BAJO = "BAJO", "🟡 Bajo"
-    NORMAL = "NORMAL", "🟢 Normal"
-    EXCESO = "EXCESO", "🔵 Exceso"
+    AGOTADO = "AGOTADO", "Agotado"
+    CRITICO = "CRITICO", "Crítico"
+    BAJO = "BAJO", "Bajo"
+    NORMAL = "NORMAL", "Normal"
+    EXCESO = "EXCESO", "Exceso"
 
 
 class TipoProducto(models.TextChoices):

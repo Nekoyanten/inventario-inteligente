@@ -15,7 +15,7 @@
       <tbody>
       {% for r in recomendaciones %}
         <tr><td><input type="checkbox" name="seleccion" value="{{ r.pk }}" checked aria-label="Incluir {{ r.producto.nombre }}"></td>
-          <td><a href="{% url 'catalogo:detalle' r.producto_id %}">{{ r.producto.nombre }}</a>{% if r.temporada %}<br><small class="suave">🎄 {{ r.temporada }}</small>{% endif %}</td>
+          <td><a href="{% url 'catalogo:detalle' r.producto_id %}">{{ r.producto.nombre }}</a>{% if r.temporada %}<br><small class="suave">{{ r.temporada }}</small>{% endif %}</td>
           <td class="fila-motivo"><b class="motivo">{{ r.motivo_corto }}</b><details class="mas-detalle"><summary>Ver cálculo</summary><small>{{ r.explicacion }}</small></details></td>
           <td data-titulo="Pedir"><input type="number" name="cantidad-{{ r.pk }}" value="{{ r.cantidad_sugerida }}" min="0" style="width:6.5rem" aria-label="Cantidad a pedir de {{ r.producto.nombre }}"></td>
           <td data-titulo="Proveedor">{% if r.proveedor %}{{ r.proveedor }}{% else %}<select name="proveedor-{{ r.pk }}" aria-label="Proveedor"><option value="">Elige…</option>{% for p in proveedores %}<option value="{{ p.pk }}">{{ p }}</option>{% endfor %}</select>{% endif %}</td>
@@ -31,6 +31,6 @@
   </section>
 </form>
 {% else %}
-<section class="tarjeta vacio">🟢 No hay compras recomendadas por ahora. Pulsa «Recalcular» después de registrar ventas.</section>
+<section class="tarjeta vacio"><span class="punto libre"></span>No hay compras recomendadas por ahora. Pulsa «Recalcular» después de registrar ventas.</section>
 {% endif %}
 {% endblock %}

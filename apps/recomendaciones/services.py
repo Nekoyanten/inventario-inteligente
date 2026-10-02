@@ -104,7 +104,7 @@ def recomendar_producto(producto: Producto, hoy=None, ciclos: dict | None = None
         explicacion += (f" Se limitó a {cantidad} porque {producto.nombre} dura {producto.vida_util_dias} días: "
                         "pedir más sería botar mercancía.")
     if producto.vida_util_dias and a.tiempo_entrega >= producto.vida_util_dias:
-        explicacion += (" ⚠️ El proveedor tarda tanto como lo que dura el producto: pide poco y seguido, o busca "
+        explicacion += (" El proveedor tarda tanto como lo que dura el producto: pide poco y seguido, o busca "
                         "uno que entregue más rápido.")
     explicacion += _nota_proveedor(producto, a.tiempo_entrega, ciclos)
     if a.en_transito:

@@ -12,9 +12,9 @@
   <div class="encabezado" style="margin-bottom:.5rem"><h2 style="margin:0">Meseros de hoy</h2>
     <form method="post" class="acciones">{% csrf_token %}
       <button class="boton boton-auto boton-chico boton-secundario" name="accion" value="copiar">↺ Repetir la noche anterior</button>
-      <button class="boton boton-auto boton-chico boton-secundario" name="accion" value="repartir">⚡ Repartir automático</button>
+      <button class="boton boton-auto boton-chico boton-secundario" name="accion" value="repartir">Repartir automático</button>
     </form></div>
-  <p class="chips">{% for u in meseros %}<span class="chip">🧑‍🍳 {{ u.get_full_name|default:u.username }} · <b>{{ u.num_mesas }}</b> mesa{{ u.num_mesas|pluralize }}</span>{% endfor %}</p>
+  <p class="chips">{% for u in meseros %}<span class="chip">{{ u.get_full_name|default:u.username }} · <b>{{ u.num_mesas }}</b> mesa{{ u.num_mesas|pluralize }}</span>{% endfor %}</p>
   {% if not asignadas %}<p class="mensaje info" style="margin-bottom:0">Aún no asignas mesas hoy. Usa «Repartir automático» o elige abajo mesa por mesa.</p>{% endif %}
 </section>
 <form method="post">{% csrf_token %}<input type="hidden" name="accion" value="guardar">
@@ -24,7 +24,7 @@
   {% for m in lista %}
     <div class="mesa-tarjeta {% if m.cuenta.pide_cuenta %}pide{% elif m.cuenta %}ocupada{% else %}libre{% endif %}">
       <p class="mesa-nombre">{{ m }}</p>
-      <p class="mesa-estado">{% if m.cuenta.pide_cuenta %}🔔 Pide la cuenta · {{ m.cuenta.r.a_pagar|moneda }}{% elif m.cuenta %}🟠 Ocupada · {{ m.cuenta.r.total|moneda }}{% else %}🟢 Libre · {{ m.capacidad }} puestos{% endif %}</p>
+      <p class="mesa-estado">{% if m.cuenta.pide_cuenta %}Pide la cuenta · {{ m.cuenta.r.a_pagar|moneda }}{% elif m.cuenta %}<span class="punto aviso"></span>Ocupada · {{ m.cuenta.r.total|moneda }}{% else %}<span class="punto libre"></span>Libre · {{ m.capacidad }} puestos{% endif %}</p>
       <label class="oculto-visual" for="mesa-{{ m.pk }}">Mesero de {{ m }}</label>
       <select id="mesa-{{ m.pk }}" name="mesa-{{ m.pk }}"><option value="">— Sin mesero —</option>{% for u in meseros %}<option value="{{ u.pk }}"{% if m.mesero and m.mesero.pk == u.pk %} selected{% endif %}>{{ u.get_full_name|default:u.username }}</option>{% endfor %}</select>
       {% if m.cuenta %}<a class="small" href="{% url 'nocturno:cuenta' m.cuenta.pk %}">Ver cuenta →</a>{% endif %}

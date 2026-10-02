@@ -21,7 +21,7 @@ def test_visitante_ve_la_pagina_de_inicio(client):
 def test_dashboard_carga(client, admin, producto):
     client.force_login(admin)
     resp = client.get("/")
-    assert resp.status_code == 200 and "¿Cómo está mi negocio?" in resp.content.decode()
+    assert resp.status_code == 200 and "Para hacer hoy" in resp.content.decode()
 
 
 def test_exportar_inventario_excel(client, admin, producto):

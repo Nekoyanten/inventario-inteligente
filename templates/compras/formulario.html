@@ -11,7 +11,7 @@
       {% for p in proveedores %}<option value="{{ p.pk }}" {% if proveedor_id == p.pk|stringformat:"s" %}selected{% endif %}>{{ p }}</option>{% endfor %}</select>
       {% if not proveedores %}<span class="helptext">Primero <a href="{% url 'proveedores:crear' %}">registra un proveedor</a>.</span>{% endif %}</p>
     {% if directa %}<p><label for="numero_factura">N.° de factura</label><input id="numero_factura" name="numero_factura" maxlength="40"></p>
-    <p><label for="factura_imagen">📷 Foto de la factura (opcional)</label><input id="factura_imagen" type="file" name="factura_imagen" accept="image/*" capture="environment"></p>
+    <p><label for="factura_imagen">Foto de la factura (opcional)</label><input id="factura_imagen" type="file" name="factura_imagen" accept="image/*" capture="environment"></p>
     {% else %}<p><label for="fecha_esperada">Entrega esperada</label><input id="fecha_esperada" name="fecha_esperada" type="date"></p>{% endif %}
   </div>
   <p><label for="lineas-buscar">Agregar producto</label><input id="lineas-buscar" type="search" placeholder="Busca por nombre o código…" autocomplete="off"></p>

@@ -10,12 +10,12 @@ from django.utils import timezone
 from .models import Cliente, Encuesta, EnvioOferta, Oferta
 
 SEGMENTOS = {
-    "CAMPEON": ("🏆 Campeones", "Compran seguido, hace poco y gastan más. Cuídalos: son la base del negocio."),
-    "LEAL": ("💛 Leales", "Vuelven con regularidad."),
-    "NUEVO": ("🌱 Nuevos", "Primera compra hace menos de 30 días. La segunda visita es la más difícil."),
-    "OCASIONAL": ("🙂 Ocasionales", "Compran de vez en cuando."),
-    "EN_RIESGO": ("⚠️ En riesgo", "Venían seguido y ya se demoraron más de lo normal en volver."),
-    "PERDIDO": ("💤 Dormidos", "No compran hace más de 90 días."),
+    "CAMPEON": ("Campeones", "Compran seguido, hace poco y gastan más. Cuídalos: son la base del negocio."),
+    "LEAL": ("Leales", "Vuelven con regularidad."),
+    "NUEVO": ("Nuevos", "Primera compra hace menos de 30 días. La segunda visita es la más difícil."),
+    "OCASIONAL": ("Ocasionales", "Compran de vez en cuando."),
+    "EN_RIESGO": ("En riesgo", "Venían seguido y ya se demoraron más de lo normal en volver."),
+    "PERDIDO": ("Dormidos", "No compran hace más de 90 días."),
 }
 
 

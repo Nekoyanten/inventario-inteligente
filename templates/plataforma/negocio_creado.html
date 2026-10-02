@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block titulo %}Negocio creado{% endblock %}
 {% block contenido %}
-<h1>✅ {{ n.nombre }} está listo</h1>
+<h1><span class="marca-ok"></span>{{ n.nombre }} está listo</h1>
 <section class="tarjeta">
   <p>Envíale estos datos a {{ dueno.first_name }}. <strong>La clave temporal solo se muestra esta vez.</strong></p>
   <pre class="credenciales">{{ mensaje }}</pre>

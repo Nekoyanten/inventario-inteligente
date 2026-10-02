@@ -1,30 +1,64 @@
 {% extends "base.html" %}
 {% block titulo %}Ingresar{% endblock %}
+{% block cabeza %}{% if personas %}<style>.barra-derecha{display:none}</style>{% endif %}{% endblock %}
 {% block contenido %}
-<section class="tarjeta formulario formulario-libre ingreso">
-  <h1>{% if equipo %}{{ equipo }}{% else %}Ingresar{% endif %}</h1>
+<section class="tarjeta formulario-libre ingreso">
   {% if personas %}
-  <p class="suave">¿Quién eres? Toca tu nombre y escribe tu PIN o contraseña.</p>
-  <div class="personas" role="list">{% for u in personas %}<button type="button" class="persona" data-usuario="{{ u.username }}" data-pin="{{ u.con_pin|yesno:'1,' }}" role="listitem"><span class="avatar">{{ u.first_name|default:u.username|slice:":1"|upper }}</span><span><b>{{ u.first_name|default:u.username }}</b><small>{{ u.get_rol_display }}</small></span></button>{% endfor %}</div>
-  {% endif %}
+  <p class="sobretitulo">{{ equipo }}</p>
+  <h1 id="titulo-ingreso">¿Quién eres?</h1>
+  {{ form.non_field_errors }}
+  <div class="personas" id="personas">{% for u in personas %}<button type="button" class="persona" data-usuario="{{ u.username }}" data-nombre="{{ u.first_name|default:u.username }}" data-pin="{{ u.con_pin|yesno:'1,' }}"><span class="avatar">{{ u.first_name|default:u.username|slice:":1"|upper }}</span><span><b>{{ u.first_name|default:u.username }}</b><small>{{ u.get_rol_display }}</small></span></button>{% endfor %}</div>
+  <form method="post" id="form-ingreso" hidden>{% csrf_token %}
+    <input type="hidden" name="username" id="id_username">
+    <div id="zona-pin" hidden>
+      <div class="pin-puntos" id="pin-puntos" aria-live="polite" aria-label="PIN"></div>
+      <div class="teclado" id="teclado">{% for d in "123456789" %}<button type="button" data-d="{{ d }}">{{ d }}</button>{% endfor %}<button type="button" data-d="borrar" aria-label="Borrar">⌫</button><button type="button" data-d="0">0</button><button type="submit" class="ok" aria-label="Entrar">✓</button></div>
+    </div>
+    <div id="zona-clave" hidden>
+      <p><label for="id_password">Contraseña</label><input type="password" name="password" id="id_password" autocomplete="current-password"></p>
+      <button class="boton">Entrar</button>
+    </div>
+    <p><button type="button" class="enlace" id="otra-persona">← Otra persona</button></p>
+  </form>
+  <p class="suave" id="pie-ingreso"><a href="?otro=1">Entrar con otro usuario</a></p>
+  {% else %}
+  <h1>Ingresar</h1>
   <form method="post">{% csrf_token %}
     {{ form.non_field_errors }}
     <p><label for="id_username">Usuario</label>{{ form.username }}</p>
-    <p><label for="id_password" id="etiqueta-clave">Contraseña o PIN</label>{{ form.password }}</p>
+    <p><label for="id_password">Contraseña o PIN</label>{{ form.password }}</p>
     <button class="boton">Entrar</button>
   </form>
   <p><a href="{% url 'password_reset' %}">¿Olvidaste tu contraseña?</a></p>
-  {% if not equipo %}<p class="suave">¿No tienes cuenta? <a href="{% url 'registro:paso1' %}">Pruébalo gratis</a></p>{% endif %}
+  <p class="suave">¿No tienes cuenta? <a href="{% url 'registro:paso1' %}">Pruébalo gratis</a></p>
+  {% endif %}
 </section>
 {% endblock %}
-{% block scripts %}<script>
-document.querySelectorAll(".persona").forEach((b) => b.addEventListener("click", () => {
-  document.querySelectorAll(".persona").forEach((x) => x.classList.remove("elegida"));
-  b.classList.add("elegida");
-  document.getElementById("id_username").value = b.dataset.usuario;
-  const clave = document.getElementById("id_password");
-  document.getElementById("etiqueta-clave").textContent = b.dataset.pin ? "PIN" : "Contraseña";
-  clave.inputMode = b.dataset.pin ? "numeric" : "text";
-  clave.value = ""; clave.focus();
-}));
-</script>{% endblock %}
+{% block scripts %}{% if personas %}<script>
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const form = $("#form-ingreso"), clave = $("#id_password"), puntos = $("#pin-puntos");
+  let pin = "", conPin = false;
+  const pintar = () => { puntos.innerHTML = "●".repeat(pin.length) || "<small>Escribe tu PIN</small>"; };
+  document.querySelectorAll(".persona").forEach((b) => b.addEventListener("click", () => {
+    conPin = !!b.dataset.pin; pin = ""; clave.value = "";
+    $("#id_username").value = b.dataset.usuario;
+    $("#titulo-ingreso").textContent = "Hola, " + b.dataset.nombre;
+    $("#personas").hidden = true; $("#pie-ingreso").hidden = true; form.hidden = false;
+    $("#zona-pin").hidden = !conPin; $("#zona-clave").hidden = conPin;
+    if (conPin) pintar(); else clave.focus();
+  }));
+  $("#otra-persona").addEventListener("click", () => { form.hidden = true; $("#personas").hidden = false; $("#pie-ingreso").hidden = false; $("#titulo-ingreso").textContent = "¿Quién eres?"; });
+  $("#teclado").addEventListener("click", (e) => {
+    const d = e.target.closest("button")?.dataset.d;
+    if (!d) return;
+    if (d === "borrar") pin = pin.slice(0, -1); else if (pin.length < 6) pin += d;
+    clave.value = pin; pintar();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (form.hidden || !conPin) return;
+    if (/^[0-9]$/.test(e.key) && pin.length < 6) pin += e.key; else if (e.key === "Backspace") pin = pin.slice(0, -1); else if (e.key === "Enter") { form.requestSubmit(); return; } else return;
+    clave.value = pin; pintar();
+  });
+})();
+</script>{% endif %}{% endblock %}

@@ -16,22 +16,22 @@ NOCTURNOS = ("BAR", "DISCOTECA", "BAR_DISCOTECA")
 
 # clave: (nombre, para qué sirve, permisos que abre, módulo del plan que necesita o None)
 AREAS = {
-    "vender": ("🧾 Vender en caja", "Cobrar en la caja rápida y ver sus ventas.",
+    "vender": ("Vender en caja", "Cobrar en la caja rápida y ver sus ventas.",
                {"registrar_venta", "consultar_productos", "registrar_cliente"}, None),
-    "mesas": ("🍽️ Atender mesas", "Abrir sus mesas, tomar pedidos y pedir la cuenta. No cobra.",
+    "mesas": ("Atender mesas", "Abrir sus mesas, tomar pedidos y pedir la cuenta. No cobra.",
               {"atender_mesas", "consultar_productos", "registrar_cliente"}, "nocturno"),
-    "caja": ("💵 Caja de la noche", "Ver todas las cuentas, cobrar, puerta, reservas y botellas guardadas.",
+    "caja": ("Caja de la noche", "Ver todas las cuentas, cobrar, puerta, reservas y botellas guardadas.",
              {"cobrar_cuentas", "atender_mesas", "registrar_venta", "consultar_productos", "registrar_cliente"},
              "nocturno"),
-    "productos": ("📦 Productos", "Crear y editar productos y precios de venta.",
+    "productos": ("Productos", "Crear y editar productos y precios de venta.",
                   {"consultar_productos", "gestionar_productos"}, None),
-    "inventario": ("🔁 Inventario", "Registrar entradas, salidas, daños y conteos.",
+    "inventario": ("Inventario", "Registrar entradas, salidas, daños y conteos.",
                    {"consultar_productos", "registrar_movimiento", "registrar_conteo"}, None),
-    "compras": ("🛒 Compras y proveedores", "Ver qué pedir, hacer pedidos y recibir mercancía.",
+    "compras": ("Compras y proveedores", "Ver qué pedir, hacer pedidos y recibir mercancía.",
                 {"consultar_productos", "gestionar_compras", "gestionar_proveedores"}, "compras"),
-    "clientes": ("💛 Clientes y fidelización", "Puntos, ofertas y clientes frecuentes.",
+    "clientes": ("Clientes y fidelización", "Puntos, ofertas y clientes frecuentes.",
                  {"registrar_cliente", "gestionar_clientes"}, "clientes"),
-    "reportes": ("📊 Reportes y alertas", "Ver cómo va el negocio, alertas y reportes (sin costos ni utilidad).",
+    "reportes": ("Reportes y alertas", "Ver cómo va el negocio, alertas y reportes (sin costos ni utilidad).",
                  {"ver_reportes"}, None),
 }
 

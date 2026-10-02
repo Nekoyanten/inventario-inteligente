@@ -11,7 +11,7 @@
   </div>
 </div>
 
-{% if not hoy and not resumen %}<section class="tarjeta vacio">🟢 Todo en orden: no hay nada urgente hoy.</section>{% endif %}
+{% if not hoy and not resumen %}<section class="tarjeta vacio"><span class="punto libre"></span>Todo en orden: no hay nada urgente hoy.</section>{% endif %}
 
 {% if hoy %}
 <section class="tarjeta">

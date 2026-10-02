@@ -76,4 +76,4 @@ def test_lista_de_arranque(client, admin, negocio, producto):
     p = progreso_arranque(negocio)
     assert not p["completo"] and p["total"] == 6
     client.force_login(admin)
-    assert "Tu arranque" in client.get("/").content.decode()
+    assert "Para terminar de configurar" in client.get("/").content.decode()

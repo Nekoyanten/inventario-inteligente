@@ -11,6 +11,8 @@ class NegocioActualMiddleware:
         usuario = getattr(request, "user", None)
         request.negocio = getattr(usuario, "negocio", None) if usuario and usuario.is_authenticated else None
         request.soporte = False
+        if usuario is not None and usuario.is_authenticated and usuario.is_superuser:
+            request.negocio = None  # el superusuario es de la plataforma, no de una tienda: solo entra en modo soporte
         # El administrador de la plataforma puede entrar a cualquier negocio para dar soporte (queda en la bitácora)
         if usuario is not None and usuario.is_authenticated and usuario.is_superuser:
             pk = request.session.get(SESION_SOPORTE)

@@ -2,70 +2,46 @@
 {% block titulo %}Inicio{% endblock %}
 {% block contenido %}
 <div class="encabezado">
-  <h1>¿Cómo está mi negocio?</h1>
-  <div class="acciones">
-    {% if "registrar_venta" in permisos %}<a class="boton boton-auto boton-chico" href="{% url 'ventas:pos' %}">{% icono "receipt" %} Vender</a>{% endif %}
-    {% if "gestionar_compras" in permisos %}{% url 'recomendaciones:lista' as u_rec %}{% if u_rec %}<a class="boton boton-auto boton-chico boton-secundario" href="{{ u_rec }}">{% icono "shopping-cart" %} Qué comprar</a>{% endif %}{% endif %}
-  </div>
+  <h1>Hola, {{ user.first_name|default:negocio.nombre }}</h1>
+  {% if "registrar_venta" in permisos %}<a class="boton boton-auto" href="{% url 'ventas:pos' %}">{% icono "receipt" %} Vender</a>{% endif %}
 </div>
+
 {% if arranque and not arranque.completo and "configurar_negocio" in permisos %}
-<section class="tarjeta explicacion">
-  <div class="encabezado" style="margin-bottom:.4rem"><h2 style="margin:0">Tu arranque: {{ arranque.hechos }} de {{ arranque.total }}</h2><span class="insignia verde">{{ arranque.porcentaje }} %</span></div>
-  <ul class="lista-simple">{% for p in arranque.pasos %}<li>{% if p.ok %}✅ <span class="suave">{{ p.texto }}</span>{% else %}⬜ <a href="{{ p.url }}">{{ p.texto }}</a>{% endif %}</li>{% endfor %}</ul>
-  {% url 'reportes:importar' as u_imp %}<p class="suave" style="margin-bottom:0">¿Tienes tus productos en Excel? <a href="{{ u_imp }}">Impórtalos de una vez</a>.</p>
-</section>
+{% for p in arranque.pasos %}{% if not p.ok %}{% ifchanged p.ok %}<a class="siguiente-paso" href="{{ p.url }}"><span><small>Para terminar de configurar ({{ arranque.hechos }} de {{ arranque.total }})</small><b>{{ p.texto }}</b></span>{% icono "chevron-left" "icono girar" %}</a>{% endifchanged %}{% endif %}{% endfor %}
 {% endif %}
-<div class="rejilla">
-  <section class="tarjeta">
-    <h2>Ventas del mes {% ayuda "Todo lo que has cobrado desde el día 1 de este mes. La flecha compara con los mismos días del mes pasado." %}</h2>
-    <p class="kpi">{{ resumen.ventas.mes|moneda }}</p>
-    <p>{% if resumen.ventas.variacion_pct is not None %}<span class="insignia {% if resumen.ventas.variacion_pct >= 0 %}verde{% else %}rojo{% endif %}">{% if resumen.ventas.variacion_pct >= 0 %}▲ +{% else %}▼ {% endif %}{{ resumen.ventas.variacion_pct|floatformat:0 }} %</span> vs. mismo período del mes anterior{% else %}<span class="suave">Sin datos del mes anterior</span>{% endif %}</p>
-    <p class="suave">Hoy: {{ resumen.ventas.hoy|moneda }} en {{ resumen.ventas.numero_hoy }} ventas</p>
-  </section>
-  {% if "ver_reportes_financieros" in permisos %}
-  <section class="tarjeta">
-    <h2>Lo que te queda (estimado) {% ayuda "Ventas del mes menos lo que te costó la mercancía que vendiste. No incluye arriendo, sueldos ni servicios." %}</h2>
-    <p class="kpi">{{ resumen.ventas.utilidad_mes|moneda }}</p>
-    <p class="suave">Cada cliente gasta en promedio {{ resumen.ventas.ticket_promedio|moneda }} · {{ resumen.ventas.numero_mes }} ventas</p>
-  </section>
-  {% endif %}
-  <section class="tarjeta">
-    <h2>Tu mercancía {% ayuda "Cuántos productos tienes. «Stock bajo» son los que están por acabarse según el mínimo que definiste." %}</h2>
-    <p class="kpi">{{ resumen.inventario.productos }} <small>productos</small></p>
-    <ul class="lista-simple">
-      <li><a href="{% url 'catalogo:lista' %}?estado=BAJO">🟡 {{ resumen.inventario.stock_bajo }} con stock bajo</a></li>
-      <li><a href="{% url 'catalogo:lista' %}?estado=AGOTADO">⚫ {{ resumen.inventario.agotados }} agotados</a></li>
-      {% if config_negocio.usa_vencimientos %}<li><a href="{% url 'inventario:lotes' %}?filtro=riesgo">⚠️ {{ resumen.inventario.por_vencer }} próximos a vencer</a></li>{% endif %}
-      {% if "ver_precios_compra" in permisos %}<li class="suave">Valor: {{ resumen.inventario.valor_total|moneda }}</li>{% endif %}
-    </ul>
-  </section>
-  <section class="tarjeta">
-    <h2>Alertas {% ayuda "El sistema revisa tu inventario y ventas y te avisa: 🔴 para actuar ya, 🟡 para revisar cuando puedas." %}</h2>
-    <ul class="lista-simple">
-      <li><a href="{% url 'alertas:lista' %}">🔴 {{ resumen.alertas.actuar }} para actuar</a></li>
-      <li><a href="{% url 'alertas:lista' %}">🟡 {{ resumen.alertas.revisar }} para revisar</a></li>
-      {% if config_negocio.usa_vencimientos %}<li>⚠️ {{ resumen.alertas.vencimientos }} de vencimiento</li>{% endif %}
-    </ul>
-    {% if "ver_precios_compra" in permisos and resumen.inmovilizado %}<p class="suave">Plata quieta en mercancía que casi no se vende: <strong>{{ resumen.inmovilizado|moneda }}</strong> en productos de baja rotación</p>{% endif %}
-  </section>
+
+<div class="cifras">
+  <div><span>Hoy</span><b>{{ resumen.ventas.hoy|moneda }}</b><span>{{ resumen.ventas.numero_hoy }} venta{{ resumen.ventas.numero_hoy|pluralize }}</span></div>
+  <div><span>Este mes</span><b>{{ resumen.ventas.mes|moneda }}</b>
+    <span>{% if resumen.ventas.variacion_pct is not None %}<span class="{% if resumen.ventas.variacion_pct >= 0 %}sube{% else %}baja{% endif %}">{% if resumen.ventas.variacion_pct >= 0 %}▲ +{% else %}▼ {% endif %}{{ resumen.ventas.variacion_pct|floatformat:0 }} %</span> vs. mes pasado{% else %}primer mes{% endif %}</span></div>
+  {% if "ver_reportes_financieros" in permisos %}<div><span>Te queda este mes {% ayuda "Ventas menos lo que costó la mercancía vendida. No incluye arriendo, sueldos ni servicios." %}</span><b>{{ resumen.ventas.utilidad_mes|moneda }}</b><span>estimado</span></div>{% endif %}
 </div>
-<div class="rejilla-2">
-  <section class="tarjeta">
-    <h2>Ventas de los últimos 30 días</h2>
-    {% grafico_barras resumen.grafico_ventas None 150 True %}
-  </section>
-  <section class="tarjeta">
-    <h2>Lo que más vende (30 días)</h2>
-    <table class="tabla compacta"><tbody>
-    {% for t in resumen.top %}<tr><td><a href="{% url 'catalogo:detalle' t.producto_id %}">{{ t.producto__nombre }}</a></td><td class="num">{{ t.unidades|cantidad }} u.</td><td class="num">{{ t.ingreso|moneda }}</td></tr>
-    {% empty %}<tr><td class="vacio">Aún no hay ventas.</td></tr>{% endfor %}
-    </tbody></table>
-  </section>
-  <section class="tarjeta ancho">
-    <div class="encabezado"><h2>Qué atender primero {% ayuda "Las alertas más importantes, con el botón para resolverlas." %}</h2><a href="{% url 'alertas:lista' %}">Ver todas →</a></div>
-    {% for a in resumen.alertas.ultimas %}
-      <p class="alerta s{{ a.severidad }}">{{ a.mensaje }} {% if a.enlace_accion %}<a href="{{ a.enlace_accion }}">{{ a.accion_sugerida|default:"Ver" }} →</a>{% else %}<em>{{ a.accion_sugerida }}</em>{% endif %}</p>
-    {% empty %}<p>🟢 Todo en orden.</p>{% endfor %}
-  </section>
-</div>
+
+<section class="tarjeta">
+  <div class="encabezado" style="margin-bottom:.4rem"><h2 style="margin:0">Para hacer hoy</h2>{% if resumen.alertas.actuar or resumen.alertas.revisar %}<a href="{% url 'alertas:lista' %}">Ver todo</a>{% endif %}</div>
+  <ul class="tareas">
+  {% for a in resumen.alertas.ultimas|slice:":3" %}
+    <li><span class="punto {% if a.severidad == 3 %}pide{% else %}aviso{% endif %}"></span><span class="tarea-texto">{{ a.mensaje }}</span>{% if a.enlace_accion %}<a class="boton boton-auto boton-chico boton-secundario" href="{{ a.enlace_accion }}">{{ a.accion_sugerida|default:"Ver" }}</a>{% endif %}</li>
+  {% empty %}<li><span class="marca-ok"></span>Todo en orden. No hay nada urgente.</li>{% endfor %}
+  </ul>
+  <p class="chips" style="margin-bottom:0">
+    {% if resumen.inventario.agotados %}<a class="chip" href="{% url 'catalogo:lista' %}?estado=AGOTADO"><b>{{ resumen.inventario.agotados }}</b> agotado{{ resumen.inventario.agotados|pluralize }}</a>{% endif %}
+    {% if resumen.inventario.stock_bajo %}<a class="chip" href="{% url 'catalogo:lista' %}?estado=BAJO"><b>{{ resumen.inventario.stock_bajo }}</b> por acabarse</a>{% endif %}
+    {% if config_negocio.usa_vencimientos and resumen.inventario.por_vencer %}<a class="chip" href="{% url 'inventario:lotes' %}?filtro=riesgo"><b>{{ resumen.inventario.por_vencer }}</b> por vencer</a>{% endif %}
+    {% if "gestionar_compras" in permisos %}{% url 'recomendaciones:lista' as u_rec %}{% if u_rec %}<a class="chip" href="{{ u_rec }}">Qué comprar</a>{% endif %}{% endif %}
+  </p>
+</section>
+
+<details class="tarjeta">
+  <summary><b>Ver más números</b> <span class="suave">· ventas de 30 días y lo más vendido</span></summary>
+  <div class="rejilla-2" style="margin-top:1rem">
+    <div><h2>Ventas de los últimos 30 días</h2>{% grafico_barras resumen.grafico_ventas None 150 True %}</div>
+    <div><h2>Lo que más vende</h2>
+      <table class="tabla compacta"><tbody>
+      {% for t in resumen.top %}<tr><td><a href="{% url 'catalogo:detalle' t.producto_id %}">{{ t.producto__nombre }}</a></td><td class="num">{{ t.unidades|cantidad }}</td><td class="num">{{ t.ingreso|moneda }}</td></tr>
+      {% empty %}<tr><td class="suave">Aún no hay ventas.</td></tr>{% endfor %}
+      </tbody></table></div>
+  </div>
+  <p class="suave">{{ resumen.inventario.productos }} productos{% if "ver_precios_compra" in permisos %} · mercancía por {{ resumen.inventario.valor_total|moneda }}{% if resumen.inmovilizado %} · {{ resumen.inmovilizado|moneda }} en productos que casi no se venden{% endif %}{% endif %} · cada cliente gasta en promedio {{ resumen.ventas.ticket_promedio|moneda }}</p>
+</details>
 {% endblock %}

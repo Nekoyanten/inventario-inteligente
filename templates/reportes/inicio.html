@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block titulo %}Reportes{% endblock %}
 {% block contenido %}
-<div class="encabezado"><h1>Reportes</h1><a class="boton boton-auto boton-chico boton-secundario" href="{% url 'reportes:importar' %}">📥 Importar productos</a></div>
+<div class="encabezado"><h1>Reportes</h1><a class="boton boton-auto boton-chico boton-secundario" href="{% url 'reportes:importar' %}">Importar productos</a></div>
 {% for grupo, reportes in grupos.items %}
 <h2>{{ grupo }}</h2>
 <div class="rejilla">

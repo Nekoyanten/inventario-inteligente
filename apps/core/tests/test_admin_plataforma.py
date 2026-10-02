@@ -26,7 +26,7 @@ def test_inicio_lleva_al_panel_y_se_ve_como_administrador_de_la_plataforma(clien
 def test_entrar_a_un_negocio_ver_todo_y_salir(client, plataforma, negocio, producto):
     r = client.post(f"/plataforma/negocios/{negocio.pk}/entrar/", follow=True)
     html = r.content.decode()
-    assert "como administrador de la plataforma" in html and "Ventas" in html  # su panel de administrador
+    assert "Modo soporte" in html and "Ventas" in html  # su panel de administrador
     assert producto.nombre in client.get("/productos/").content.decode()
     assert client.get("/negocio/configuracion/").status_code == 200  # puede configurar su negocio
     assert RegistroAuditoria.objects.filter(negocio=negocio, accion="soporte_entrar", usuario=plataforma).exists()

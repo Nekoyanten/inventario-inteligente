@@ -5,14 +5,14 @@
   <span class="suave">{{ r.fecha|date:"l d/m" }} {{ r.hora|time:"H:i"|default:"" }} · {{ r.personas }} personas{% if r.mesa %} · {{ r.mesa }}{% endif %}{% if r.promotor %} · promotor {{ r.promotor }}{% endif %} · <b>{{ r.get_estado_display }}</b></span></div></div>
 {% include "nocturno/_pestanas.html" %}
 <div class="rejilla">
-  <section class="tarjeta"><h2>Beneficio</h2><p>{% if r.es_grupo %}👥 Grupo: {{ conf.grupo_descuento_pct|floatformat:0 }} % de descuento{% if r.cliente %} y {{ conf.grupo_puntos_por_asistente }} puntos para {{ r.cliente.primer_nombre }} por cada asistente{% endif %}.{% elif r.tipo == 'CUMPLEANOS' %}🎂 Cumpleaños: entrada gratis para el cumpleañero registrado.{% else %}—{% endif %}</p></section>
+  <section class="tarjeta"><h2>Beneficio</h2><p>{% if r.es_grupo %}Grupo: {{ conf.grupo_descuento_pct|floatformat:0 }} % de descuento{% if r.cliente %} y {{ conf.grupo_puntos_por_asistente }} puntos para {{ r.cliente.primer_nombre }} por cada asistente{% endif %}.{% elif r.tipo == 'CUMPLEANOS' %}Cumpleaños: entrada gratis para el cumpleañero registrado.{% else %}—{% endif %}</p></section>
   <section class="tarjeta"><h2>Consumo mínimo / anticipo</h2><p>{{ r.consumo_minimo|moneda }} / {{ r.anticipo|moneda }}</p></section>
   <section class="tarjeta"><h2>Llegaron</h2><p class="kpi">{{ r.llegaron }} <small>de {{ invitados|length }} en la lista</small></p></section>
 </div>
 {% if r.estado == 'PENDIENTE' or r.estado == 'CONFIRMADA' %}
 <section class="tarjeta formulario-libre"><form method="post">{% csrf_token %}<input type="hidden" name="accion" value="llego">
   <div class="campo-linea"><select name="mesa" aria-label="Mesa"><option value="">{% if r.mesa %}{{ r.mesa }}{% else %}Sin mesa{% endif %}</option>{% for m in mesas %}<option value="{{ m.pk }}">{{ m }}</option>{% endfor %}</select>
-  <button class="boton boton-auto">✅ Llegaron: abrir cuenta</button></div></form>
+  <button class="boton boton-auto"><span class="marca-ok"></span>Llegaron: abrir cuenta</button></div></form>
   <div class="acciones" style="margin-top:.5rem">
     <form method="post">{% csrf_token %}<button class="boton boton-auto boton-chico boton-secundario" name="accion" value="CONFIRMADA">Confirmada</button><button class="boton boton-auto boton-chico boton-secundario" name="accion" value="NO_LLEGO">No llegó</button><button class="boton boton-auto boton-chico boton-secundario" name="accion" value="CANCELADA">Cancelar</button></form></div>
 </section>
@@ -21,7 +21,7 @@
 <section class="tarjeta">
   <h2>Lista de invitados</h2>
   <p class="suave">Al llegar, cada invitado puede quedar registrado como cliente (con su autorización y verificando su cédula). Queda como referido de quien organizó: así sabes a quién te trae cada organizador.</p>
-  <table class="tabla compacta"><tbody>{% for i in invitados %}<tr><td>{{ i.nombre }} <small class="suave">{{ i.telefono }}</small>{% if i.cliente %} · 👤 cliente{% endif %}</td>
+  <table class="tabla compacta"><tbody>{% for i in invitados %}<tr><td>{{ i.nombre }} <small class="suave">{{ i.telefono }}</small>{% if i.cliente %} · cliente{% endif %}</td>
     <td>{% if i.llego %}✔ {{ i.llegada|time:"H:i" }}{% else %}<form method="post" class="campo-linea">{% csrf_token %}<input type="hidden" name="accion" value="llego_invitado"><input type="hidden" name="invitado" value="{{ i.pk }}">
       {% if i.telefono %}<label><input type="checkbox" name="registrar" value="1"> Registrar (autorizó datos)</label><label><input type="checkbox" name="mayor_edad" value="1"> Cédula verificada (18+)</label><label><input type="checkbox" name="ofertas" value="1"> Ofertas</label>{% endif %}
       <button class="boton boton-auto boton-chico">Llegó</button></form>{% endif %}</td></tr>

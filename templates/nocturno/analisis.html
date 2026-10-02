@@ -3,13 +3,13 @@
 {% block contenido %}
 <h1>Análisis de la noche</h1>
 {% include "nocturno/_pestanas.html" %}
-{% if sugerencias %}<section class="tarjeta destacado"><h2>💡 Qué haría con estos datos</h2>
+{% if sugerencias %}<section class="tarjeta destacado"><h2>Qué haría con estos datos</h2>
   {% for s in sugerencias %}<div class="alerta s2"><div class="encabezado" style="margin:0"><div><b>{{ s.titulo }}</b><em>{{ s.razon }}</em></div>
     {% if s.dia is not None and "configurar_negocio" in permisos %}<a class="boton boton-auto boton-chico" href="{% url 'nocturno:precios' %}?dia={{ s.dia }}">Crear</a>{% endif %}</div></div>{% endfor %}
 </section>{% endif %}
 <div class="rejilla">
   <section class="tarjeta"><h2>Pour cost (30 días)</h2><p class="kpi">{% if pc.pct is not None %}{{ pc.pct }} %{% else %}—{% endif %}</p><p class="suave">costo de lo servido ÷ ventas de bebidas{% if pc.real_pct is not None and pc.real_pct != pc.pct %} · real con faltantes {{ pc.real_pct }} %{% endif %}</p>
-    {% if pc.por_categoria %}<table class="tabla compacta"><tbody>{% for f in pc.por_categoria %}<tr><td>{{ f.categoria }}</td><td class="num">{% if f.pct is not None %}{{ f.pct }} %{% endif %}</td><td class="num suave">{% if f.alto %}⚠️ {% endif %}ref. {{ f.referencia }} %</td></tr>{% endfor %}</tbody></table>{% endif %}</section>
+    {% if pc.por_categoria %}<table class="tabla compacta"><tbody>{% for f in pc.por_categoria %}<tr><td>{{ f.categoria }}</td><td class="num">{% if f.pct is not None %}{{ f.pct }} %{% endif %}</td><td class="num suave">{% if f.alto %}{% endif %}ref. {{ f.referencia }} %</td></tr>{% endfor %}</tbody></table>{% endif %}</section>
   <section class="tarjeta"><h2>Clientes identificados</h2><p class="kpi">{% if fid.ventas_con_cliente_pct is not None %}{{ fid.ventas_con_cliente_pct }} %{% else %}—{% endif %}</p><p class="suave">{{ fid.clientes }} clientes · {{ fid.vuelven }} volvieron otra noche</p></section>
   <section class="tarjeta"><h2>Reservas</h2><p class="kpi">{{ reservas.total }}</p><p class="suave">{% if reservas.no_show_pct is not None %}{{ reservas.no_show_pct }} % no llegó · {% endif %}{{ reservas.grupos }} grupos ({{ reservas.personas_grupos }} personas)</p></section>
   <section class="tarjeta"><h2>Puerta (30 días)</h2><p class="kpi">{{ puerta.personas }}</p><p class="suave">personas{% if puerta.promedio_noche %} · {{ puerta.promedio_noche|floatformat:0 }} por noche{% endif %} · cover {{ puerta.cover|moneda }}</p></section>

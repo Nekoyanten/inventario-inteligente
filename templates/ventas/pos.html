@@ -5,7 +5,7 @@
   <section class="tarjeta">
     <div class="campo-linea">
       <input id="pos-buscar" type="search" placeholder="Busca o escanea un producto…" autocomplete="off" aria-label="Buscar producto">
-      <button id="pos-escanear" class="boton boton-auto boton-secundario" type="button" hidden title="Escanear con la cámara">📷</button>
+      <button id="pos-escanear" class="boton boton-auto boton-secundario" type="button" hidden title="Escanear con la cámara"></button>
     </div>
     <div id="pos-resultados" class="resultados"></div>
   </section>
@@ -15,7 +15,7 @@
     {% if puede_clientes %}
     <div class="cliente-caja">
       <div id="pos-cliente-elegido" hidden>
-        <p class="encabezado"><span>👤 <b id="pos-cliente-nombre"></b> <small id="pos-cliente-info" class="suave"></small></span><button type="button" id="pos-cliente-quitar" class="enlace">Quitar</button></p>
+        <p class="encabezado"><span><b id="pos-cliente-nombre"></b> <small id="pos-cliente-info" class="suave"></small></span><button type="button" id="pos-cliente-quitar" class="enlace">Quitar</button></p>
         {% if fidelizacion %}<p><label for="pos-puntos">Canjear puntos</label><input id="pos-puntos" type="number" min="0" step="1" inputmode="numeric" placeholder="0"></p>{% endif %}
       </div>
       <div id="pos-cliente-busqueda">

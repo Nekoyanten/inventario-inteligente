@@ -12,8 +12,8 @@
 </div>
 <div class="rejilla">
   <section class="tarjeta"><h2>Entrega real promedio</h2><p class="kpi">{% if indicadores.tiempo_promedio is not None %}{{ indicadores.tiempo_promedio }} <small>días</small>{% else %}—{% endif %}</p><p class="suave">Prometido: {{ indicadores.tiempo_prometido }} días</p>
-    {% if not indicadores.entregas %}<p class="suave">⚠️ Aún no hay entregas registradas: el sistema usa lo que prometió el proveedor, sin comprobar.</p>
-    {% elif indicadores.pocos_datos %}<p class="suave">⚠️ Pocos datos ({{ indicadores.entregas }} entrega{{ indicadores.entregas|pluralize }}): tómalo como referencia.</p>{% endif %}</section>
+    {% if not indicadores.entregas %}<p class="suave">Aún no hay entregas registradas: el sistema usa lo que prometió el proveedor, sin comprobar.</p>
+    {% elif indicadores.pocos_datos %}<p class="suave">Pocos datos ({{ indicadores.entregas }} entrega{{ indicadores.entregas|pluralize }}): tómalo como referencia.</p>{% endif %}</section>
   <section class="tarjeta"><h2>Cumplimiento</h2><p class="kpi">{% if indicadores.cumplimiento_pct is not None %}{{ indicadores.cumplimiento_pct }} %{% else %}—{% endif %}</p><p class="suave">órdenes recibidas a tiempo</p></section>
   <section class="tarjeta"><h2>Órdenes</h2><p class="kpi">{{ indicadores.ordenes }}</p><p class="suave">{{ indicadores.recibidas }} recibidas · {{ indicadores.parciales }} parciales · {{ indicadores.compras_directas }} facturas directas</p>
     {% if ciclo %}<p class="suave">Le compras cada ~{{ ciclo|floatformat:0 }} días.</p>{% endif %}</section>

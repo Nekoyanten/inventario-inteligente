@@ -3,7 +3,7 @@
 {% block contenido %}
 <div class="encabezado">
   <div><a class="suave" href="{% url 'clientes:lista' %}">← Clientes</a><h1>{{ cliente }}</h1>
-    <span class="suave">{{ cliente.telefono|default:"sin celular" }}{% if cliente.email %} · {{ cliente.email }}{% endif %}{% if cliente.fecha_nacimiento %} · 🎂 {{ cliente.fecha_nacimiento|date:"d/m" }}{% endif %}</span></div>
+    <span class="suave">{{ cliente.telefono|default:"sin celular" }}{% if cliente.email %} · {{ cliente.email }}{% endif %}{% if cliente.fecha_nacimiento %} · {{ cliente.fecha_nacimiento|date:"d/m" }}{% endif %}</span></div>
   <div class="acciones">
     {% if whatsapp %}<a class="boton boton-auto boton-chico" href="{{ whatsapp }}" target="_blank" rel="noopener">WhatsApp</a>{% endif %}
     <a class="boton boton-auto boton-chico boton-secundario" href="{% url 'clientes:editar' cliente.pk %}">Editar</a>
@@ -19,7 +19,7 @@
 <section class="tarjeta"><h2>Vida nocturna</h2>
   {% if cliente.referido_por %}<p>Lo trajo <a href="{% url 'clientes:detalle' cliente.referido_por_id %}">{{ cliente.referido_por }}</a>.</p>{% endif %}
   {% if referidos %}<p>Ha traído a {{ referidos|length }}: {% for r in referidos %}<a href="{% url 'clientes:detalle' r.pk %}">{{ r }}</a>{% if not forloop.last %}, {% endif %}{% endfor %}.</p>{% endif %}
-  {% for b in guardadas %}<p>🍾 {{ b.producto }} · {{ b.restante_pct }} % · {{ b.get_estado_display|lower }} (vence {{ b.vence|date:"d/m/Y" }})</p>{% endfor %}
+  {% for b in guardadas %}<p>{{ b.producto }} · {{ b.restante_pct }} % · {{ b.get_estado_display|lower }} (vence {{ b.vence|date:"d/m/Y" }})</p>{% endfor %}
 </section>{% endif %}{% endwith %}
 {% if cliente.notas %}<section class="tarjeta"><h2>Notas</h2><p>{{ cliente.notas|linebreaksbr }}</p></section>{% endif %}
 <div class="rejilla-2">
