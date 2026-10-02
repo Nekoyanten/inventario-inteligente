@@ -102,7 +102,7 @@ def a_pdf(nombre: str, titulo: str, subtitulo: str, encabezados: list[str], fila
         datos.append([fmt(v, tipos[i]) for i, v in enumerate(totales)])
     tabla = Table(datos, repeatRows=1)
     estilo = [
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1f7a4d")), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0f5b5e")), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("FONTSIZE", (0, 0), (-1, -1), 8), ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#dddddd")),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f4f6f5")]),
     ]

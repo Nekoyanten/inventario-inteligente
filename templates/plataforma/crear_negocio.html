@@ -11,6 +11,7 @@
   <div class="rejilla-2">{% for c in form %}{% if c.name in "dueno usuario correo" %}<p>{{ c.label_tag }}{{ c }}{% if c.help_text %}<small class="suave">{{ c.help_text }}</small>{% endif %}{% for e in c.errors %}<br><small class="error">{{ e }}</small>{% endfor %}</p>{% endif %}{% endfor %}</div>
   <h2>Plan</h2>
   <div class="rejilla-2"><p>{{ form.plan.label_tag }}{{ form.plan }}</p><p>{{ form.dias.label_tag }}{{ form.dias }}<small class="suave">{{ form.dias.help_text }}</small></p></div>
+  <div class="rejilla-2"><p>{{ form.mesas.label_tag }}{{ form.mesas }}<small class="suave">{{ form.mesas.help_text }}</small></p><p>{{ form.mesas_vip.label_tag }}{{ form.mesas_vip }}</p></div>
   <p class="suave">Después de crearlo puedes ajustar módulos y límites a la medida.</p>
   <p><button class="boton boton-auto">Crear negocio</button></p>
 </form>

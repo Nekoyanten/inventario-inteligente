@@ -85,6 +85,59 @@ def orden_natural(mesas):
     return sorted(mesas, key=clave)
 
 
+def conteo_mesas(negocio) -> dict:
+    activas = Mesa.objects.filter(negocio=negocio, activa=True)
+    return {"normales": activas.exclude(zona=Mesa.Zona.VIP).count(), "vip": activas.filter(zona=Mesa.Zona.VIP).count()}
+
+
+def ajustar_mesas(negocio, normales: int, vip: int, usuario=None) -> dict:
+    """Deja el negocio con esa cantidad de mesas normales (M1, M2…) y VIP (V1, V2…).
+
+    Si faltan, se crean (o se reactivan las que estaban guardadas). Si sobran, se quitan las de número más alto que
+    estén libres: se borran si nunca se usaron y se guardan (inactivas) si tienen historial."""
+    normales, vip = max(0, min(int(normales), 300)), max(0, min(int(vip), 300))
+    creadas = quitadas = 0
+    with transaction.atomic():
+        for es_vip, meta, prefijo in ((False, normales, "M"), (True, vip, "V")):
+            base = Mesa.objects.filter(negocio=negocio)
+            grupo = base.filter(zona=Mesa.Zona.VIP) if es_vip else base.exclude(zona=Mesa.Zona.VIP)
+            activas = orden_natural(grupo.filter(activa=True))
+            sobran = len(activas) - meta
+            for m in reversed(activas):
+                if sobran <= 0:
+                    break
+                if Cuenta.objects.filter(mesa=m, estado=Cuenta.Estado.ABIERTA).exists():
+                    continue  # ocupada ahora: no se toca
+                if m.cuentas.exists() or m.reservas.exists():
+                    m.activa = False
+                    m.save(update_fields=["activa"])
+                else:
+                    m.delete()
+                sobran -= 1
+                quitadas += 1
+            falta = meta - len(activas)
+            if falta > 0:
+                for m in orden_natural(grupo.filter(activa=False))[:falta]:
+                    m.activa = True
+                    m.save(update_fields=["activa"])
+                    falta -= 1
+                    creadas += 1
+                usados = set(base.values_list("nombre", flat=True))
+                n = 1
+                while falta > 0:
+                    nombre = f"{prefijo}{n}"
+                    n += 1
+                    if nombre in usados:
+                        continue
+                    Mesa.objects.create(negocio=negocio, nombre=nombre, zona=Mesa.Zona.VIP if es_vip else Mesa.Zona.SALON,
+                                        capacidad=6 if es_vip else 4)
+                    falta -= 1
+                    creadas += 1
+    if usuario is not None:
+        auditar(negocio, usuario, "ajustar_mesas", negocio, normales=normales, vip=vip)
+    return {"creadas": creadas, "quitadas": quitadas, **conteo_mesas(negocio)}
+
+
 def mesero_de(mesa: Mesa, noche):
     a = AsignacionMesa.objects.filter(mesa=mesa, noche=noche).select_related("mesero").first()
     return a.mesero if a else None

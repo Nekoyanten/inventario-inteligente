@@ -14,7 +14,7 @@ def manifest(request):
     return JsonResponse({
         "name": "Inventario Inteligente", "short_name": "Inventario", "lang": "es-CO",
         "start_url": "/", "scope": "/", "display": "standalone",
-        "background_color": "#f4f6f5", "theme_color": "#1f7a4d",
+        "background_color": "#ede6da", "theme_color": "#0f5b5e",
         "description": "Inventario que te dice qué comprar, qué se vence y qué no se vende.",
         "icons": [
             {"src": static("img/icono.svg"), "sizes": "any", "type": "image/svg+xml", "purpose": "any"},

@@ -411,3 +411,31 @@ def test_sin_emojis_en_las_pantallas_de_trabajo(client, bar):
     client.force_login(bar["dueno"])
     for url in ("/", "/noche/", "/noche/mesas/", "/usuarios/", "/productos/", "/alertas/", "/ventas/"):
         assert not emoji.search(client.get(url).content.decode()), url
+
+
+# ---------------------------------------------------------------- Fase 17: el superusuario arma las mesas
+def test_superusuario_define_cuantas_mesas_tiene_el_negocio(client, bar):
+    n = bar["n"]  # empieza con 4 normales
+    neko = Usuario.objects.create_superuser("neko", "n@example.com", "clave-larga-123")
+    client.force_login(neko)
+    assert "¿Cuántas mesas tiene?" in client.get(f"/plataforma/negocios/{n.pk}/mesas/").content.decode()
+    client.post(f"/plataforma/negocios/{n.pk}/mesas/", {"accion": "cantidad", "normales": 6, "vip": 2})
+    assert s.conteo_mesas(n) == {"normales": 6, "vip": 2}
+    assert set(Mesa.objects.filter(negocio=n, zona="VIP").values_list("nombre", flat=True)) == {"V1", "V2"}
+    # un negocio pequeño: se quitan las de número más alto; la ocupada y las que tienen historial no se pierden
+    ocupada = Mesa.objects.get(negocio=n, nombre="M6")
+    s.abrir_cuenta(n, bar["ana"], mesa=ocupada)
+    client.post(f"/plataforma/negocios/{n.pk}/mesas/", {"accion": "cantidad", "normales": 2, "vip": 0})
+    nombres = set(Mesa.objects.filter(negocio=n, activa=True).values_list("nombre", flat=True))
+    assert nombres == {"M1", "M6"} and not Mesa.objects.filter(negocio=n, zona="VIP").exists()
+    # mover de zona, renombrar y quitar una
+    m1 = Mesa.objects.get(negocio=n, nombre="M1")
+    client.post(f"/plataforma/negocios/{n.pk}/mesas/", {"accion": "guardar", "mesa": m1.pk, "nombre": "Terraza 1",
+                                                       "zona": "TERRAZA", "capacidad": 8, "consumo_minimo": 0})
+    m1.refresh_from_db()
+    assert (m1.nombre, m1.zona, m1.capacidad) == ("Terraza 1", "TERRAZA", 8)
+    client.post(f"/plataforma/negocios/{n.pk}/mesas/", {"accion": "quitar", "mesa": m1.pk})
+    assert not Mesa.objects.filter(pk=m1.pk).exists()
+    # el dueño no entra a esta pantalla
+    client.force_login(bar["dueno"])
+    assert client.get(f"/plataforma/negocios/{n.pk}/mesas/").status_code in (302, 403)

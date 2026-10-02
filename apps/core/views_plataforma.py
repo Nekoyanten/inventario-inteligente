@@ -176,6 +176,10 @@ def crear_negocio(request):
             s.pagado_hasta = None if d["plan"] == "GRATIS" else timezone.localdate() + timedelta(days=d["dias"])
             s.save()
             auditar(n, request.user, "crear_negocio", n, giro=n.giro, plan=s.plan, dueno=dueno.username)
+            if n.giro in ("BAR", "DISCOTECA", "BAR_DISCOTECA") and (d.get("mesas") or d.get("mesas_vip")):
+                from apps.nocturno.services import ajustar_mesas
+
+                ajustar_mesas(n, d.get("mesas") or 0, d.get("mesas_vip") or 0, request.user)
         url = request.build_absolute_uri("/ingresar/")
         mensaje = (f"Hola {nombre}, ya está listo {n.nombre} en {settings.EMPRESA['nombre']}.\n"
                    f"Entra en {url}\nUsuario: {dueno.username}\nClave temporal: {clave}\n"
@@ -184,3 +188,64 @@ def crear_negocio(request):
             "n": n, "dueno": dueno, "clave": clave, "url": url, "mensaje": mensaje,
             "telefono": "".join(c for c in (d["telefono"] or "") if c.isdigit())})
     return render(request, "plataforma/crear_negocio.html", {"form": form})
+
+
+NOCTURNOS = ("BAR", "DISCOTECA", "BAR_DISCOTECA")
+
+
+@staff_member_required
+@solo_superusuario
+def mesas(request, pk):
+    """El superusuario arma las mesas del establecimiento: cuántas normales y VIP, nombres, zona y puestos."""
+    from apps.nocturno import services as noc
+    from apps.nocturno.models import Cuenta, Mesa
+
+    n = get_object_or_404(Negocio, pk=pk)
+    if request.method == "POST":
+        accion = request.POST.get("accion")
+        if accion == "cantidad":
+            try:
+                r = noc.ajustar_mesas(n, int(request.POST.get("normales") or 0), int(request.POST.get("vip") or 0),
+                                      request.user)
+                messages.success(request, f"Listo: {r['normales']} mesas normales y {r['vip']} VIP.")
+            except ValueError:
+                messages.error(request, "Escribe las cantidades en números.")
+        else:
+            m = get_object_or_404(Mesa, negocio=n, pk=request.POST.get("mesa") or 0)
+            if accion == "quitar":
+                if Cuenta.objects.filter(mesa=m, estado=Cuenta.Estado.ABIERTA).exists():
+                    messages.error(request, f"{m} está ocupada ahora: cóbrala o libérala primero.")
+                elif m.cuentas.exists() or m.reservas.exists():
+                    m.activa = False
+                    m.save(update_fields=["activa"])
+                    messages.success(request, f"{m} quedó guardada (tiene historial). Puedes reactivarla cuando quieras.")
+                else:
+                    m.delete()
+                    messages.success(request, "Mesa eliminada.")
+            elif accion == "reactivar":
+                m.activa = True
+                m.save(update_fields=["activa"])
+            elif accion == "guardar":
+                nombre = (request.POST.get("nombre") or "").strip()[:40]
+                if not nombre:
+                    messages.error(request, "La mesa necesita un nombre.")
+                elif Mesa.objects.filter(negocio=n, nombre=nombre).exclude(pk=m.pk).exists():
+                    messages.error(request, f"Ya hay una mesa llamada {nombre}.")
+                else:
+                    m.nombre = nombre
+                    if request.POST.get("zona") in Mesa.Zona.values:
+                        m.zona = request.POST["zona"]
+                    m.capacidad = max(1, min(int(request.POST.get("capacidad") or m.capacidad), 100))
+                    m.consumo_minimo = max(0, int(request.POST.get("consumo_minimo") or 0))
+                    m.save()
+                    messages.success(request, f"{m} guardada.")
+            auditar(n, request.user, "administrar_mesa", n, cambio=accion)
+        return redirect("plataforma:mesas", pk=n.pk)
+    todas = noc.orden_natural(Mesa.objects.filter(negocio=n))
+    ocupadas = set(Cuenta.objects.filter(negocio=n, estado=Cuenta.Estado.ABIERTA, mesa__isnull=False)
+                   .values_list("mesa_id", flat=True))
+    for m in todas:
+        m.ocupada = m.pk in ocupadas
+    return render(request, "plataforma/mesas.html", {
+        "n": n, "mesas": [m for m in todas if m.activa], "guardadas": [m for m in todas if not m.activa],
+        "conteo": noc.conteo_mesas(n), "zonas": Mesa.Zona.choices, "usa_mesas": n.giro in NOCTURNOS})

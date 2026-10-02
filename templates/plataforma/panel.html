@@ -21,6 +21,7 @@
     <span class="insignia {% if f.dias_activos >= 15 %}verde{% elif f.dias_activos >= 7 %}amarillo{% else %}gris{% endif %}" title="Días con ventas en los últimos {{ f.dias_piloto }}">{{ f.dias_activos }}/{{ f.dias_piloto }} días</span>
     <div class="acciones-fila">
       <a class="boton boton-auto boton-chico" href="{% url 'plataforma:negocio' f.negocio.pk %}">Plan y módulos</a>
+      <a class="boton boton-auto boton-chico boton-secundario" href="{% url 'plataforma:mesas' f.negocio.pk %}">Mesas</a>
       <form method="post" action="{% url 'plataforma:entrar' f.negocio.pk %}">{% csrf_token %}<button class="boton boton-auto boton-chico boton-secundario">Entrar a ver</button></form></div>
   </li>
 {% empty %}<li class="suave">Aún no hay negocios. Crea el primero.</li>{% endfor %}

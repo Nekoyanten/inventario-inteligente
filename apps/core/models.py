@@ -87,8 +87,8 @@ class ConfiguracionNegocio(ModeloBase):
         CLARO = "CLARO", "Claro"
         OSCURO = "OSCURO", "Oscuro"
 
-    color_principal = models.CharField(max_length=7, default="#1f7a4d", validators=[RegexValidator(
-        r"^#[0-9a-fA-F]{6}$", "Usa un color como #1f7a4d.")], help_text="Botones, menú y enlaces")
+    color_principal = models.CharField(max_length=7, default="#0f5b5e", validators=[RegexValidator(
+        r"^#[0-9a-fA-F]{6}$", "Usa un color como #0f5b5e.")], help_text="Botones, menú y enlaces")
     tema = models.CharField(max_length=6, choices=Tema.choices, default=Tema.AUTO)
     letra_grande = models.BooleanField(default=False, help_text="Letra más grande en toda la aplicación")
     logo = models.ImageField(upload_to=ruta_logo, null=True, blank=True,

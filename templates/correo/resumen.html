@@ -1,5 +1,5 @@
 <div style="font-family:system-ui,sans-serif;max-width:560px">
-  <h2 style="color:#1f7a4d">{{ negocio.nombre }}: {{ alertas|length }} alertas para actuar hoy</h2>
+  <h2 style="color:#0f5b5e">{{ negocio.nombre }}: {{ alertas|length }} alertas para actuar hoy</h2>
   <ul>{% for a in alertas %}<li style="margin:.4rem 0">{{ a.mensaje }}{% if a.accion_sugerida %}<br><small style="color:#5d6b64">{{ a.accion_sugerida }}</small>{% endif %}</li>{% endfor %}</ul>
-  <p><a href="{{ url }}/alertas/" style="background:#1f7a4d;color:#fff;padding:.6rem 1rem;border-radius:8px;text-decoration:none">Ver alertas</a></p>
+  <p><a href="{{ url }}/alertas/" style="background:#0f5b5e;color:#fff;padding:.6rem 1rem;border-radius:8px;text-decoration:none">Ver alertas</a></p>
 </div>

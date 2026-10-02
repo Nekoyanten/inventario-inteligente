@@ -32,3 +32,4 @@ Resumen:
 26. **Entrar por turnos**: en *Equipo* copia el «Enlace para tu equipo» y ábrelo una vez en cada celular. Desde ahí cada persona toca su nombre y marca su PIN en el teclado. El botón de salir (arriba) vuelve a esa pantalla para el siguiente turno.
 27. **Inicio del dueño**: tres cifras (hoy, este mes, lo que te queda) y «Para hacer hoy» con máximo tres cosas. Lo demás está en «Ver más números».
 28. **Superusuario de la plataforma**: no pertenece a ninguna tienda. Ve «Tus negocios», crea negocios, ajusta planes y, si necesita, entra a ver uno en «Modo soporte» (franja azul arriba, queda en la bitácora).
+29. **Mesas de cada negocio (superusuario)**: en *Tus negocios → Mesas* escribe cuántas mesas normales y cuántas VIP tiene el establecimiento y guarda. Toca una mesa para cambiarle el nombre, moverla de zona (salón, VIP, terraza, barra), los puestos o el consumo mínimo, o para quitarla. Al crear un negocio también puedes poner las cantidades de una vez.

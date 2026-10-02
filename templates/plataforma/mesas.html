@@ -1,0 +1,46 @@
+{% extends "base.html" %}{% load ui %}
+{% block titulo %}Mesas · {{ n.nombre }}{% endblock %}
+{% block contenido %}
+<div class="encabezado"><div><a class="suave" href="{% url 'plataforma:negocio' n.pk %}">← {{ n.nombre }}</a><h1>Mesas</h1></div></div>
+{% if not usa_mesas %}<p class="mensaje info">Las mesas se usan en bares y discotecas. Este negocio es «{{ n.get_giro_display }}».</p>{% endif %}
+
+<form method="post" class="tarjeta formulario-libre">{% csrf_token %}<input type="hidden" name="accion" value="cantidad">
+  <h2>¿Cuántas mesas tiene?</h2>
+  <div class="contadores">
+    <div class="contador-campo"><label for="normales">Normales</label><div class="paso"><button type="button" data-paso="-1" aria-label="Una menos">−</button><input id="normales" name="normales" type="number" min="0" max="300" value="{{ conteo.normales }}" inputmode="numeric"><button type="button" data-paso="1" aria-label="Una más">+</button></div></div>
+    <div class="contador-campo"><label for="vip">VIP</label><div class="paso"><button type="button" data-paso="-1" aria-label="Una menos">−</button><input id="vip" name="vip" type="number" min="0" max="300" value="{{ conteo.vip }}" inputmode="numeric"><button type="button" data-paso="1" aria-label="Una más">+</button></div></div>
+    <button class="boton boton-auto">Guardar cantidad</button>
+  </div>
+  <p class="suave" style="margin-bottom:0">Al bajar la cantidad se quitan las de número más alto que estén libres.</p>
+</form>
+
+<section class="tarjeta">
+  <h2>Mesas activas ({{ mesas|length }})</h2>
+  <div class="mesas-admin">
+  {% for m in mesas %}
+    <details class="mesa-admin{% if m.zona == 'VIP' %} vip{% endif %}{% if m.ocupada %} ocupada{% endif %}">
+      <summary><b>{{ m.nombre }}</b><small>{{ m.get_zona_display }} · {{ m.capacidad }} puestos{% if m.ocupada %} · ocupada{% endif %}</small></summary>
+      <form method="post" class="formulario-libre">{% csrf_token %}<input type="hidden" name="mesa" value="{{ m.pk }}">
+        <p><label for="n-{{ m.pk }}">Nombre</label><input id="n-{{ m.pk }}" name="nombre" value="{{ m.nombre }}" maxlength="40" required></p>
+        <p><label for="z-{{ m.pk }}">Zona</label><select id="z-{{ m.pk }}" name="zona">{% for valor, texto in zonas %}<option value="{{ valor }}"{% if valor == m.zona %} selected{% endif %}>{{ texto }}</option>{% endfor %}</select></p>
+        <div class="campo-linea"><p><label for="c-{{ m.pk }}">Puestos</label><input id="c-{{ m.pk }}" name="capacidad" type="number" min="1" max="100" value="{{ m.capacidad }}" inputmode="numeric"></p>
+          <p><label for="cm-{{ m.pk }}">Consumo mínimo</label><input id="cm-{{ m.pk }}" name="consumo_minimo" type="number" min="0" step="1000" value="{{ m.consumo_minimo }}" inputmode="numeric"></p></div>
+        <div class="acciones"><button class="boton boton-auto boton-chico" name="accion" value="guardar">Guardar</button><button class="boton boton-auto boton-chico boton-peligro" name="accion" value="quitar" formnovalidate>Quitar</button></div>
+      </form>
+    </details>
+  {% empty %}<p class="suave">Este negocio no tiene mesas. Escribe arriba cuántas necesita.</p>{% endfor %}
+  </div>
+</section>
+
+{% if guardadas %}<section class="tarjeta">
+  <h2>Guardadas ({{ guardadas|length }})</h2>
+  <p class="suave" style="margin-top:0">Tienen historial, por eso no se borran. No aparecen en el tablero.</p>
+  <div class="chips">{% for m in guardadas %}<form method="post" class="chip">{% csrf_token %}<input type="hidden" name="mesa" value="{{ m.pk }}">{{ m.nombre }} <button class="enlace" name="accion" value="reactivar">Reactivar</button></form>{% endfor %}</div>
+</section>{% endif %}
+{% endblock %}
+{% block scripts %}<script>
+document.querySelectorAll(".paso button").forEach((b) => b.addEventListener("click", () => {
+  const i = b.parentElement.querySelector("input");
+  i.value = Math.max(0, Math.min(300, Number(i.value || 0) + Number(b.dataset.paso)));
+}));
+</script>{% endblock %}

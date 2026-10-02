@@ -257,7 +257,7 @@ def pdf_orden(orden: OrdenCompra) -> bytes:
     filas.append(["", "", "", "Total", f"${total:,.0f}"])
     tabla = Table(filas, colWidths=[6.5 * cm, 2.8 * cm, 2 * cm, 2.6 * cm, 2.8 * cm])
     tabla.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1f7a4d")), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#0f5b5e")), ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("ALIGN", (2, 0), (-1, -1), "RIGHT"), ("GRID", (0, 0), (-1, -2), 0.25, colors.HexColor("#cccccc")),
         ("FONTNAME", (0, -1), (-1, -1), "Helvetica-Bold"),
     ]))

@@ -3,10 +3,10 @@
 import re
 
 PALETAS = [
-    ("#1f7a4d", "Verde"), ("#2563eb", "Azul"), ("#7c3aed", "Morado"), ("#9f1239", "Vino"),
+    ("#0f5b5e", "Petróleo"), ("#1f7a4d", "Verde"), ("#2563eb", "Azul"), ("#7c3aed", "Morado"), ("#9f1239", "Vino"),
     ("#ea580c", "Naranja"), ("#0f766e", "Turquesa"), ("#db2777", "Rosa"), ("#334155", "Grafito"),
 ]
-COLOR_DEFECTO = "#1f7a4d"
+COLOR_DEFECTO = "#0f5b5e"
 HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 

@@ -78,6 +78,9 @@ class NuevoNegocioForm(forms.Form):
                              initial="EMPRENDEDOR")
     dias = forms.IntegerField(label="Días activo", min_value=1, max_value=3660, initial=30,
                               help_text="Para planes de pago")
+    mesas = forms.IntegerField(label="Mesas normales", min_value=0, max_value=300, initial=0, required=False,
+                               help_text="Solo bares y discotecas")
+    mesas_vip = forms.IntegerField(label="Mesas VIP", min_value=0, max_value=300, initial=0, required=False)
 
     def clean_usuario(self):
         u = self.cleaned_data["usuario"].strip()
